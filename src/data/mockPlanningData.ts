@@ -51,6 +51,7 @@ export const BASES: BaseConfig[] = [
   { id: "Rio_Centro", name: "Rio - Centro", lat: -22.906, lon: -43.172, timezone: "America/Sao_Paulo" },
   { id: "Rio_Zona_Sul", name: "Rio - Zona Sul", lat: -22.983, lon: -43.198, timezone: "America/Sao_Paulo" },
   { id: "Baixada", name: "Baixada Fluminense", lat: -22.757, lon: -43.310, timezone: "America/Sao_Paulo" },
+  { id: "Sao_Goncalo", name: "São Gonçalo", lat: -22.827, lon: -43.053, timezone: "America/Sao_Paulo" },
 ];
 
 // Default configuration
