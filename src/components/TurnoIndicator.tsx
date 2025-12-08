@@ -40,11 +40,11 @@ export const TurnoIndicator = ({
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div>
           <p className="text-muted-foreground text-xs">BT</p>
-          <p className="font-mono font-semibold">{equipesBT}</p>
+          <p className="font-mono font-semibold text-primary">{equipesBT}</p>
         </div>
         <div>
           <p className="text-muted-foreground text-xs">MT</p>
-          <p className="font-mono font-semibold">{equipesMT}</p>
+          <p className="font-mono font-semibold text-purple-400">{equipesMT}</p>
         </div>
       </div>
     </div>

@@ -1,7 +1,11 @@
-import { configData } from "@/data/mockPlanningData";
+import { PlanningConfig } from "@/data/mockPlanningData";
 import { Settings, Users, Gauge } from "lucide-react";
 
-export const ConfigPanel = () => {
+interface ConfigPanelProps {
+  config: PlanningConfig;
+}
+
+export const ConfigPanel = ({ config }: ConfigPanelProps) => {
   return (
     <div className="glass-card p-5 animate-slide-up">
       <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -14,13 +18,13 @@ export const ConfigPanel = () => {
           <div>
             <p className="text-xs text-muted-foreground mb-1">Backlog BT</p>
             <p className="font-mono text-lg font-semibold text-primary">
-              {configData.backlog_bt}
+              {config.backlog_bt}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Backlog MT</p>
             <p className="font-mono text-lg font-semibold text-purple-400">
-              {configData.backlog_mt}
+              {config.backlog_mt}
             </p>
           </div>
         </div>
@@ -37,9 +41,9 @@ export const ConfigPanel = () => {
               <div key={turno} className="text-center p-2 rounded bg-secondary/30">
                 <p className="text-xs text-muted-foreground">Turno {turno}</p>
                 <p className="font-mono">
-                  <span className="text-primary">{configData.equipes_bt[turno]}</span>
+                  <span className="text-primary">{config.equipes_bt[turno]}</span>
                   <span className="text-muted-foreground mx-1">/</span>
-                  <span className="text-purple-400">{configData.equipes_mt[turno]}</span>
+                  <span className="text-purple-400">{config.equipes_mt[turno]}</span>
                 </p>
               </div>
             ))}
@@ -56,11 +60,11 @@ export const ConfigPanel = () => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground">Prod. BT</p>
-              <p className="font-mono font-semibold">{configData.prod_bt}/turno</p>
+              <p className="font-mono font-semibold">{config.prod_bt}/turno</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Prod. MT</p>
-              <p className="font-mono font-semibold">{configData.prod_mt}/turno</p>
+              <p className="font-mono font-semibold">{config.prod_mt}/turno</p>
             </div>
           </div>
         </div>

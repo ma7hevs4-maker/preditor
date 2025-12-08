@@ -1,4 +1,4 @@
-// Mock data based on the Python script output structure
+// Data types based on the Python script
 export interface HourlyData {
   hora: number;
   turno: 'A' | 'B' | 'C';
@@ -24,7 +24,15 @@ export interface HourlyData {
   temp_c: number;
 }
 
-export interface ConfigData {
+export interface BaseConfig {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  timezone: string;
+}
+
+export interface PlanningConfig {
   base: string;
   backlog_bt: number;
   backlog_mt: number;
@@ -32,16 +40,30 @@ export interface ConfigData {
   equipes_mt: { A: number; B: number; C: number };
   prod_bt: number;
   prod_mt: number;
+  remote_share: number;
+  chuva_threshold: number;
 }
 
-export const configData: ConfigData = {
-  base: "Niterói - Verão",
+// Available bases from Python script
+export const BASES: BaseConfig[] = [
+  { id: "Niteroi_Verao", name: "Niterói - Verão", lat: -22.883, lon: -43.103, timezone: "America/Sao_Paulo" },
+  { id: "Niteroi_Inverno", name: "Niterói - Inverno", lat: -22.883, lon: -43.103, timezone: "America/Sao_Paulo" },
+  { id: "Rio_Centro", name: "Rio - Centro", lat: -22.906, lon: -43.172, timezone: "America/Sao_Paulo" },
+  { id: "Rio_Zona_Sul", name: "Rio - Zona Sul", lat: -22.983, lon: -43.198, timezone: "America/Sao_Paulo" },
+  { id: "Baixada", name: "Baixada Fluminense", lat: -22.757, lon: -43.310, timezone: "America/Sao_Paulo" },
+];
+
+// Default configuration
+export const defaultConfig: PlanningConfig = {
+  base: "Niteroi_Verao",
   backlog_bt: 29,
   backlog_mt: 1,
   equipes_bt: { A: 6, B: 10, C: 7 },
   equipes_mt: { A: 3, B: 4, C: 2 },
   prod_bt: 2.81,
   prod_mt: 1.47,
+  remote_share: 0.30,
+  chuva_threshold: 0.2,
 };
 
 const getTurno = (hora: number): 'A' | 'B' | 'C' => {
@@ -56,11 +78,32 @@ const ENTRADA_MT = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 2, 3, 3, 2, 3, 3, 3, 2, 
 const RETIRADA_BT_PCT = [72, 70, 67, 62, 71, 68, 67, 66, 69, 72, 74, 78, 77, 76, 77, 79, 81, 82, 81, 79, 83, 82, 77, 79];
 const RETIRADA_MT_PCT = [21, 19, 22, 15, 16, 16, 10, 14, 26, 29, 27, 23, 23, 28, 23, 29, 17, 19, 21, 23, 22, 21, 17, 11];
 
-// Generate mock hourly data starting from current hour
-export const generateMockData = (startHour: number = new Date().getHours()): HourlyData[] => {
+// Uplift tables from Python
+const UPLIFT_CHUVA = {
+  bt_total: { "0.2-1": 28.0, "1-5": 52.13, "5-10": 79.90, "gt10": 141.46 },
+  mt_total: { "0.2-1": 40.0, "1-5": 104.12, "5-10": 97.33, "gt10": 265.33 },
+};
+
+const getFaixaChuva = (mm: number): string => {
+  if (mm < 0.2) return "seco";
+  if (mm < 1.0) return "0.2-1";
+  if (mm < 5.0) return "1-5";
+  if (mm < 10.0) return "5-10";
+  return "gt10";
+};
+
+const getUplift = (precip: number, type: 'bt' | 'mt'): number => {
+  const faixa = getFaixaChuva(precip);
+  if (faixa === "seco") return 0;
+  const table = type === 'bt' ? UPLIFT_CHUVA.bt_total : UPLIFT_CHUVA.mt_total;
+  return (table[faixa as keyof typeof table] || 0) / 100;
+};
+
+// Generate planning data based on configuration
+export const generatePlanningData = (config: PlanningConfig, startHour: number = new Date().getHours()): HourlyData[] => {
   const data: HourlyData[] = [];
-  let backlog_bt = configData.backlog_bt;
-  let backlog_mt = configData.backlog_mt;
+  let backlog_bt = config.backlog_bt;
+  let backlog_mt = config.backlog_mt;
 
   for (let i = 0; i < 24 - startHour; i++) {
     const hora = startHour + i;
@@ -71,31 +114,35 @@ export const generateMockData = (startHour: number = new Date().getHours()): Hou
     const wind_ms = 2 + Math.random() * 4;
     const temp_c = 24 + Math.random() * 8;
 
-    // Apply rain uplift
-    const rainUplift = precip_mm > 1 ? 0.52 : precip_mm > 0.2 ? 0.28 : 0;
+    // Apply rain uplift based on Python logic
+    const uplift_bt = getUplift(precip_mm, 'bt');
+    const uplift_mt = getUplift(precip_mm, 'mt');
     
-    const entrada_bt_adj = ENTRADA_BT[hora] * (1 + rainUplift);
-    const entrada_mt_adj = ENTRADA_MT[hora] * (1 + rainUplift * 1.5);
+    const entrada_bt_adj = ENTRADA_BT[hora] * (1 + uplift_bt);
+    const entrada_mt_adj = ENTRADA_MT[hora] * (1 + uplift_mt);
     
     const ret_op_bt = entrada_bt_adj * (RETIRADA_BT_PCT[hora] / 100);
     const ret_op_mt = entrada_mt_adj * (RETIRADA_MT_PCT[hora] / 100);
     
-    const eq_bt_disp = configData.equipes_bt[turno];
-    const eq_mt_disp = configData.equipes_mt[turno];
+    const eq_bt_disp = config.equipes_bt[turno];
+    const eq_mt_disp = config.equipes_mt[turno];
     
-    const cap_bt_h_disp = Math.ceil(eq_bt_disp * (configData.prod_bt / 8));
-    const cap_mt_h_disp = Math.ceil(eq_mt_disp * (configData.prod_mt / 8));
+    // Capacity per hour = (prod/8) * teams, rounded up
+    const cap_bt_h_disp = Math.ceil(eq_bt_disp * (config.prod_bt / 8));
+    const cap_mt_h_disp = Math.ceil(eq_mt_disp * (config.prod_mt / 8));
     
-    // Calculate saldo
+    // Calculate saldo (balance)
     const saldo_bt_disp = Math.max(0, backlog_bt + entrada_bt_adj - ret_op_bt - cap_bt_h_disp);
     const saldo_mt_disp = Math.max(0, backlog_mt + entrada_mt_adj - ret_op_mt - cap_mt_h_disp);
     
     // Additional teams needed for ideal scenario
-    const eq_bt_add_dist = saldo_bt_disp > 5 ? Math.ceil(saldo_bt_disp / 3) : 0;
-    const eq_mt_add_dist = saldo_mt_disp > 2 ? Math.ceil(saldo_mt_disp / 2) : 0;
+    const cap_unit_bt = (config.prod_bt / 8);
+    const cap_unit_mt = (config.prod_mt / 8);
+    const eq_bt_add_dist = saldo_bt_disp > 0 ? Math.ceil(saldo_bt_disp / Math.max(cap_unit_bt, 0.1)) : 0;
+    const eq_mt_add_dist = saldo_mt_disp > 0 ? Math.ceil(saldo_mt_disp / Math.max(cap_unit_mt, 0.1)) : 0;
     
-    const saldo_bt_ideal = Math.max(0, saldo_bt_disp - eq_bt_add_dist * cap_bt_h_disp / eq_bt_disp);
-    const saldo_mt_ideal = Math.max(0, saldo_mt_disp - eq_mt_add_dist * cap_mt_h_disp / eq_mt_disp);
+    const saldo_bt_ideal = Math.max(0, saldo_bt_disp - eq_bt_add_dist * cap_unit_bt);
+    const saldo_mt_ideal = Math.max(0, saldo_mt_disp - eq_mt_add_dist * cap_unit_mt);
 
     data.push({
       hora,
@@ -125,5 +172,3 @@ export const generateMockData = (startHour: number = new Date().getHours()): Hou
 
   return data;
 };
-
-export const mockHourlyData = generateMockData();

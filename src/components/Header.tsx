@@ -1,14 +1,23 @@
 import { Cloud, MapPin, Zap, Clock } from "lucide-react";
-import { configData } from "@/data/mockPlanningData";
+import { PlanningConfig, BASES } from "@/data/mockPlanningData";
+import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { useEffect, useState } from "react";
 
-export const Header = () => {
+interface HeaderProps {
+  config: PlanningConfig;
+  onConfigChange: (config: PlanningConfig) => void;
+  onCalculate: () => void;
+}
+
+export const Header = ({ config, onConfigChange, onCalculate }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const selectedBase = BASES.find((b) => b.id === config.base);
 
   return (
     <header className="glass-card p-4 mb-6 animate-slide-up">
@@ -23,12 +32,12 @@ export const Header = () => {
             </h1>
             <p className="text-muted-foreground text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4" />
-              {configData.base}
+              {selectedBase?.name || "Selecione uma base"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Cloud className="w-5 h-5" />
             <span className="text-sm">OpenWeather API</span>
@@ -45,6 +54,12 @@ export const Header = () => {
               })}
             </div>
           </div>
+
+          <ConfigurationForm
+            config={config}
+            onConfigChange={onConfigChange}
+            onCalculate={onCalculate}
+          />
         </div>
       </div>
     </header>
