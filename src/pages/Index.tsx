@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { KPICard } from "@/components/KPICard";
 import { WeatherIndicator } from "@/components/WeatherIndicator";
@@ -5,17 +6,37 @@ import { TurnoIndicator } from "@/components/TurnoIndicator";
 import { PlanningTable } from "@/components/PlanningTable";
 import { IncidentChart } from "@/components/IncidentChart";
 import { ConfigPanel } from "@/components/ConfigPanel";
-import { mockHourlyData, configData } from "@/data/mockPlanningData";
+import { generatePlanningData, defaultConfig, PlanningConfig } from "@/data/mockPlanningData";
 import { AlertTriangle, TrendingDown, Users, Zap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
+  const [config, setConfig] = useState<PlanningConfig>(defaultConfig);
+  const [planningKey, setPlanningKey] = useState(0);
+
   const currentHour = new Date().getHours();
-  const currentTurno =
-    currentHour <= 7 ? "A" : currentHour <= 15 ? "B" : "C";
+  const currentTurno = currentHour <= 7 ? "A" : currentHour <= 15 ? "B" : "C";
+
+  // Generate planning data based on current config
+  const hourlyData = useMemo(() => {
+    return generatePlanningData(config, currentHour);
+  }, [config, planningKey, currentHour]);
+
+  const handleConfigChange = (newConfig: PlanningConfig) => {
+    setConfig(newConfig);
+  };
+
+  const handleCalculate = () => {
+    setPlanningKey((prev) => prev + 1);
+    toast({
+      title: "Planejamento Calculado",
+      description: `Dados atualizados com Backlog BT: ${config.backlog_bt}, MT: ${config.backlog_mt}`,
+    });
+  };
 
   // Get current/latest data for KPIs
-  const currentData = mockHourlyData[0] || {
+  const currentData = hourlyData[0] || {
     incidentes_bt_saldo_disp: 0,
     incidentes_mt_saldo_disp: 0,
     eq_bt_add_dist: 0,
@@ -28,18 +49,23 @@ const Index = () => {
   // Calculate totals
   const totalBacklog =
     currentData.incidentes_bt_saldo_disp + currentData.incidentes_mt_saldo_disp;
-  const totalEquipesAdd = mockHourlyData.reduce(
+  const totalEquipesAdd = hourlyData.reduce(
     (acc, row) => acc + row.eq_bt_add_dist + row.eq_mt_add_dist,
     0
   );
   const avgRain =
-    mockHourlyData.reduce((acc, row) => acc + row.precip_mm, 0) /
-    mockHourlyData.length;
+    hourlyData.length > 0
+      ? hourlyData.reduce((acc, row) => acc + row.precip_mm, 0) / hourlyData.length
+      : 0;
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
       <div className="max-w-[1800px] mx-auto">
-        <Header />
+        <Header
+          config={config}
+          onConfigChange={handleConfigChange}
+          onCalculate={handleCalculate}
+        />
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -100,8 +126,8 @@ const Index = () => {
                 key={turno}
                 turno={turno}
                 isActive={turno === currentTurno}
-                equipesBT={configData.equipes_bt[turno]}
-                equipesMT={configData.equipes_mt[turno]}
+                equipesBT={config.equipes_bt[turno]}
+                equipesMT={config.equipes_mt[turno]}
               />
             ))}
           </div>
@@ -127,19 +153,19 @@ const Index = () => {
               </TabsList>
 
               <TabsContent value="BT" className="space-y-6 mt-0">
-                <IncidentChart data={mockHourlyData} type="BT" />
-                <PlanningTable data={mockHourlyData} type="BT" />
+                <IncidentChart data={hourlyData} type="BT" />
+                <PlanningTable data={hourlyData} type="BT" />
               </TabsContent>
 
               <TabsContent value="MT" className="space-y-6 mt-0">
-                <IncidentChart data={mockHourlyData} type="MT" />
-                <PlanningTable data={mockHourlyData} type="MT" />
+                <IncidentChart data={hourlyData} type="MT" />
+                <PlanningTable data={hourlyData} type="MT" />
               </TabsContent>
             </Tabs>
           </div>
 
           <div className="space-y-4">
-            <ConfigPanel />
+            <ConfigPanel config={config} />
 
             <div className="glass-card p-5 animate-slide-up">
               <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
