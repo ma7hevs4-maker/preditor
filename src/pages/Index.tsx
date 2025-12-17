@@ -1,70 +1,127 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { KPICard } from "@/components/KPICard";
 import { WeatherIndicator } from "@/components/WeatherIndicator";
-import { TurnoIndicator } from "@/components/TurnoIndicator";
+import { TeamsDisplay } from "@/components/TeamsDisplay";
 import { PlanningTable } from "@/components/PlanningTable";
 import { IncidentChart } from "@/components/IncidentChart";
 import { ConfigPanel } from "@/components/ConfigPanel";
-import { generatePlanningData, defaultConfig, PlanningConfig } from "@/data/mockPlanningData";
-import { AlertTriangle, TrendingDown, Users, Zap } from "lucide-react";
+import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { useBases } from "@/hooks/useBases";
+import { useHistoricalData } from "@/hooks/useHistoricalData";
+import { useWeather } from "@/hooks/useWeather";
+import { useSimulation, SimulationConfig } from "@/hooks/useSimulation";
+
+const defaultTeamsPerHour = [
+  0, 0, 0, 0, 0, 0, // 0-5h (madrugada)
+  2, 4, 6, 8, 8, 8, // 6-11h (manhã)
+  8, 8, 8, 8, 8, 6, // 12-17h (tarde)
+  4, 4, 3, 2, 1, 0, // 18-23h (noite)
+];
 
 const Index = () => {
-  const [config, setConfig] = useState<PlanningConfig>(defaultConfig);
-  const [planningKey, setPlanningKey] = useState(0);
+  const [config, setConfig] = useState<SimulationConfig>({
+    baseId: "",
+    btInitialBacklog: 0,
+    mtInitialBacklog: 0,
+    teamsPerHour: [...defaultTeamsPerHour],
+    horizonHours: 24,
+  });
+  const [simulationKey, setSimulationKey] = useState(0);
 
   const currentHour = new Date().getHours();
-  const currentTurno = currentHour <= 7 ? "A" : currentHour <= 15 ? "B" : "C";
 
-  // Generate planning data based on current config
-  const hourlyData = useMemo(() => {
-    return generatePlanningData(config, currentHour);
-  }, [config, planningKey, currentHour]);
+  // Fetch bases from Supabase
+  const { data: bases, isLoading: basesLoading } = useBases();
+  
+  // Set first base as default when loaded
+  useEffect(() => {
+    if (bases && bases.length > 0 && !config.baseId) {
+      setConfig(prev => ({ ...prev, baseId: bases[0].id }));
+    }
+  }, [bases, config.baseId]);
 
-  const handleConfigChange = (newConfig: PlanningConfig) => {
+  const selectedBase = bases?.find(b => b.id === config.baseId);
+
+  // Fetch historical data for selected base
+  const { data: historicalData, isLoading: historicalLoading } = useHistoricalData(config.baseId);
+
+  // Fetch weather forecast
+  const { 
+    data: weatherData, 
+    isLoading: weatherLoading, 
+    isError: weatherError 
+  } = useWeather(
+    selectedBase?.lat || null, 
+    selectedBase?.lon || null, 
+    config.horizonHours
+  );
+
+  // Run simulation
+  const simulationData = useSimulation(
+    config,
+    historicalData,
+    weatherData?.forecast
+  );
+
+  const handleConfigChange = (newConfig: SimulationConfig) => {
     setConfig(newConfig);
   };
 
   const handleCalculate = () => {
-    setPlanningKey((prev) => prev + 1);
+    setSimulationKey((prev) => prev + 1);
     toast({
-      title: "Planejamento Calculado",
-      description: `Dados atualizados com Backlog BT: ${config.backlog_bt}, MT: ${config.backlog_mt}`,
+      title: "Simulação Calculada",
+      description: `Horizonte: ${config.horizonHours}h | Base: ${selectedBase?.name || "N/A"}`,
     });
   };
 
-  // Get current/latest data for KPIs
-  const currentData = hourlyData[0] || {
-    incidentes_bt_saldo_disp: 0,
-    incidentes_mt_saldo_disp: 0,
-    eq_bt_add_dist: 0,
-    eq_mt_add_dist: 0,
+  // Loading state
+  if (basesLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Carregando bases...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Get current data for KPIs (first row or defaults)
+  const currentData = simulationData[0] || {
+    incidentes_bt_saldo: 0,
+    incidentes_mt_saldo: 0,
+    eq_bt_add: 0,
+    eq_mt_add: 0,
     precip_mm: 0,
     wind_ms: 0,
     temp_c: 25,
   };
 
   // Calculate totals
-  const totalBacklog =
-    currentData.incidentes_bt_saldo_disp + currentData.incidentes_mt_saldo_disp;
-  const totalEquipesAdd = hourlyData.reduce(
-    (acc, row) => acc + row.eq_bt_add_dist + row.eq_mt_add_dist,
+  const totalBacklog = currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo;
+  const totalEquipesAdd = simulationData.reduce(
+    (acc, row) => acc + row.eq_bt_add + row.eq_mt_add,
     0
   );
-  const avgRain =
-    hourlyData.length > 0
-      ? hourlyData.reduce((acc, row) => acc + row.precip_mm, 0) / hourlyData.length
-      : 0;
+  const avgRain = simulationData.length > 0
+    ? simulationData.reduce((acc, row) => acc + row.precip_mm, 0) / simulationData.length
+    : 0;
+
+  const weatherStatus = weatherLoading ? "loading" : weatherError ? "error" : "success";
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
       <div className="max-w-[1800px] mx-auto">
         <Header
           config={config}
+          selectedBase={selectedBase}
           onConfigChange={handleConfigChange}
           onCalculate={handleCalculate}
+          weatherStatus={weatherStatus}
         />
 
         {/* KPI Cards */}
@@ -78,26 +135,26 @@ const Index = () => {
           />
           <KPICard
             title="Incidentes BT"
-            value={currentData.incidentes_bt_saldo_disp}
-            subtitle="Saldo atual (disponível)"
+            value={currentData.incidentes_bt_saldo}
+            subtitle="Saldo atual previsto"
             icon={Zap}
             variant={
-              currentData.incidentes_bt_saldo_disp > 25
+              currentData.incidentes_bt_saldo > 25
                 ? "destructive"
-                : currentData.incidentes_bt_saldo_disp > 15
+                : currentData.incidentes_bt_saldo > 15
                 ? "warning"
                 : "default"
             }
           />
           <KPICard
             title="Incidentes MT"
-            value={currentData.incidentes_mt_saldo_disp}
-            subtitle="Saldo atual (disponível)"
+            value={currentData.incidentes_mt_saldo}
+            subtitle="Saldo atual previsto"
             icon={TrendingDown}
             variant={
-              currentData.incidentes_mt_saldo_disp > 5
+              currentData.incidentes_mt_saldo > 5
                 ? "destructive"
-                : currentData.incidentes_mt_saldo_disp > 2
+                : currentData.incidentes_mt_saldo > 2
                 ? "warning"
                 : "default"
             }
@@ -105,13 +162,13 @@ const Index = () => {
           <KPICard
             title="Equipes Adicionais"
             value={`+${totalEquipesAdd}`}
-            subtitle="Necessárias (cenário ideal)"
+            subtitle="Necessárias no período"
             icon={Users}
             variant={totalEquipesAdd > 10 ? "warning" : "default"}
           />
         </div>
 
-        {/* Weather + Turnos */}
+        {/* Weather + Teams */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           <div className="lg:col-span-2">
             <WeatherIndicator
@@ -120,48 +177,50 @@ const Index = () => {
               temp_c={currentData.temp_c}
             />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {(["A", "B", "C"] as const).map((turno) => (
-              <TurnoIndicator
-                key={turno}
-                turno={turno}
-                isActive={turno === currentTurno}
-                equipesBT={config.equipes_bt[turno]}
-                equipesMT={config.equipes_mt[turno]}
-              />
-            ))}
+          <div>
+            <TeamsDisplay 
+              teamsPerHour={config.teamsPerHour} 
+              currentHour={currentHour}
+            />
           </div>
         </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           <div className="xl:col-span-3 space-y-6">
-            <Tabs defaultValue="BT" className="w-full">
-              <TabsList className="glass-card p-1 mb-4">
-                <TabsTrigger
-                  value="BT"
-                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                >
-                  Baixa Tensão (BT)
-                </TabsTrigger>
-                <TabsTrigger
-                  value="MT"
-                  className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
-                >
-                  Média Tensão (MT)
-                </TabsTrigger>
-              </TabsList>
+            {historicalLoading ? (
+              <div className="glass-card p-8 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                <span>Carregando dados históricos...</span>
+              </div>
+            ) : (
+              <Tabs defaultValue="BT" className="w-full">
+                <TabsList className="glass-card p-1 mb-4">
+                  <TabsTrigger
+                    value="BT"
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  >
+                    Baixa Tensão (BT)
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="MT"
+                    className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+                  >
+                    Média Tensão (MT)
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="BT" className="space-y-6 mt-0">
-                <IncidentChart data={hourlyData} type="BT" />
-                <PlanningTable data={hourlyData} type="BT" />
-              </TabsContent>
+                <TabsContent value="BT" className="space-y-6 mt-0">
+                  <IncidentChart data={simulationData} type="BT" />
+                  <PlanningTable data={simulationData} type="BT" />
+                </TabsContent>
 
-              <TabsContent value="MT" className="space-y-6 mt-0">
-                <IncidentChart data={hourlyData} type="MT" />
-                <PlanningTable data={hourlyData} type="MT" />
-              </TabsContent>
-            </Tabs>
+                <TabsContent value="MT" className="space-y-6 mt-0">
+                  <IncidentChart data={simulationData} type="MT" />
+                  <PlanningTable data={simulationData} type="MT" />
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -194,6 +253,7 @@ const Index = () => {
               <div className="font-mono text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">
                 <p>Saldo(h) = Backlog + Entrada_adj</p>
                 <p className="mt-1">- Ret_operador - Cap_equipes</p>
+                <p className="mt-2 text-primary">Entrada_adj = Entrada × (1 + Uplift_chuva)</p>
               </div>
             </div>
           </div>
