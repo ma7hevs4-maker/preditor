@@ -110,8 +110,15 @@ const Index = () => {
   // Calculate totals
   const totalBacklog = currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo;
   
-  // Média de equipes adicionais por hora (eq_bt_add e eq_mt_add já são "por hora")
-  const avgEquipesAddPerHour = simulationData.length > 0
+  // Equipes adicionais: só mostra se o saldo FINAL estiver acima da meta (70 BT, 10 MT)
+  const TARGET_BT = 70;
+  const TARGET_MT = 10;
+  const finalData = simulationData[simulationData.length - 1];
+  const finalBtAboveTarget = finalData ? finalData.incidentes_bt_saldo > TARGET_BT : false;
+  const finalMtAboveTarget = finalData ? finalData.incidentes_mt_saldo > TARGET_MT : false;
+  
+  // Se já atinge a meta no final, não precisa de equipes adicionais
+  const avgEquipesAddPerHour = (finalBtAboveTarget || finalMtAboveTarget) && simulationData.length > 0
     ? Math.ceil(
         simulationData.reduce((acc, row) => acc + row.eq_bt_add + row.eq_mt_add, 0) / simulationData.length
       )
