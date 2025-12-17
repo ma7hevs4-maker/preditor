@@ -185,57 +185,27 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          <div className="xl:col-span-3 space-y-6">
+        {/* Chart + Config Panel */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
+          <div className="xl:col-span-3">
             {historicalLoading ? (
-              <div className="glass-card p-8 flex items-center justify-center">
+              <div className="glass-card p-8 flex items-center justify-center h-[380px]">
                 <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
                 <span>Carregando dados históricos...</span>
               </div>
             ) : (
-              <div className="space-y-6">
-                <IncidentChart data={simulationData} />
-                <PlanningTable data={simulationData} />
-              </div>
+              <IncidentChart data={simulationData} />
             )}
           </div>
-
-          <div className="space-y-4">
+          <div>
             <ConfigPanel config={config} />
-
-            <div className="glass-card p-5 animate-slide-up">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                Legenda
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-success" />
-                  <span className="text-muted-foreground">Normal</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-warning" />
-                  <span className="text-muted-foreground">Atenção</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-destructive" />
-                  <span className="text-muted-foreground">Crítico</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass-card p-5 animate-slide-up">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-                Fórmula
-              </h3>
-              <div className="font-mono text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">
-                <p>Saldo(h) = Backlog + Entrada_adj</p>
-                <p className="mt-1">- Ret_operador - Cap_equipes</p>
-                <p className="mt-2 text-primary">Entrada_adj = Entrada × (1 + Uplift_chuva)</p>
-              </div>
-            </div>
           </div>
         </div>
+
+        {/* Full Width Planning Table */}
+        {!historicalLoading && (
+          <PlanningTable data={simulationData} />
+        )}
       </div>
     </div>
   );
