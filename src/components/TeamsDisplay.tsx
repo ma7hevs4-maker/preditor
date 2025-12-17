@@ -48,17 +48,21 @@ export const TeamsDisplay = ({ teamsPerHour, currentHour }: TeamsDisplayProps) =
             </div>
             {/* Mini bar visualization */}
             <div className="flex gap-0.5 mt-3 items-end h-8">
-              {turno.range.map((h) => (
-                <div
-                  key={h}
-                  className={cn(
-                    "flex-1 rounded-sm transition-all",
-                    teamsPerHour[h] > 0 ? "bg-primary/60" : "bg-muted/30"
-                  )}
-                  style={{ height: `${Math.max(4, teamsPerHour[h] * 3)}px` }}
-                  title={`${h}h: ${teamsPerHour[h]} equipes`}
-                />
-              ))}
+              {turno.range.map((h) => {
+                const maxTeams = Math.max(...teamsPerHour, 1);
+                const heightPct = (teamsPerHour[h] / maxTeams) * 100;
+                return (
+                  <div
+                    key={h}
+                    className={cn(
+                      "flex-1 rounded-sm transition-all",
+                      teamsPerHour[h] > 0 ? "bg-primary/60" : "bg-muted/30"
+                    )}
+                    style={{ height: `${Math.max(10, heightPct)}%` }}
+                    title={`${h}h: ${teamsPerHour[h]} equipes`}
+                  />
+                );
+              })}
             </div>
           </div>
         );
