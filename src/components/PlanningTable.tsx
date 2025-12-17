@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Cloud, CloudRain } from "lucide-react";
+import { Cloud, CloudRain, Thermometer, Wind } from "lucide-react";
 
 interface PlanningTableProps {
   data: SimulationRow[];
@@ -42,7 +42,9 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                 Hora
               </TableHead>
               <TableHead className="table-header">Turno</TableHead>
-              <TableHead className="table-header text-center">Clima</TableHead>
+              <TableHead className="table-header text-center">Temp</TableHead>
+              <TableHead className="table-header text-center">Chuva</TableHead>
+              <TableHead className="table-header text-center">Vento</TableHead>
               <TableHead className="table-header text-right">
                 <span className="text-cyan-400">Entrada BT</span>
               </TableHead>
@@ -93,6 +95,12 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Thermometer className="w-4 h-4 text-orange-400" />
+                      <span className="text-xs text-orange-400">{row.temp_c.toFixed(0)}°</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
                     {row.precip_mm > 0.2 ? (
                       <div className="flex items-center justify-center gap-1">
                         <CloudRain className="w-4 h-4 text-blue-400" />
@@ -101,6 +109,12 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                     ) : (
                       <Cloud className="w-4 h-4 text-muted-foreground mx-auto" />
                     )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Wind className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs text-emerald-400">{row.wind_ms.toFixed(1)}</span>
+                    </div>
                   </TableCell>
                   <TableCell className="data-cell text-right text-cyan-400">
                     {row.entrada_bt_adj.toFixed(1)}
