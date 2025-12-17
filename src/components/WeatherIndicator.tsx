@@ -44,7 +44,7 @@ export const WeatherIndicator = ({
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Chuva</p>
-            <p className="font-mono text-sm font-semibold">{precip_mm} mm</p>
+            <p className="font-mono text-sm font-semibold">{precip_mm.toFixed(1)} mm</p>
             <p className={cn("text-xs", rainStatus.color)}>{rainStatus.label}</p>
           </div>
         </div>
