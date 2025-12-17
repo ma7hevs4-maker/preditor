@@ -40,7 +40,7 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
   const showMT = viewMode === "MT" || viewMode === "BOTH";
 
   return (
-    <div className="glass-card p-5 animate-slide-up">
+    <div className="glass-card p-5 animate-slide-up h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Evolução de Incidentes</h3>
         <ToggleGroup 

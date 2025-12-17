@@ -169,15 +169,15 @@ const Index = () => {
         </div>
 
         {/* Weather + Teams */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
+          <div className="xl:col-span-2">
             <WeatherIndicator
               precip_mm={avgRain}
               wind_ms={currentData.wind_ms}
               temp_c={currentData.temp_c}
             />
           </div>
-          <div>
+          <div className="xl:col-span-2">
             <TeamsDisplay 
               teamsPerHour={config.teamsPerHour} 
               currentHour={currentHour}
@@ -186,10 +186,10 @@ const Index = () => {
         </div>
 
         {/* Chart + Config Panel */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
           <div className="xl:col-span-3">
             {historicalLoading ? (
-              <div className="glass-card p-8 flex items-center justify-center h-[380px]">
+              <div className="glass-card p-8 flex items-center justify-center h-full min-h-[400px]">
                 <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
                 <span>Carregando dados históricos...</span>
               </div>
@@ -197,8 +197,8 @@ const Index = () => {
               <IncidentChart data={simulationData} />
             )}
           </div>
-          <div>
-            <ConfigPanel config={config} />
+          <div className="xl:col-span-1">
+            <ConfigPanel config={config} className="h-full" />
           </div>
         </div>
 
