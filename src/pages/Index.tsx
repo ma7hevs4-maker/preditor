@@ -115,19 +115,20 @@ const Index = () => {
   const TARGET_MT = 10;
   const finalData = simulationData[simulationData.length - 1];
   
-  // Calcula gap do saldo final em relação à meta
+  // Calcula gap TOTAL do saldo final em relação às metas
   const gapBt = finalData ? Math.max(0, finalData.incidentes_bt_saldo - TARGET_BT) : 0;
   const gapMt = finalData ? Math.max(0, finalData.incidentes_mt_saldo - TARGET_MT) : 0;
+  const totalGap = gapBt + gapMt;
   
-  // Capacidade média por equipe por hora (baseado em produtividade típica / 8)
-  // BT: ~1 incidente/equipe/8h = 0.125/h, MT: ~0.8/8h = 0.1/h
-  const CAP_BT_PER_TEAM = 0.125;
-  const CAP_MT_PER_TEAM = 0.1;
+  // Capacidade média por equipe por hora (baseado nos dados reais da simulação)
+  // Olhando a tabela: com 50 equipes, cap_bt_h ≈ 12, então cap/equipe ≈ 0.24
+  // Produtividade real é ~2 incidentes/equipe/8h = 0.25/h
+  const CAP_PER_TEAM = 0.25;
   
-  // Equipes adicionais por hora = gap / (horas * capacidade por equipe)
-  const additionalBt = gapBt > 0 ? Math.ceil(gapBt / (config.horizonHours * CAP_BT_PER_TEAM)) : 0;
-  const additionalMt = gapMt > 0 ? Math.ceil(gapMt / (config.horizonHours * CAP_MT_PER_TEAM)) : 0;
-  const avgEquipesAddPerHour = additionalBt + additionalMt;
+  // Equipes adicionais por hora = gap total / (horas * capacidade por equipe)
+  const avgEquipesAddPerHour = totalGap > 0 
+    ? Math.ceil(totalGap / (config.horizonHours * CAP_PER_TEAM)) 
+    : 0;
 
   const weatherStatus = weatherLoading ? "loading" : weatherError ? "error" : "success";
 
