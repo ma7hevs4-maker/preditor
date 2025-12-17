@@ -15,10 +15,9 @@ import { useWeather } from "@/hooks/useWeather";
 import { useSimulation, SimulationConfig } from "@/hooks/useSimulation";
 
 const defaultTeamsPerHour = [
-  0, 0, 0, 0, 0, 0, // 0-5h (madrugada)
-  2, 4, 6, 8, 8, 8, // 6-11h (manhã)
-  8, 8, 8, 8, 8, 6, // 12-17h (tarde)
-  4, 4, 3, 2, 1, 0, // 18-23h (noite)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno B (8-15h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno C (16-23h)
 ];
 
 const Index = () => {
