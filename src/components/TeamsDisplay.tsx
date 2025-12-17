@@ -42,15 +42,9 @@ export const TeamsDisplay = ({ teamsPerHour, currentHour }: TeamsDisplayProps) =
               {isActive && <span className="status-indicator bg-primary" />}
             </div>
             <p className="text-xs text-muted-foreground mb-2">{turno.hours}</p>
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total:</span>
-                <span className="font-mono font-semibold text-primary">{totalTeams} eq-h</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Média:</span>
-                <span className="font-mono">{avgTeams.toFixed(1)} eq/h</span>
-              </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Média:</span>
+              <span className="font-mono font-semibold text-primary">{avgTeams.toFixed(1)} eq/h</span>
             </div>
             {/* Mini bar visualization */}
             <div className="flex gap-0.5 mt-3 items-end h-8">
