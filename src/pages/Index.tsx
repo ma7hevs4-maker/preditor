@@ -107,9 +107,6 @@ const Index = () => {
     (acc, row) => acc + row.eq_bt_add + row.eq_mt_add,
     0
   );
-  const avgRain = simulationData.length > 0
-    ? simulationData.reduce((acc, row) => acc + row.precip_mm, 0) / simulationData.length
-    : 0;
 
   const weatherStatus = weatherLoading ? "loading" : weatherError ? "error" : "success";
 
@@ -172,7 +169,7 @@ const Index = () => {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
           <div className="xl:col-span-2">
             <WeatherIndicator
-              precip_mm={avgRain}
+              precip_mm={currentData.precip_mm}
               wind_ms={currentData.wind_ms}
               temp_c={currentData.temp_c}
               lat={selectedBase?.lat}
