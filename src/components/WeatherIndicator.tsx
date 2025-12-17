@@ -1,12 +1,17 @@
-import { CloudRain, Wind, Thermometer, AlertTriangle, ChevronRight } from "lucide-react";
+import { CloudRain, Wind, Thermometer, AlertTriangle, ChevronRight, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { WeatherTriggersDialog } from "./WeatherTriggersDialog";
+import { WeatherMapDialog } from "./WeatherMapDialog";
+import { Button } from "@/components/ui/button";
 
 interface WeatherIndicatorProps {
   precip_mm: number;
   wind_ms: number;
   temp_c: number;
+  lat?: number;
+  lon?: number;
+  baseName?: string;
   className?: string;
 }
 
@@ -14,9 +19,13 @@ export const WeatherIndicator = ({
   precip_mm,
   wind_ms,
   temp_c,
+  lat,
+  lon,
+  baseName = "Base",
   className,
 }: WeatherIndicatorProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [triggersDialogOpen, setTriggersDialogOpen] = useState(false);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
   const getRainStatus = (mm: number) => {
     if (mm >= 5) return { label: "Forte", color: "text-destructive" };
@@ -48,24 +57,42 @@ export const WeatherIndicator = ({
 
   return (
     <>
-      <div 
-        className={cn("glass-card p-5 animate-slide-up cursor-pointer hover:bg-muted/30 transition-colors h-full", className)}
-        onClick={() => setDialogOpen(true)}
-      >
+      <div className={cn("glass-card p-5 animate-slide-up h-full flex flex-col", className)}>
+        {/* Header with map button */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Condições Climáticas
           </h3>
-          {activeTriggers > 0 && (
-            <div className="flex items-center gap-1 text-warning">
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm font-medium">{activeTriggers} gatilho{activeTriggers > 1 ? 's' : ''}</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {lat && lon && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setMapDialogOpen(true)}
+              >
+                <Map className="w-3.5 h-3.5" />
+                Ver Mapa
+              </Button>
+            )}
+            {activeTriggers > 0 && (
+              <button
+                onClick={() => setTriggersDialogOpen(true)}
+                className="flex items-center gap-1 text-warning hover:opacity-80 transition-opacity"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-medium">{activeTriggers} gatilho{activeTriggers > 1 ? 's' : ''}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Weather data */}
+        <div 
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1 cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+          onClick={() => setTriggersDialogOpen(true)}
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/10">
               <CloudRain className="w-5 h-5 text-blue-400" />
@@ -113,12 +140,22 @@ export const WeatherIndicator = ({
       </div>
 
       <WeatherTriggersDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={triggersDialogOpen}
+        onOpenChange={setTriggersDialogOpen}
         precip_mm={precip_mm}
         wind_ms={wind_ms}
         temp_c={temp_c}
       />
+
+      {lat && lon && (
+        <WeatherMapDialog
+          open={mapDialogOpen}
+          onOpenChange={setMapDialogOpen}
+          lat={lat}
+          lon={lon}
+          baseName={baseName}
+        />
+      )}
     </>
   );
 };

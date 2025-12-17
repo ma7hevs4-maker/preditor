@@ -175,6 +175,9 @@ const Index = () => {
               precip_mm={avgRain}
               wind_ms={currentData.wind_ms}
               temp_c={currentData.temp_c}
+              lat={selectedBase?.lat}
+              lon={selectedBase?.lon}
+              baseName={selectedBase?.name}
             />
           </div>
           <div className="xl:col-span-2">
