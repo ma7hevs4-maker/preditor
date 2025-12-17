@@ -20,7 +20,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Settings, Play, RotateCcw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useBases, Base } from "@/hooks/useBases";
+import { useBases } from "@/hooks/useBases";
 import { SimulationConfig } from "@/hooks/useSimulation";
 
 interface ConfigurationFormProps {
@@ -30,10 +30,15 @@ interface ConfigurationFormProps {
 }
 
 const defaultTeamsPerHour = [
-  0, 0, 0, 0, 0, 0, // 0-5h (madrugada)
-  2, 4, 6, 8, 8, 8, // 6-11h (manhã)
-  8, 8, 8, 8, 8, 6, // 12-17h (tarde)
-  4, 4, 3, 2, 1, 0, // 18-23h (noite)
+  0, 0, 0, 0, 0, 0, 2, 4, // Turno A (0-7h)
+  6, 8, 8, 8, 8, 8, 8, 6, // Turno B (8-15h)
+  4, 4, 3, 2, 1, 0, 0, 0, // Turno C (16-23h)
+];
+
+const turnos = [
+  { id: "A", name: "Turno A", hours: "00h - 07h", range: [0, 1, 2, 3, 4, 5, 6, 7], colorClass: "text-blue-400 border-blue-500/30" },
+  { id: "B", name: "Turno B", hours: "08h - 15h", range: [8, 9, 10, 11, 12, 13, 14, 15], colorClass: "text-amber-400 border-amber-500/30" },
+  { id: "C", name: "Turno C", hours: "16h - 23h", range: [16, 17, 18, 19, 20, 21, 22, 23], colorClass: "text-purple-400 border-purple-500/30" },
 ];
 
 export const ConfigurationForm = ({
@@ -76,7 +81,6 @@ export const ConfigurationForm = ({
   };
 
   const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
-  const totalTeams = localConfig.teamsPerHour.reduce((a, b) => a + b, 0);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -90,7 +94,7 @@ export const ConfigurationForm = ({
         <SheetHeader>
           <SheetTitle className="text-foreground">Configurações da Simulação</SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            Configure a base, equipes por hora e horizonte de previsão
+            Configure a base, equipes por turno e horizonte de previsão
           </SheetDescription>
         </SheetHeader>
 
@@ -178,64 +182,50 @@ export const ConfigurationForm = ({
             </div>
           </div>
 
-          {/* Equipes por Hora */}
+          {/* Equipes por Turno */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Equipes por Hora
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Equipes por Hora (por Turno)
               </h4>
-              <span className="text-xs text-muted-foreground">
-                Total: <span className="font-mono text-primary">{totalTeams}</span> equipes-hora
-              </span>
-            </div>
-            
-            {/* Grid de inputs 24h */}
-            <div className="grid grid-cols-6 gap-2">
-              {Array.from({ length: 24 }, (_, hour) => (
-                <div key={hour} className="space-y-1">
-                  <Label 
-                    className={cn(
-                      "text-xs text-center block",
-                      hour >= 0 && hour < 6 && "text-blue-400",
-                      hour >= 6 && hour < 12 && "text-amber-400",
-                      hour >= 12 && hour < 18 && "text-orange-400",
-                      hour >= 18 && "text-purple-400"
-                    )}
-                  >
-                    {hour.toString().padStart(2, "0")}h
-                  </Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={50}
-                    value={localConfig.teamsPerHour[hour]}
-                    onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0)}
-                    className="bg-secondary border-border font-mono text-center h-9 px-1 text-sm"
-                  />
-                </div>
-              ))}
             </div>
 
-            {/* Legenda períodos */}
-            <div className="flex flex-wrap gap-3 text-xs">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
-                Madrugada (0-5h)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                Manhã (6-11h)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-orange-400" />
-                Tarde (12-17h)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-purple-400" />
-                Noite (18-23h)
-              </span>
-            </div>
+            {turnos.map((turno) => {
+              const totalTurno = turno.range.reduce((sum, h) => sum + localConfig.teamsPerHour[h], 0);
+              
+              return (
+                <div key={turno.id} className={cn("space-y-2 p-3 rounded-lg border bg-secondary/20", turno.colorClass)}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("turno-badge", `turno-${turno.id.toLowerCase()}`)}>
+                        {turno.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                    </div>
+                    <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-8 gap-1">
+                    {turno.range.map((hour) => (
+                      <div key={hour} className="space-y-1">
+                        <Label className="text-xs text-center block text-muted-foreground">
+                          {hour.toString().padStart(2, "0")}h
+                        </Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={50}
+                          value={localConfig.teamsPerHour[hour]}
+                          onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0)}
+                          className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Actions */}
