@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface WeatherTriggersDialogProps {
   open: boolean;
@@ -183,12 +183,19 @@ export const WeatherTriggersDialog = ({
                     {allTriggers.map((trigger, index) => (
                       <tr
                         key={trigger.name}
-                        className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}
+                        className={cn(
+                          index % 2 === 0 ? "bg-background" : "bg-muted/20",
+                          trigger.isActive && "bg-warning/10 border-l-2 border-l-warning"
+                        )}
                       >
-                        <td className="px-3 py-2 text-foreground">{trigger.name}</td>
+                        <td className={cn("px-3 py-2", trigger.isActive ? "text-warning font-semibold" : "text-foreground")}>
+                          {trigger.name}
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{trigger.condition}</td>
                         <td className="px-3 py-2 text-right">
-                          <span className="text-warning font-semibold">{trigger.impact}</span>
+                          <span className={cn("font-semibold", trigger.isActive ? "text-warning" : "text-muted-foreground")}>
+                            {trigger.impact}
+                          </span>
                         </td>
                       </tr>
                     ))}
