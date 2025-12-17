@@ -20,12 +20,19 @@ const defaultTeamsPerHour = [
   0, 0, 0, 0, 0, 0, 0, 0, // Turno C (16-23h)
 ];
 
+const defaultLossTeamsPerHour = [
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno B (8-15h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno C (16-23h)
+];
+
 const Index = () => {
   const [config, setConfig] = useState<SimulationConfig>({
     baseId: "",
     btInitialBacklog: 0,
     mtInitialBacklog: 0,
     teamsPerHour: [...defaultTeamsPerHour],
+    lossTeamsPerHour: [...defaultLossTeamsPerHour],
     horizonHours: 24,
   });
   const [simulationKey, setSimulationKey] = useState(0);
