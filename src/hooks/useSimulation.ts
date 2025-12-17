@@ -126,9 +126,30 @@ export const useSimulation = (
       const saldo_bt = Math.max(0, backlog_bt + entrada_bt_adj - ret_op_bt - cap_bt_h);
       const saldo_mt = Math.max(0, backlog_mt + entrada_mt_adj - ret_op_mt - cap_mt_h);
 
-      // Equipes adicionais necessárias para zerar o backlog
-      const eq_bt_add = saldo_bt > 0 ? Math.ceil(saldo_bt / Math.max(historical.bt_productivity / 8, 0.1)) : 0;
-      const eq_mt_add = saldo_mt > 0 ? Math.ceil(saldo_mt / Math.max(historical.mt_productivity / 8, 0.1)) : 0;
+      // Metas de estabilidade (não zerar, mas manter controlado)
+      const TARGET_BT = 70;
+      const TARGET_MT = 10;
+
+      // Equipes adicionais necessárias para atingir estabilidade
+      // Demanda pós-operador = backlog + entrada - retirada_operador
+      // Equipes necessárias = ceil((demanda - target) / capacidade_por_equipe)
+      const demanda_bt = backlog_bt + entrada_bt_adj - ret_op_bt;
+      const demanda_mt = backlog_mt + entrada_mt_adj - ret_op_mt;
+      
+      const cap_por_eq_bt = historical.bt_productivity / 8;
+      const cap_por_eq_mt = historical.mt_productivity / 8;
+      
+      // Equipes totais necessárias para atingir a meta
+      const eq_necessarias_bt = demanda_bt > TARGET_BT 
+        ? Math.ceil((demanda_bt - TARGET_BT) / Math.max(cap_por_eq_bt, 0.1)) 
+        : 0;
+      const eq_necessarias_mt = demanda_mt > TARGET_MT 
+        ? Math.ceil((demanda_mt - TARGET_MT) / Math.max(cap_por_eq_mt, 0.1)) 
+        : 0;
+      
+      // Equipes adicionais = necessárias - já alocadas neste horário
+      const eq_bt_add = Math.max(0, eq_necessarias_bt - eq_bt);
+      const eq_mt_add = Math.max(0, eq_necessarias_mt - eq_mt);
 
       result.push({
         hora,
