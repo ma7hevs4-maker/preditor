@@ -1,4 +1,4 @@
-import { CloudRain, Wind, Thermometer, Droplets } from "lucide-react";
+import { CloudRain, Wind, Thermometer, AlertTriangle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { WeatherTriggersDialog } from "./WeatherTriggersDialog";
@@ -32,8 +32,19 @@ export const WeatherIndicator = ({
     return { label: "Fraco", color: "text-muted-foreground" };
   };
 
+  // Calculate active triggers
+  const getActiveTriggers = () => {
+    let count = 0;
+    if (precip_mm >= 0.2) count++;
+    if (wind_ms >= 4) count++;
+    if (temp_c >= 35) count++;
+    if (temp_c <= 10) count++;
+    return count;
+  };
+
   const rainStatus = getRainStatus(precip_mm);
   const windStatus = getWindStatus(wind_ms);
+  const activeTriggers = getActiveTriggers();
 
   return (
     <>
@@ -41,9 +52,18 @@ export const WeatherIndicator = ({
         className={cn("glass-card p-5 animate-slide-up cursor-pointer hover:bg-muted/30 transition-colors", className)}
         onClick={() => setDialogOpen(true)}
       >
-        <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">
-          Condições Climáticas
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Condições Climáticas
+          </h3>
+          {activeTriggers > 0 && (
+            <div className="flex items-center gap-1 text-warning">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm font-medium">{activeTriggers} gatilho{activeTriggers > 1 ? 's' : ''}</span>
+              <ChevronRight className="w-4 h-4" />
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-center gap-3">
@@ -63,7 +83,7 @@ export const WeatherIndicator = ({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Vento</p>
-              <p className="font-mono text-sm font-semibold">{wind_ms} m/s</p>
+              <p className="font-mono text-sm font-semibold">{wind_ms.toFixed(1)} m/s</p>
               <p className={cn("text-xs", windStatus.color)}>{windStatus.label}</p>
             </div>
           </div>
@@ -74,18 +94,18 @@ export const WeatherIndicator = ({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Temperatura</p>
-              <p className="font-mono text-sm font-semibold">{temp_c}°C</p>
+              <p className="font-mono text-sm font-semibold">{temp_c.toFixed(1)}°C</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10">
-              <Droplets className="w-5 h-5 text-emerald-400" />
+            <div className={cn("p-2 rounded-lg", activeTriggers > 0 ? "bg-warning/10" : "bg-emerald-500/10")}>
+              <AlertTriangle className={cn("w-5 h-5", activeTriggers > 0 ? "text-warning" : "text-emerald-400")} />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Gatilho</p>
-              <p className={cn("font-mono text-sm font-semibold", precip_mm >= 0.2 ? "text-warning" : "text-success")}>
-                {precip_mm >= 0.2 ? "Ativo" : "Inativo"}
+              <p className={cn("font-mono text-sm font-semibold", activeTriggers > 0 ? "text-warning" : "text-success")}>
+                {activeTriggers > 0 ? "Ativo" : "Inativo"}
               </p>
             </div>
           </div>
