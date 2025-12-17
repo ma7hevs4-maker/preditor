@@ -7,6 +7,7 @@ export interface SimulationConfig {
   btInitialBacklog: number;
   mtInitialBacklog: number;
   teamsPerHour: number[]; // 24 values for each hour
+  lossTeamsPerHour: number[]; // 24 values - equipes de perdas (só BT)
   horizonHours: number;
 }
 
@@ -111,6 +112,7 @@ export const useSimulation = (
 
       // Total de equipes disponíveis nesta hora
       const eq_disp = config.teamsPerHour[hora] || 0;
+      const eq_perdas = config.lossTeamsPerHour?.[hora] || 0;
 
       // Alocação de equipes: MT primeiro (mais importante), resto para BT
       // Equipes necessárias para MT = backlog_mt atual (1 equipe por incidente, no máximo)
@@ -118,7 +120,8 @@ export const useSimulation = (
       const eq_bt = Math.max(0, eq_disp - eq_mt);
 
       // Capacidade de retirada = (produtividade / 8) * equipes alocadas
-      const cap_bt_h = (historical.bt_productivity / 8) * eq_bt;
+      // Equipes de perdas só contribuem para BT
+      const cap_bt_h = (historical.bt_productivity / 8) * (eq_bt + eq_perdas);
       const cap_mt_h = (historical.mt_productivity / 8) * eq_mt;
 
       // Cálculo do backlog:
