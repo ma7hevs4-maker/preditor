@@ -126,30 +126,29 @@ export const useSimulation = (
       const saldo_bt = Math.max(0, backlog_bt + entrada_bt_adj - ret_op_bt - cap_bt_h);
       const saldo_mt = Math.max(0, backlog_mt + entrada_mt_adj - ret_op_mt - cap_mt_h);
 
-      // Metas de estabilidade (não zerar, mas manter controlado)
+      // Metas de estabilidade ao final do horizonte
       const TARGET_BT = 70;
       const TARGET_MT = 10;
 
-      // Equipes adicionais necessárias para atingir estabilidade
-      // Demanda pós-operador = backlog + entrada - retirada_operador
-      // Equipes necessárias = ceil((demanda - target) / capacidade_por_equipe)
-      const demanda_bt = backlog_bt + entrada_bt_adj - ret_op_bt;
-      const demanda_mt = backlog_mt + entrada_mt_adj - ret_op_mt;
-      
+      // Capacidade por equipe por hora
       const cap_por_eq_bt = historical.bt_productivity / 8;
       const cap_por_eq_mt = historical.mt_productivity / 8;
+
+      // Horas restantes até o final do horizonte
+      const horasRestantes = config.horizonHours - i;
       
-      // Equipes totais necessárias para atingir a meta
-      const eq_necessarias_bt = demanda_bt > TARGET_BT 
-        ? Math.ceil((demanda_bt - TARGET_BT) / Math.max(cap_por_eq_bt, 0.1)) 
-        : 0;
-      const eq_necessarias_mt = demanda_mt > TARGET_MT 
-        ? Math.ceil((demanda_mt - TARGET_MT) / Math.max(cap_por_eq_mt, 0.1)) 
-        : 0;
+      // Gap entre saldo atual e meta
+      const gap_bt = saldo_bt - TARGET_BT;
+      const gap_mt = saldo_mt - TARGET_MT;
       
-      // Equipes adicionais = necessárias - já alocadas neste horário
-      const eq_bt_add = Math.max(0, eq_necessarias_bt - eq_bt);
-      const eq_mt_add = Math.max(0, eq_necessarias_mt - eq_mt);
+      // Equipes adicionais POR HORA necessárias para atingir a meta ao final do horizonte
+      // Distribuindo o gap ao longo das horas restantes
+      const eq_bt_add = gap_bt > 0 && horasRestantes > 0
+        ? Math.ceil(gap_bt / (horasRestantes * Math.max(cap_por_eq_bt, 0.1)))
+        : 0;
+      const eq_mt_add = gap_mt > 0 && horasRestantes > 0
+        ? Math.ceil(gap_mt / (horasRestantes * Math.max(cap_por_eq_mt, 0.1)))
+        : 0;
 
       result.push({
         hora,
