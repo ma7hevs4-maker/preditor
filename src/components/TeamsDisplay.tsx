@@ -53,7 +53,7 @@ export const TeamsDisplay = ({ teamsPerHour, currentHour }: TeamsDisplayProps) =
               </div>
             </div>
             {/* Mini bar visualization */}
-            <div className="flex gap-0.5 mt-3">
+            <div className="flex gap-0.5 mt-3 items-end h-8">
               {turno.range.map((h) => (
                 <div
                   key={h}
