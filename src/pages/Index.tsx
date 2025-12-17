@@ -110,19 +110,24 @@ const Index = () => {
   // Calculate totals
   const totalBacklog = currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo;
   
-  // Equipes adicionais: só mostra se o saldo FINAL estiver acima da meta (70 BT, 10 MT)
+  // Equipes adicionais baseado no saldo FINAL vs meta
   const TARGET_BT = 70;
   const TARGET_MT = 10;
   const finalData = simulationData[simulationData.length - 1];
-  const finalBtAboveTarget = finalData ? finalData.incidentes_bt_saldo > TARGET_BT : false;
-  const finalMtAboveTarget = finalData ? finalData.incidentes_mt_saldo > TARGET_MT : false;
   
-  // Se já atinge a meta no final, não precisa de equipes adicionais
-  const avgEquipesAddPerHour = (finalBtAboveTarget || finalMtAboveTarget) && simulationData.length > 0
-    ? Math.ceil(
-        simulationData.reduce((acc, row) => acc + row.eq_bt_add + row.eq_mt_add, 0) / simulationData.length
-      )
-    : 0;
+  // Calcula gap do saldo final em relação à meta
+  const gapBt = finalData ? Math.max(0, finalData.incidentes_bt_saldo - TARGET_BT) : 0;
+  const gapMt = finalData ? Math.max(0, finalData.incidentes_mt_saldo - TARGET_MT) : 0;
+  
+  // Capacidade média por equipe por hora (baseado em produtividade típica / 8)
+  // BT: ~1 incidente/equipe/8h = 0.125/h, MT: ~0.8/8h = 0.1/h
+  const CAP_BT_PER_TEAM = 0.125;
+  const CAP_MT_PER_TEAM = 0.1;
+  
+  // Equipes adicionais por hora = gap / (horas * capacidade por equipe)
+  const additionalBt = gapBt > 0 ? Math.ceil(gapBt / (config.horizonHours * CAP_BT_PER_TEAM)) : 0;
+  const additionalMt = gapMt > 0 ? Math.ceil(gapMt / (config.horizonHours * CAP_MT_PER_TEAM)) : 0;
+  const avgEquipesAddPerHour = additionalBt + additionalMt;
 
   const weatherStatus = weatherLoading ? "loading" : weatherError ? "error" : "success";
 
