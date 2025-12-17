@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SimulationRow } from "@/hooks/useSimulation";
 import { cn } from "@/lib/utils";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Cloud, CloudRain, Thermometer, Wind } from "lucide-react";
+import { HourDetailDialog } from "./HourDetailDialog";
 
 interface PlanningTableProps {
   data: SimulationRow[];
@@ -22,12 +24,19 @@ const getTurno = (hora: number): "A" | "B" | "C" => {
 };
 
 export const PlanningTable = ({ data }: PlanningTableProps) => {
+  const [selectedRow, setSelectedRow] = useState<SimulationRow | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const currentHour = new Date().getHours();
 
   const getStatusColor = (value: number, threshold: number) => {
     if (value >= threshold * 2) return "text-destructive";
     if (value >= threshold) return "text-warning";
     return "text-success";
+  };
+
+  const handleRowClick = (row: SimulationRow) => {
+    setSelectedRow(row);
+    setDialogOpen(true);
   };
 
   return (
@@ -75,10 +84,11 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                 <TableRow
                   key={`${row.dia}-${row.hora}`}
                   className={cn(
-                    "border-border/20 transition-colors",
+                    "border-border/20 transition-colors cursor-pointer hover:bg-primary/5",
                     isCurrentHour && "bg-primary/10 border-l-2 border-l-primary",
                     row.dia > 0 && "opacity-80"
                   )}
+                  onClick={() => handleRowClick(row)}
                 >
                   <TableCell className="font-mono font-semibold sticky left-0 bg-card z-10">
                     {row.dia > 0 && (
@@ -154,6 +164,12 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
         </Table>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
+
+      <HourDetailDialog 
+        row={selectedRow} 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen} 
+      />
     </div>
   );
 };
