@@ -1,12 +1,9 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const OPENWEATHERMAP_API_KEY = Deno.env.get('OPENWEATHERMAP_API_KEY');
 
 interface WeatherHour {
   hour: number;
@@ -17,6 +14,44 @@ interface WeatherHour {
   humidity: number;
   description: string;
   icon: string;
+}
+
+// Map WMO weather codes to descriptions and icons
+function getWeatherInfo(code: number, isDay: boolean): { description: string; icon: string } {
+  const dayNight = isDay ? 'd' : 'n';
+  
+  const weatherMap: Record<number, { description: string; icon: string }> = {
+    0: { description: 'clear sky', icon: `01${dayNight}` },
+    1: { description: 'mainly clear', icon: `01${dayNight}` },
+    2: { description: 'partly cloudy', icon: `02${dayNight}` },
+    3: { description: 'overcast', icon: `04${dayNight}` },
+    45: { description: 'fog', icon: `50${dayNight}` },
+    48: { description: 'depositing rime fog', icon: `50${dayNight}` },
+    51: { description: 'light drizzle', icon: `09${dayNight}` },
+    53: { description: 'moderate drizzle', icon: `09${dayNight}` },
+    55: { description: 'dense drizzle', icon: `09${dayNight}` },
+    56: { description: 'light freezing drizzle', icon: `09${dayNight}` },
+    57: { description: 'dense freezing drizzle', icon: `09${dayNight}` },
+    61: { description: 'slight rain', icon: `10${dayNight}` },
+    63: { description: 'moderate rain', icon: `10${dayNight}` },
+    65: { description: 'heavy rain', icon: `10${dayNight}` },
+    66: { description: 'light freezing rain', icon: `13${dayNight}` },
+    67: { description: 'heavy freezing rain', icon: `13${dayNight}` },
+    71: { description: 'slight snow', icon: `13${dayNight}` },
+    73: { description: 'moderate snow', icon: `13${dayNight}` },
+    75: { description: 'heavy snow', icon: `13${dayNight}` },
+    77: { description: 'snow grains', icon: `13${dayNight}` },
+    80: { description: 'slight rain showers', icon: `09${dayNight}` },
+    81: { description: 'moderate rain showers', icon: `09${dayNight}` },
+    82: { description: 'violent rain showers', icon: `09${dayNight}` },
+    85: { description: 'slight snow showers', icon: `13${dayNight}` },
+    86: { description: 'heavy snow showers', icon: `13${dayNight}` },
+    95: { description: 'thunderstorm', icon: `11${dayNight}` },
+    96: { description: 'thunderstorm with slight hail', icon: `11${dayNight}` },
+    99: { description: 'thunderstorm with heavy hail', icon: `11${dayNight}` },
+  };
+
+  return weatherMap[code] || { description: 'unknown', icon: `01${dayNight}` };
 }
 
 serve(async (req) => {
@@ -35,24 +70,16 @@ serve(async (req) => {
       );
     }
 
-    if (!OPENWEATHERMAP_API_KEY) {
-      console.error('OPENWEATHERMAP_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ error: 'Weather API not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    console.log(`Fetching weather from Open-Meteo for lat: ${lat}, lon: ${lon}, hours: ${hours}`);
 
-    console.log(`Fetching weather for lat: ${lat}, lon: ${lon}, hours: ${hours}`);
-
-    // Use OpenWeatherMap 3.0 One Call API for hourly forecast (48h) + daily for extended
-    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHERMAP_API_KEY}&units=metric&cnt=${Math.min(Math.ceil(hours / 3), 40)}`;
+    // Open-Meteo API - free, no API key required
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,is_day&forecast_days=4&timezone=auto`;
     
     const response = await fetch(url);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenWeatherMap API error:', errorText);
+      console.error('Open-Meteo API error:', errorText);
       return new Response(
         JSON.stringify({ error: 'Weather API error', details: errorText }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -60,34 +87,36 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log(`Received ${data.list?.length || 0} forecast entries`);
+    console.log(`Received ${data.hourly?.time?.length || 0} hourly entries from Open-Meteo`);
 
-    // Transform to hourly data (interpolate 3-hour forecasts)
+    // Transform Open-Meteo data to our format
     const hourlyForecast: WeatherHour[] = [];
-    const now = new Date();
-    const currentHour = now.getHours();
+    const hourlyData = data.hourly;
+    
+    if (hourlyData && hourlyData.time) {
+      const now = new Date();
+      const currentHourIndex = hourlyData.time.findIndex((time: string) => {
+        const forecastTime = new Date(time);
+        return forecastTime >= now;
+      });
 
-    for (let i = 0; i < Math.min(hours, 72); i++) {
-      const targetHour = (currentHour + i) % 24;
-      const dayOffset = Math.floor((currentHour + i) / 24);
-      const targetDate = new Date(now);
-      targetDate.setDate(targetDate.getDate() + dayOffset);
-      targetDate.setHours(targetHour, 0, 0, 0);
+      const startIndex = Math.max(0, currentHourIndex);
+      const endIndex = Math.min(startIndex + hours, hourlyData.time.length);
 
-      // Find closest forecast entry (3-hour intervals)
-      const forecastIndex = Math.min(Math.floor(i / 3), (data.list?.length || 1) - 1);
-      const forecast = data.list?.[forecastIndex];
-
-      if (forecast) {
+      for (let i = startIndex; i < endIndex; i++) {
+        const datetime = new Date(hourlyData.time[i]);
+        const isDay = hourlyData.is_day[i] === 1;
+        const weatherInfo = getWeatherInfo(hourlyData.weather_code[i], isDay);
+        
         hourlyForecast.push({
-          hour: targetHour,
-          datetime: targetDate.toISOString(),
-          temp_c: Math.round(forecast.main.temp * 10) / 10,
-          precip_mm: forecast.rain?.['3h'] ? Math.round(forecast.rain['3h'] / 3 * 100) / 100 : 0,
-          wind_ms: Math.round(forecast.wind.speed * 10) / 10,
-          humidity: forecast.main.humidity,
-          description: forecast.weather[0]?.description || '',
-          icon: forecast.weather[0]?.icon || '01d',
+          hour: datetime.getHours(),
+          datetime: datetime.toISOString(),
+          temp_c: Math.round(hourlyData.temperature_2m[i] * 10) / 10,
+          precip_mm: Math.round(hourlyData.precipitation[i] * 100) / 100,
+          wind_ms: Math.round((hourlyData.wind_speed_10m[i] / 3.6) * 10) / 10, // km/h to m/s
+          humidity: hourlyData.relative_humidity_2m[i],
+          description: weatherInfo.description,
+          icon: weatherInfo.icon,
         });
       }
     }
@@ -97,8 +126,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         forecast: hourlyForecast,
-        city: data.city?.name,
-        country: data.city?.country 
+        city: data.timezone?.split('/').pop()?.replace('_', ' ') || 'Unknown',
+        country: 'BR'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
