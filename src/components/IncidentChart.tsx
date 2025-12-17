@@ -1,4 +1,5 @@
 import { SimulationRow } from "@/hooks/useSimulation";
+import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -9,42 +10,85 @@ import {
   YAxis,
   Legend,
 } from "recharts";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface IncidentChartProps {
   data: SimulationRow[];
-  type: "BT" | "MT";
 }
 
-export const IncidentChart = ({ data, type }: IncidentChartProps) => {
+type ViewMode = "BT" | "MT" | "BOTH";
+
+export const IncidentChart = ({ data }: IncidentChartProps) => {
+  const [viewMode, setViewMode] = useState<ViewMode>("BOTH");
+
   const chartData = data.map((row) => ({
     hora: row.dia > 0 
       ? `D${row.dia + 1} ${String(row.hora).padStart(2, "0")}h` 
       : `${String(row.hora).padStart(2, "0")}h`,
-    "Saldo": type === "BT" ? row.incidentes_bt_saldo : row.incidentes_mt_saldo,
-    "Entrada": type === "BT" ? row.entrada_bt_adj : row.entrada_mt_adj,
-    "Chuva (mm)": row.precip_mm,
+    "Saldo BT": row.incidentes_bt_saldo,
+    "Saldo MT": row.incidentes_mt_saldo,
+    "Entrada BT": row.entrada_bt_adj,
+    "Entrada MT": row.entrada_mt_adj,
   }));
 
-  const primaryColor = type === "BT" ? "hsl(190, 95%, 50%)" : "hsl(280, 70%, 60%)";
-  const entradaColor = "hsl(45, 93%, 47%)";
+  const btColor = "hsl(190, 95%, 50%)";
+  const mtColor = "hsl(280, 70%, 60%)";
+  const btEntradaColor = "hsl(45, 93%, 47%)";
+  const mtEntradaColor = "hsl(340, 80%, 55%)";
+
+  const showBT = viewMode === "BT" || viewMode === "BOTH";
+  const showMT = viewMode === "MT" || viewMode === "BOTH";
 
   return (
     <div className="glass-card p-5 animate-slide-up">
-      <h3 className="text-lg font-semibold mb-4">
-        Evolução de Incidentes - {type === "BT" ? "Baixa Tensão" : "Média Tensão"}
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Evolução de Incidentes</h3>
+        <ToggleGroup 
+          type="single" 
+          value={viewMode} 
+          onValueChange={(value) => value && setViewMode(value as ViewMode)}
+          className="bg-muted/30 p-1 rounded-lg"
+        >
+          <ToggleGroupItem 
+            value="BOTH" 
+            className="text-xs px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+          >
+            Ambos
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="BT" 
+            className="text-xs px-3 data-[state=on]:bg-cyan-500 data-[state=on]:text-white"
+          >
+            BT
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="MT" 
+            className="text-xs px-3 data-[state=on]:bg-purple-500 data-[state=on]:text-white"
+          >
+            MT
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
 
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id={`colorSaldo${type}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={primaryColor} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={primaryColor} stopOpacity={0} />
+              <linearGradient id="colorSaldoBT" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={btColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={btColor} stopOpacity={0} />
               </linearGradient>
-              <linearGradient id={`colorEntrada${type}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={entradaColor} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={entradaColor} stopOpacity={0} />
+              <linearGradient id="colorSaldoMT" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={mtColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={mtColor} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="colorEntradaBT" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={btEntradaColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={btEntradaColor} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="colorEntradaMT" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={mtEntradaColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={mtEntradaColor} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 20%)" />
@@ -77,22 +121,46 @@ export const IncidentChart = ({ data, type }: IncidentChartProps) => {
                 <span style={{ color: "hsl(215, 20%, 55%)" }}>{value}</span>
               )}
             />
-            <Area
-              type="monotone"
-              dataKey="Saldo"
-              stroke={primaryColor}
-              fillOpacity={1}
-              fill={`url(#colorSaldo${type})`}
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="Entrada"
-              stroke={entradaColor}
-              fillOpacity={1}
-              fill={`url(#colorEntrada${type})`}
-              strokeWidth={2}
-            />
+            {showBT && (
+              <>
+                <Area
+                  type="monotone"
+                  dataKey="Saldo BT"
+                  stroke={btColor}
+                  fillOpacity={1}
+                  fill="url(#colorSaldoBT)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Entrada BT"
+                  stroke={btEntradaColor}
+                  fillOpacity={1}
+                  fill="url(#colorEntradaBT)"
+                  strokeWidth={2}
+                />
+              </>
+            )}
+            {showMT && (
+              <>
+                <Area
+                  type="monotone"
+                  dataKey="Saldo MT"
+                  stroke={mtColor}
+                  fillOpacity={1}
+                  fill="url(#colorSaldoMT)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Entrada MT"
+                  stroke={mtEntradaColor}
+                  fillOpacity={1}
+                  fill="url(#colorEntradaMT)"
+                  strokeWidth={2}
+                />
+              </>
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>

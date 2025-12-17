@@ -7,7 +7,7 @@ import { PlanningTable } from "@/components/PlanningTable";
 import { IncidentChart } from "@/components/IncidentChart";
 import { ConfigPanel } from "@/components/ConfigPanel";
 import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { toast } from "@/hooks/use-toast";
 import { useBases } from "@/hooks/useBases";
 import { useHistoricalData } from "@/hooks/useHistoricalData";
@@ -194,32 +194,10 @@ const Index = () => {
                 <span>Carregando dados históricos...</span>
               </div>
             ) : (
-              <Tabs defaultValue="BT" className="w-full">
-                <TabsList className="glass-card p-1 mb-4">
-                  <TabsTrigger
-                    value="BT"
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                  >
-                    Baixa Tensão (BT)
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="MT"
-                    className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
-                  >
-                    Média Tensão (MT)
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="BT" className="space-y-6 mt-0">
-                  <IncidentChart data={simulationData} type="BT" />
-                  <PlanningTable data={simulationData} type="BT" />
-                </TabsContent>
-
-                <TabsContent value="MT" className="space-y-6 mt-0">
-                  <IncidentChart data={simulationData} type="MT" />
-                  <PlanningTable data={simulationData} type="MT" />
-                </TabsContent>
-              </Tabs>
+              <div className="space-y-6">
+                <IncidentChart data={simulationData} />
+                <PlanningTable data={simulationData} />
+              </div>
             )}
           </div>
 
