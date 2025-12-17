@@ -109,10 +109,13 @@ const Index = () => {
 
   // Calculate totals
   const totalBacklog = currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo;
-  const totalEquipesAdd = simulationData.reduce(
-    (acc, row) => acc + row.eq_bt_add + row.eq_mt_add,
-    0
-  );
+  
+  // Média de equipes adicionais por hora (eq_bt_add e eq_mt_add já são "por hora")
+  const avgEquipesAddPerHour = simulationData.length > 0
+    ? Math.ceil(
+        simulationData.reduce((acc, row) => acc + row.eq_bt_add + row.eq_mt_add, 0) / simulationData.length
+      )
+    : 0;
 
   const weatherStatus = weatherLoading ? "loading" : weatherError ? "error" : "success";
 
@@ -164,10 +167,10 @@ const Index = () => {
           />
           <KPICard
             title="Equipes Adicionais"
-            value={`+${totalEquipesAdd}`}
-            subtitle="Necessárias no período"
+            value={`+${avgEquipesAddPerHour}`}
+            subtitle="Média por hora no período"
             icon={Users}
-            variant={totalEquipesAdd > 10 ? "warning" : "default"}
+            variant={avgEquipesAddPerHour > 10 ? "warning" : "default"}
           />
         </div>
 
