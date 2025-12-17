@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface ConfigPanelProps {
   config: SimulationConfig;
+  className?: string;
 }
 
 const turnos = [
@@ -12,9 +13,9 @@ const turnos = [
   { id: "C", name: "Turno C", range: [16, 17, 18, 19, 20, 21, 22, 23], colorClass: "text-purple-400 bg-purple-500/10" },
 ];
 
-export const ConfigPanel = ({ config }: ConfigPanelProps) => {
+export const ConfigPanel = ({ config, className }: ConfigPanelProps) => {
   return (
-    <div className="glass-card p-5 animate-slide-up">
+    <div className={cn("glass-card p-5 animate-slide-up", className)}>
       <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
         <Settings className="w-4 h-4" />
         Configurações Ativas
