@@ -59,10 +59,11 @@ export const ConfigPanel = ({ config, className }: ConfigPanelProps) => {
           <div className="grid grid-cols-3 gap-2 text-sm">
             {turnos.map((turno) => {
               const totalTurno = turno.range.reduce((sum, h) => sum + config.teamsPerHour[h], 0);
+              const avgTurno = totalTurno / turno.range.length;
               return (
                 <div key={turno.id} className={cn("text-center p-2 rounded", turno.colorClass)}>
                   <p className="text-xs">{turno.name}</p>
-                  <p className="font-mono font-semibold">{totalTurno}</p>
+                  <p className="font-mono font-semibold">{avgTurno.toFixed(1)}</p>
                 </div>
               );
             })}
