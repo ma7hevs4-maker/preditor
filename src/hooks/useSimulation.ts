@@ -33,6 +33,19 @@ export interface SimulationRow {
   wind_ms: number;
   temp_c: number;
   weather_description: string;
+  // Detailed data
+  uplift_bt_pct: number;
+  uplift_mt_pct: number;
+  eq_bt: number; // equipes alocadas a BT
+  eq_mt: number; // equipes alocadas a MT
+  eq_perdas: number; // equipes de perdas
+  entrada_bt_base: number; // entrada histórica sem uplift
+  entrada_mt_base: number;
+  bt_productivity: number;
+  mt_productivity: number;
+  saldo_bt_ideal: number; // saldo se usar equipes ideais
+  saldo_mt_ideal: number;
+  eq_ideal_total: number; // total de equipes ideal
 }
 
 // Uplift tables from Python
@@ -154,6 +167,21 @@ export const useSimulation = (
         ? Math.ceil(gap_mt / (horasRestantes * Math.max(cap_por_eq_mt, 0.1)))
         : 0;
 
+      // Cálculo de equipes ideais para esta hora atingir meta gradualmente
+      const eq_ideal_bt = gap_bt > 0 && cap_por_eq_bt > 0 
+        ? Math.ceil(gap_bt / (horasRestantes * cap_por_eq_bt))
+        : 0;
+      const eq_ideal_mt = gap_mt > 0 && cap_por_eq_mt > 0 
+        ? Math.ceil(gap_mt / (horasRestantes * cap_por_eq_mt))
+        : 0;
+      const eq_ideal_total = eq_ideal_bt + eq_ideal_mt + eq_bt + eq_mt;
+
+      // Saldo com equipes ideais
+      const cap_bt_ideal = cap_por_eq_bt * (eq_bt + eq_ideal_bt + eq_perdas);
+      const cap_mt_ideal = cap_por_eq_mt * (eq_mt + eq_ideal_mt);
+      const saldo_bt_ideal = Math.max(0, backlog_bt + entrada_bt_adj - ret_op_bt - cap_bt_ideal);
+      const saldo_mt_ideal = Math.max(0, backlog_mt + entrada_mt_adj - ret_op_mt - cap_mt_ideal);
+
       result.push({
         hora,
         dia,
@@ -173,6 +201,19 @@ export const useSimulation = (
         wind_ms: weather.wind_ms,
         temp_c: weather.temp_c,
         weather_description: weather.description || "",
+        // Detailed data
+        uplift_bt_pct: uplift_bt * 100,
+        uplift_mt_pct: uplift_mt * 100,
+        eq_bt,
+        eq_mt,
+        eq_perdas,
+        entrada_bt_base: historical.bt_entry_rate,
+        entrada_mt_base: historical.mt_entry_rate,
+        bt_productivity: historical.bt_productivity,
+        mt_productivity: historical.mt_productivity,
+        saldo_bt_ideal,
+        saldo_mt_ideal,
+        eq_ideal_total,
       });
 
       // Atualiza backlog para próxima iteração
