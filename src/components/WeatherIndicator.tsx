@@ -49,7 +49,7 @@ export const WeatherIndicator = ({
   return (
     <>
       <div 
-        className={cn("glass-card p-5 animate-slide-up cursor-pointer hover:bg-muted/30 transition-colors", className)}
+        className={cn("glass-card p-5 animate-slide-up cursor-pointer hover:bg-muted/30 transition-colors h-full", className)}
         onClick={() => setDialogOpen(true)}
       >
         <div className="flex items-center justify-between mb-4">
