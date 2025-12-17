@@ -30,9 +30,9 @@ interface ConfigurationFormProps {
 }
 
 const defaultTeamsPerHour = [
-  0, 0, 0, 0, 0, 0, 2, 4, // Turno A (0-7h)
-  6, 8, 8, 8, 8, 8, 8, 6, // Turno B (8-15h)
-  4, 4, 3, 2, 1, 0, 0, 0, // Turno C (16-23h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno B (8-15h)
+  0, 0, 0, 0, 0, 0, 0, 0, // Turno C (16-23h)
 ];
 
 const turnos = [
@@ -60,7 +60,7 @@ export const ConfigurationForm = ({
 
   const handleTeamHourChange = (hour: number, value: number) => {
     const newTeams = [...localConfig.teamsPerHour];
-    newTeams[hour] = Math.max(0, Math.min(50, value));
+    newTeams[hour] = Math.max(0, Math.min(200, value));
     setLocalConfig((prev) => ({ ...prev, teamsPerHour: newTeams }));
   };
 
@@ -215,10 +215,11 @@ export const ConfigurationForm = ({
                         <Input
                           type="number"
                           min={0}
-                          max={50}
+                          max={200}
                           value={localConfig.teamsPerHour[hour]}
                           onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0)}
-                          className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm"
+                          onFocus={(e) => e.target.select()}
+                          className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
                     ))}
