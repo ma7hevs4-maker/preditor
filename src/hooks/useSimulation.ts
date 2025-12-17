@@ -83,10 +83,10 @@ export const useSimulation = (
       const historical = historicalData.find((h) => h.hour === hora) || {
         bt_productivity: 1,
         bt_entry_rate: 10,
-        bt_operator_removal: 1,
+        bt_operator_removal: 0.5,
         mt_productivity: 0.8,
         mt_entry_rate: 5,
-        mt_operator_removal: 0.5,
+        mt_operator_removal: 0.2,
       };
 
       // Get weather for this hour
@@ -97,29 +97,38 @@ export const useSimulation = (
         description: "",
       };
 
-      // Apply rain uplift
+      // Apply rain uplift to entry rates
       const uplift_bt = getUplift(weather.precip_mm, "bt");
       const uplift_mt = getUplift(weather.precip_mm, "mt");
 
+      // Entrada ajustada = entrada histórica * (1 + uplift do clima)
       const entrada_bt_adj = historical.bt_entry_rate * (1 + uplift_bt);
       const entrada_mt_adj = historical.mt_entry_rate * (1 + uplift_mt);
 
-      const ret_op_bt = historical.bt_operator_removal;
-      const ret_op_mt = historical.mt_operator_removal;
+      // Retirada de operador = entrada histórica * percentual de retirada
+      const ret_op_bt = historical.bt_entry_rate * historical.bt_operator_removal;
+      const ret_op_mt = historical.mt_entry_rate * historical.mt_operator_removal;
 
+      // Total de equipes disponíveis nesta hora
       const eq_disp = config.teamsPerHour[hora] || 0;
 
-      // Capacity per hour = productivity * teams
-      const cap_bt_h = eq_disp * historical.bt_productivity;
-      const cap_mt_h = eq_disp * historical.mt_productivity;
+      // Alocação de equipes: MT primeiro (mais importante), resto para BT
+      // Equipes necessárias para MT = backlog_mt atual (1 equipe por incidente, no máximo)
+      const eq_mt = Math.min(eq_disp, Math.ceil(backlog_mt + entrada_mt_adj - ret_op_mt));
+      const eq_bt = Math.max(0, eq_disp - eq_mt);
 
-      // Calculate saldo (balance)
+      // Capacidade de retirada = (produtividade / 8) * equipes alocadas
+      const cap_bt_h = (historical.bt_productivity / 8) * eq_bt;
+      const cap_mt_h = (historical.mt_productivity / 8) * eq_mt;
+
+      // Cálculo do backlog:
+      // novo_backlog = backlog_atual + entrada_ajustada - retirada_operador - capacidade_equipes
       const saldo_bt = Math.max(0, backlog_bt + entrada_bt_adj - ret_op_bt - cap_bt_h);
       const saldo_mt = Math.max(0, backlog_mt + entrada_mt_adj - ret_op_mt - cap_mt_h);
 
-      // Additional teams needed
-      const eq_bt_add = saldo_bt > 0 ? Math.ceil(saldo_bt / Math.max(historical.bt_productivity, 0.1)) : 0;
-      const eq_mt_add = saldo_mt > 0 ? Math.ceil(saldo_mt / Math.max(historical.mt_productivity, 0.1)) : 0;
+      // Equipes adicionais necessárias para zerar o backlog
+      const eq_bt_add = saldo_bt > 0 ? Math.ceil(saldo_bt / Math.max(historical.bt_productivity / 8, 0.1)) : 0;
+      const eq_mt_add = saldo_mt > 0 ? Math.ceil(saldo_mt / Math.max(historical.mt_productivity / 8, 0.1)) : 0;
 
       result.push({
         hora,
@@ -142,7 +151,7 @@ export const useSimulation = (
         weather_description: weather.description || "",
       });
 
-      // Update backlog for next iteration
+      // Atualiza backlog para próxima iteração
       backlog_bt = saldo_bt;
       backlog_mt = saldo_mt;
     }
