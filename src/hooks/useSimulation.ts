@@ -70,8 +70,9 @@ export const useSimulation = (
     const now = new Date();
     const currentHour = now.getHours();
     
-    let backlog_bt = config.btInitialBacklog;
-    let backlog_mt = config.mtInitialBacklog;
+    // Backlog inicial com redução de 40% na primeira hora (estimativa de operador)
+    let backlog_bt = config.btInitialBacklog * 0.6;
+    let backlog_mt = config.mtInitialBacklog * 0.6;
 
     for (let i = 0; i < config.horizonHours; i++) {
       const hora = (currentHour + i) % 24;
