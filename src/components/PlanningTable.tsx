@@ -161,7 +161,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
           size="sm"
           onClick={handleExportXLSX}
           disabled={data.length === 0}
-          className="gap-2"
+          className="gap-2 bg-background/50 border-border/50 hover:bg-background/80"
         >
           <Download className="w-4 h-4" />
           Exportar XLSX
