@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { HistoricalDataRow } from "./useHistoricalData";
 import { WeatherHour } from "./useWeather";
+import { SystemSetting } from "./useSystemSettings";
 
 export interface SimulationConfig {
   baseId: string;
@@ -50,6 +51,7 @@ export interface SimulationRow {
   saldo_bt_ideal: number; // saldo se usar equipes ideais
   saldo_mt_ideal: number;
   eq_ideal_total: number; // total de equipes ideal
+  remoto_bt_retirado: number; // quantidade retirada pelo remoto nesta hora
 }
 
 // Uplift tables from Python
@@ -76,20 +78,31 @@ const getUplift = (precip: number, type: "bt" | "mt"): number => {
 export const useSimulation = (
   config: SimulationConfig,
   historicalData: HistoricalDataRow[] | undefined,
-  weatherData: WeatherHour[] | undefined
+  weatherData: WeatherHour[] | undefined,
+  systemSettings?: SystemSetting[]
 ) => {
   return useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
       return [];
     }
 
+    // Get system settings values
+    const getSettingValue = (key: string, defaultValue: number): number => {
+      const setting = systemSettings?.find(s => s.key === key);
+      return setting ? parseFloat(setting.value) : defaultValue;
+    };
+
+    const remotoPercent = getSettingValue("operator_removal_percent", 10) / 100; // ex: 10% -> 0.1
+    const TARGET_BT = getSettingValue("bt_target", 70);
+    const TARGET_MT = getSettingValue("mt_target", 10);
+
     const result: SimulationRow[] = [];
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Backlog inicial com redução de 40% na primeira hora (estimativa de operador)
-    let backlog_bt = config.btInitialBacklog * 0.6;
-    let backlog_mt = config.mtInitialBacklog * 0.6;
+    // Backlog inicial (sem redução prévia - agora aplicamos por hora)
+    let backlog_bt = config.btInitialBacklog;
+    let backlog_mt = config.mtInitialBacklog;
 
     for (let i = 0; i < config.horizonHours; i++) {
       const hora = (currentHour + i) % 24;
@@ -97,6 +110,13 @@ export const useSimulation = (
       
       const targetDate = new Date(now);
       targetDate.setHours(currentHour + i, 0, 0, 0);
+
+      // Nas primeiras 8 horas, retirar a % de remoto do backlog BT ANTES do cálculo
+      let remoto_bt_retirado = 0;
+      if (i < 8) {
+        remoto_bt_retirado = backlog_bt * remotoPercent;
+        backlog_bt = backlog_bt - remoto_bt_retirado;
+      }
 
       // Get historical data for this hour
       const historical = historicalData.find((h) => h.hour === hora) || {
@@ -156,10 +176,6 @@ export const useSimulation = (
       // novo_backlog = backlog_atual + entrada_ajustada - retirada_operador - capacidade_equipes
       const saldo_bt = Math.max(0, backlog_bt + entrada_bt_adj - ret_op_bt - cap_bt_h);
       const saldo_mt = Math.max(0, backlog_mt + entrada_mt_adj - ret_op_mt - cap_mt_h);
-
-      // Metas de estabilidade ao final do horizonte
-      const TARGET_BT = 70;
-      const TARGET_MT = 10;
 
       // Capacidade por equipe por hora
       const cap_por_eq_bt = historical.bt_productivity / 8;
@@ -228,6 +244,7 @@ export const useSimulation = (
         saldo_bt_ideal,
         saldo_mt_ideal,
         eq_ideal_total,
+        remoto_bt_retirado: Math.round(remoto_bt_retirado * 100) / 100,
       });
 
       // Atualiza backlog para próxima iteração
@@ -236,5 +253,5 @@ export const useSimulation = (
     }
 
     return result;
-  }, [config, historicalData, weatherData]);
+  }, [config, historicalData, weatherData, systemSettings]);
 };
