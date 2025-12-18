@@ -1,9 +1,9 @@
 import { Cloud, MapPin, Zap, Clock } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
+import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
-
 interface HeaderProps {
   config: SimulationConfig;
   selectedBase: Base | undefined;
@@ -74,6 +74,8 @@ export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weat
             onConfigChange={onConfigChange}
             onCalculate={onCalculate}
           />
+
+          <AdminConfigDialog />
         </div>
       </div>
     </header>
