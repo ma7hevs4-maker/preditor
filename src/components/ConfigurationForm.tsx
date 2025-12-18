@@ -119,9 +119,10 @@ export const ConfigurationForm = ({
 
   const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
 
-  // Determine which days to show based on horizon
-  const showDay2 = localConfig.horizonHours > 24;
-  const showDay3 = localConfig.horizonHours > 48;
+  // Determine which days to show based on current hour + horizon
+  const currentHour = new Date().getHours();
+  const showDay2 = (currentHour + localConfig.horizonHours) > 24;
+  const showDay3 = (currentHour + localConfig.horizonHours) > 48;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
