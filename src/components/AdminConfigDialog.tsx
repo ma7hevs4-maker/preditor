@@ -18,15 +18,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
-import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger } from "@/hooks/useWeatherTriggers";
+import { useAllWeatherTriggers, useAddWeatherTrigger, useDeleteWeatherTrigger } from "@/hooks/useWeatherTriggers";
+import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "dys";
+
+const defaultTeamsArray = Array(24).fill(0);
+
+const turnos = [
+  { id: "A", name: "Turno A", hours: "00h - 07h", range: [0, 1, 2, 3, 4, 5, 6, 7], colorClass: "text-blue-400 border-blue-500/30" },
+  { id: "B", name: "Turno B", hours: "08h - 15h", range: [8, 9, 10, 11, 12, 13, 14, 15], colorClass: "text-amber-400 border-amber-500/30" },
+  { id: "C", name: "Turno C", hours: "16h - 23h", range: [16, 17, 18, 19, 20, 21, 22, 23], colorClass: "text-purple-400 border-purple-500/30" },
+];
 
 export const AdminConfigDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,13 +48,16 @@ export const AdminConfigDialog = () => {
   const { data: historicalData } = useHistoricalData(selectedBaseId);
   const { data: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { data: weatherTriggers, isLoading: triggersLoading } = useAllWeatherTriggers();
+  const { data: teamStructures, isLoading: structuresLoading } = useTeamStructures(selectedBaseId);
   
   const addBase = useAddBase();
   const updateHistoricalData = useUpdateHistoricalData();
   const updateSystemSetting = useUpdateSystemSetting();
   const addWeatherTrigger = useAddWeatherTrigger();
-  const updateWeatherTrigger = useUpdateWeatherTrigger();
   const deleteWeatherTrigger = useDeleteWeatherTrigger();
+  const addTeamStructure = useAddTeamStructure();
+  const updateTeamStructure = useUpdateTeamStructure();
+  const deleteTeamStructure = useDeleteTeamStructure();
 
   // New base form
   const [newBaseName, setNewBaseName] = useState("");
@@ -68,6 +80,13 @@ export const AdminConfigDialog = () => {
     description: "",
     base_id: null as string | null,
   });
+
+  // Structure form
+  const [showStructureForm, setShowStructureForm] = useState(false);
+  const [editingStructure, setEditingStructure] = useState<TeamStructure | null>(null);
+  const [structureName, setStructureName] = useState("Padrão");
+  const [structureTeams, setStructureTeams] = useState<number[]>([...defaultTeamsArray]);
+  const [structureLossTeams, setStructureLossTeams] = useState<number[]>([...defaultTeamsArray]);
 
   // Load settings from database
   useEffect(() => {
@@ -187,6 +206,81 @@ export const AdminConfigDialog = () => {
     }
   };
 
+  // Structure handlers
+  const handleNewStructure = () => {
+    setEditingStructure(null);
+    setStructureName("Padrão");
+    setStructureTeams([...defaultTeamsArray]);
+    setStructureLossTeams([...defaultTeamsArray]);
+    setShowStructureForm(true);
+  };
+
+  const handleEditStructure = (structure: TeamStructure) => {
+    setEditingStructure(structure);
+    setStructureName(structure.name);
+    setStructureTeams(structureToTeamsArray(structure));
+    setStructureLossTeams(structureToLossTeamsArray(structure));
+    setShowStructureForm(true);
+  };
+
+  const handleCancelStructureForm = () => {
+    setShowStructureForm(false);
+    setEditingStructure(null);
+  };
+
+  const handleSaveStructure = async () => {
+    if (!selectedBaseId) return;
+    if (!structureName.trim()) {
+      toast.error("Preencha o nome da estrutura");
+      return;
+    }
+
+    const structureData = {
+      ...teamsArrayToStructure(structureTeams, structureLossTeams),
+      name: structureName.trim(),
+      base_id: selectedBaseId,
+      is_default: false,
+    } as Omit<TeamStructure, "id">;
+
+    try {
+      if (editingStructure) {
+        await updateTeamStructure.mutateAsync({
+          id: editingStructure.id,
+          ...structureData,
+        });
+        toast.success("Estrutura atualizada com sucesso!");
+      } else {
+        await addTeamStructure.mutateAsync(structureData);
+        toast.success("Estrutura criada com sucesso!");
+      }
+      setShowStructureForm(false);
+      setEditingStructure(null);
+    } catch (error) {
+      toast.error("Erro ao salvar estrutura");
+    }
+  };
+
+  const handleDeleteStructure = async (id: string) => {
+    try {
+      await deleteTeamStructure.mutateAsync(id);
+      toast.success("Estrutura removida!");
+    } catch (error) {
+      toast.error("Erro ao remover estrutura");
+    }
+  };
+
+  const handleStructureTeamChange = (hour: number, value: number) => {
+    const newTeams = [...structureTeams];
+    newTeams[hour] = Math.max(0, Math.min(200, value));
+    setStructureTeams(newTeams);
+  };
+
+  const handleStructureLossTeamChange = (hour: number, value: number) => {
+    const newTeams = [...structureLossTeams];
+    newTeams[hour] = Math.max(0, Math.min(200, value));
+    setStructureLossTeams(newTeams);
+  };
+
   const getTriggerTypeLabel = (type: string) => {
     switch (type) {
       case "precip": return "Precipitação";
@@ -220,9 +314,19 @@ export const AdminConfigDialog = () => {
 
   // Filter triggers by selected base
   const filteredTriggers = weatherTriggers?.filter(t => {
-    if (!selectedBaseId) return t.base_id === null; // Show only defaults
+    if (!selectedBaseId) return t.base_id === null;
     return t.base_id === null || t.base_id === selectedBaseId;
   });
+
+  // Calculate structure totals
+  const getStructureTotals = (structure: TeamStructure) => {
+    const teams = structureToTeamsArray(structure);
+    const lossTeams = structureToLossTeamsArray(structure);
+    return {
+      totalTeams: teams.reduce((a, b) => a + b, 0),
+      totalLoss: lossTeams.reduce((a, b) => a + b, 0),
+    };
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -396,7 +500,10 @@ export const AdminConfigDialog = () => {
                   <Label>Selecione a Base</Label>
                   <select
                     value={selectedBaseId || ""}
-                    onChange={(e) => setSelectedBaseId(e.target.value || null)}
+                    onChange={(e) => {
+                      setSelectedBaseId(e.target.value || null);
+                      setShowStructureForm(false);
+                    }}
                     className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-foreground"
                   >
                     <option value="">Selecione uma base</option>
@@ -406,21 +513,189 @@ export const AdminConfigDialog = () => {
                   </select>
                 </div>
 
-                {selectedBaseId && (
-                  <div className="border border-border rounded-lg p-4 space-y-4">
+                {selectedBaseId && !showStructureForm && (
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-foreground">Estrutura Padrão de Equipes (24h)</h4>
-                      <Button variant="outline" size="sm" className="gap-1">
+                      <h4 className="font-semibold text-foreground">Estruturas Padrão de Equipes (24h)</h4>
+                      <Button variant="outline" size="sm" className="gap-1" onClick={handleNewStructure}>
                         <Plus className="w-3 h-3" />
                         Nova Estrutura
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Configure a quantidade de equipes padrão para cada hora do dia nesta base.
-                      Esta estrutura pode ser carregada rapidamente na tela de simulação.
-                    </p>
-                    <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">
-                      Funcionalidade em desenvolvimento
+
+                    {structuresLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+                    ) : teamStructures && teamStructures.length > 0 ? (
+                      <div className="border border-border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-muted/50">
+                            <tr>
+                              <th className="text-left px-3 py-2 text-muted-foreground font-medium">Nome</th>
+                              <th className="text-center px-3 py-2 text-muted-foreground font-medium">Equipes (24h)</th>
+                              <th className="text-center px-3 py-2 text-muted-foreground font-medium">Perdas (24h)</th>
+                              <th className="text-right px-3 py-2 text-muted-foreground font-medium">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {teamStructures.map((structure, index) => {
+                              const totals = getStructureTotals(structure);
+                              return (
+                                <tr key={structure.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                                  <td className="px-3 py-2 text-foreground font-medium">{structure.name}</td>
+                                  <td className="px-3 py-2 text-center text-muted-foreground font-mono">
+                                    {totals.totalTeams} eq-h
+                                  </td>
+                                  <td className="px-3 py-2 text-center text-orange-400 font-mono">
+                                    {totals.totalLoss} eq-h
+                                  </td>
+                                  <td className="px-3 py-2 text-right">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 w-7 p-0"
+                                      onClick={() => handleEditStructure(structure)}
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 w-7 p-0 text-destructive"
+                                      onClick={() => handleDeleteStructure(structure.id)}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground border border-dashed border-border rounded-lg">
+                        Nenhuma estrutura cadastrada para esta base.
+                        <br />
+                        <Button variant="link" className="mt-2" onClick={handleNewStructure}>
+                          Criar primeira estrutura
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Structure Form */}
+                {selectedBaseId && showStructureForm && (
+                  <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-foreground">
+                        {editingStructure ? "Editar Estrutura" : "Nova Estrutura"}
+                      </h4>
+                      <Button variant="ghost" size="sm" onClick={handleCancelStructureForm}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nome da Estrutura</Label>
+                      <Input
+                        value={structureName}
+                        onChange={(e) => setStructureName(e.target.value)}
+                        placeholder="Ex: Dia Útil, Final de Semana"
+                        className="bg-secondary border-border"
+                      />
+                    </div>
+
+                    {/* Regular Teams */}
+                    <div className="space-y-3">
+                      <h5 className="text-sm font-medium text-foreground">Equipes Regulares</h5>
+                      {turnos.map((turno) => {
+                        const totalTurno = turno.range.reduce((sum, h) => sum + structureTeams[h], 0);
+                        return (
+                          <div key={turno.id} className={cn("p-3 rounded-lg border bg-secondary/20", turno.colorClass)}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className={cn("turno-badge", `turno-${turno.id.toLowerCase()}`)}>
+                                  {turno.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                              </div>
+                              <span className="text-xs font-mono">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
+                            </div>
+                            <div className="grid grid-cols-8 gap-1">
+                              {turno.range.map((hour) => (
+                                <div key={hour} className="space-y-1">
+                                  <Label className="text-xs text-center block text-muted-foreground">
+                                    {hour.toString().padStart(2, "0")}h
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={200}
+                                    value={structureTeams[hour]}
+                                    onChange={(e) => handleStructureTeamChange(hour, parseInt(e.target.value) || 0)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Loss Teams */}
+                    <div className="space-y-3">
+                      <h5 className="text-sm font-medium text-orange-400">Equipes de Perdas (só BT)</h5>
+                      {turnos.map((turno) => {
+                        const totalTurno = turno.range.reduce((sum, h) => sum + structureLossTeams[h], 0);
+                        return (
+                          <div key={`loss-${turno.id}`} className="p-3 rounded-lg border bg-orange-500/10 border-orange-500/30">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="turno-badge bg-orange-500/20 text-orange-400">
+                                  {turno.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                              </div>
+                              <span className="text-xs font-mono text-orange-400">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
+                            </div>
+                            <div className="grid grid-cols-8 gap-1">
+                              {turno.range.map((hour) => (
+                                <div key={hour} className="space-y-1">
+                                  <Label className="text-xs text-center block text-muted-foreground">
+                                    {hour.toString().padStart(2, "0")}h
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={200}
+                                    value={structureLossTeams[hour]}
+                                    onChange={(e) => handleStructureLossTeamChange(hour, parseInt(e.target.value) || 0)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="bg-orange-500/10 border-orange-500/30 font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        onClick={handleSaveStructure} 
+                        disabled={addTeamStructure.isPending || updateTeamStructure.isPending}
+                        className="gap-1"
+                      >
+                        <Save className="w-4 h-4" />
+                        {editingStructure ? "Atualizar" : "Salvar"}
+                      </Button>
+                      <Button variant="outline" onClick={handleCancelStructureForm}>
+                        Cancelar
+                      </Button>
                     </div>
                   </div>
                 )}
