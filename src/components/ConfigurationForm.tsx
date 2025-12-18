@@ -18,7 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Settings, Play, RotateCcw, Users, Copy, Trash2 } from "lucide-react";
+import { Play, RotateCcw, Users, Copy, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBases } from "@/hooks/useBases";
 import { SimulationConfig } from "@/hooks/useSimulation";
@@ -161,8 +161,8 @@ export const ConfigurationForm = ({
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" className="gap-2 bg-secondary/50 border-border hover:bg-secondary">
-          <Settings className="w-4 h-4" />
-          Configurar
+          <Play className="w-4 h-4" />
+          Simulação
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto bg-card border-border">
