@@ -18,7 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Settings, Play, RotateCcw, Users, Copy } from "lucide-react";
+import { Settings, Play, RotateCcw, Users, Copy, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBases } from "@/hooks/useBases";
 import { SimulationConfig } from "@/hooks/useSimulation";
@@ -94,6 +94,39 @@ export const ConfigurationForm = ({
         lossTeamsPerHourDay3: [...(prev.lossTeamsPerHour || defaultLossTeamsPerHour)],
       }));
     }
+  };
+
+  // Copy first hour value to entire shift
+  const copyFirstHourToShift = (turnoRange: number[], day: number, isLoss: boolean) => {
+    const fieldName = isLoss
+      ? (day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3")
+      : (day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3");
+    const currentTeams = [...(localConfig[fieldName] || defaultTeamsPerHour)];
+    const firstValue = currentTeams[turnoRange[0]];
+    turnoRange.forEach((hour) => {
+      currentTeams[hour] = firstValue;
+    });
+    setLocalConfig((prev) => ({ ...prev, [fieldName]: currentTeams }));
+  };
+
+  // Zero out entire shift
+  const zeroShift = (turnoRange: number[], day: number, isLoss: boolean) => {
+    const fieldName = isLoss
+      ? (day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3")
+      : (day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3");
+    const currentTeams = [...(localConfig[fieldName] || defaultTeamsPerHour)];
+    turnoRange.forEach((hour) => {
+      currentTeams[hour] = 0;
+    });
+    setLocalConfig((prev) => ({ ...prev, [fieldName]: currentTeams }));
+  };
+
+  // Zero out entire day
+  const zeroDay = (day: number, isLoss: boolean) => {
+    const fieldName = isLoss
+      ? (day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3")
+      : (day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3");
+    setLocalConfig((prev) => ({ ...prev, [fieldName]: [...defaultTeamsPerHour] }));
   };
 
   const handleApply = () => {
@@ -226,11 +259,23 @@ export const ConfigurationForm = ({
 
           {/* Day 1 - Equipes por Turno */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Dia 1 - Equipes por Hora
-              </h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Dia 1 - Equipes por Hora
+                </h4>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => zeroDay(1, false)}
+                className="gap-1 text-xs text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-3 h-3" />
+                Zerar Dia
+              </Button>
             </div>
 
             {turnos.map((turno) => {
@@ -245,7 +290,29 @@ export const ConfigurationForm = ({
                       </span>
                       <span className="text-xs text-muted-foreground">{turno.hours}</span>
                     </div>
-                    <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyFirstHourToShift(turno.range, 1, false)}
+                        className="h-6 px-2 text-xs"
+                        title="Copiar primeiro horário para todo o turno"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => zeroShift(turno.range, 1, false)}
+                        className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                        title="Zerar turno"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                      <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-8 gap-1">
@@ -273,11 +340,23 @@ export const ConfigurationForm = ({
 
           {/* Day 1 - Equipes de Perdas (só BT) */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-orange-400" />
-              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Dia 1 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
-              </h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-orange-400" />
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Dia 1 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                </h4>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => zeroDay(1, true)}
+                className="gap-1 text-xs text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-3 h-3" />
+                Zerar Dia
+              </Button>
             </div>
 
             {turnos.map((turno) => {
@@ -293,7 +372,29 @@ export const ConfigurationForm = ({
                       </span>
                       <span className="text-xs text-muted-foreground">{turno.hours}</span>
                     </div>
-                    <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyFirstHourToShift(turno.range, 1, true)}
+                        className="h-6 px-2 text-xs"
+                        title="Copiar primeiro horário para todo o turno"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => zeroShift(turno.range, 1, true)}
+                        className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                        title="Zerar turno"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                      <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-8 gap-1">
@@ -330,16 +431,28 @@ export const ConfigurationForm = ({
                       Dia 2 - Equipes por Hora
                     </h4>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyFromDay1(2)}
-                    className="gap-1 text-xs"
-                  >
-                    <Copy className="w-3 h-3" />
-                    Copiar do Dia 1
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyFromDay1(2)}
+                      className="gap-1 text-xs"
+                    >
+                      <Copy className="w-3 h-3" />
+                      Copiar do Dia 1
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => zeroDay(2, false)}
+                      className="gap-1 text-xs text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Zerar Dia
+                    </Button>
+                  </div>
                 </div>
 
                 {turnos.map((turno) => {
@@ -355,7 +468,29 @@ export const ConfigurationForm = ({
                           </span>
                           <span className="text-xs text-muted-foreground">{turno.hours}</span>
                         </div>
-                        <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyFirstHourToShift(turno.range, 2, false)}
+                            className="h-6 px-2 text-xs"
+                            title="Copiar primeiro horário para todo o turno"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => zeroShift(turno.range, 2, false)}
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            title="Zerar turno"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-8 gap-1">
@@ -383,11 +518,23 @@ export const ConfigurationForm = ({
 
               {/* Day 2 - Equipes de Perdas (só BT) */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-orange-400" />
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    Dia 2 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
-                  </h4>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-orange-400" />
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Dia 2 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => zeroDay(2, true)}
+                    className="gap-1 text-xs text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Zerar Dia
+                  </Button>
                 </div>
 
                 {turnos.map((turno) => {
@@ -403,7 +550,29 @@ export const ConfigurationForm = ({
                           </span>
                           <span className="text-xs text-muted-foreground">{turno.hours}</span>
                         </div>
-                        <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyFirstHourToShift(turno.range, 2, true)}
+                            className="h-6 px-2 text-xs"
+                            title="Copiar primeiro horário para todo o turno"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => zeroShift(turno.range, 2, true)}
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            title="Zerar turno"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-8 gap-1">
@@ -442,16 +611,28 @@ export const ConfigurationForm = ({
                       Dia 3 - Equipes por Hora
                     </h4>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyFromDay1(3)}
-                    className="gap-1 text-xs"
-                  >
-                    <Copy className="w-3 h-3" />
-                    Copiar do Dia 1
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyFromDay1(3)}
+                      className="gap-1 text-xs"
+                    >
+                      <Copy className="w-3 h-3" />
+                      Copiar do Dia 1
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => zeroDay(3, false)}
+                      className="gap-1 text-xs text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Zerar Dia
+                    </Button>
+                  </div>
                 </div>
 
                 {turnos.map((turno) => {
@@ -467,7 +648,29 @@ export const ConfigurationForm = ({
                           </span>
                           <span className="text-xs text-muted-foreground">{turno.hours}</span>
                         </div>
-                        <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyFirstHourToShift(turno.range, 3, false)}
+                            className="h-6 px-2 text-xs"
+                            title="Copiar primeiro horário para todo o turno"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => zeroShift(turno.range, 3, false)}
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            title="Zerar turno"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-8 gap-1">
@@ -495,11 +698,23 @@ export const ConfigurationForm = ({
 
               {/* Day 3 - Equipes de Perdas (só BT) */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-orange-400" />
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    Dia 3 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
-                  </h4>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-orange-400" />
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Dia 3 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => zeroDay(3, true)}
+                    className="gap-1 text-xs text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Zerar Dia
+                  </Button>
                 </div>
 
                 {turnos.map((turno) => {
@@ -515,7 +730,29 @@ export const ConfigurationForm = ({
                           </span>
                           <span className="text-xs text-muted-foreground">{turno.hours}</span>
                         </div>
-                        <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyFirstHourToShift(turno.range, 3, true)}
+                            className="h-6 px-2 text-xs"
+                            title="Copiar primeiro horário para todo o turno"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => zeroShift(turno.range, 3, true)}
+                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            title="Zerar turno"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                          <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-8 gap-1">
