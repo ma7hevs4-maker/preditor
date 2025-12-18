@@ -6,8 +6,12 @@ export interface SimulationConfig {
   baseId: string;
   btInitialBacklog: number;
   mtInitialBacklog: number;
-  teamsPerHour: number[]; // 24 values for each hour
-  lossTeamsPerHour: number[]; // 24 values - equipes de perdas (só BT)
+  teamsPerHour: number[]; // 24 values for day 1
+  lossTeamsPerHour: number[]; // 24 values - equipes de perdas (só BT) day 1
+  teamsPerHourDay2: number[]; // 24 values for day 2
+  lossTeamsPerHourDay2: number[]; // 24 values - equipes de perdas day 2
+  teamsPerHourDay3: number[]; // 24 values for day 3
+  lossTeamsPerHourDay3: number[]; // 24 values - equipes de perdas day 3
   horizonHours: number;
 }
 
@@ -124,9 +128,19 @@ export const useSimulation = (
       const ret_op_bt = historical.bt_entry_rate * historical.bt_operator_removal;
       const ret_op_mt = historical.mt_entry_rate * historical.mt_operator_removal;
 
-      // Total de equipes disponíveis nesta hora
-      const eq_disp = config.teamsPerHour[hora] || 0;
-      const eq_perdas = config.lossTeamsPerHour?.[hora] || 0;
+      // Total de equipes disponíveis nesta hora (usa dia correto)
+      let eq_disp = 0;
+      let eq_perdas = 0;
+      if (dia === 0) {
+        eq_disp = config.teamsPerHour[hora] || 0;
+        eq_perdas = config.lossTeamsPerHour?.[hora] || 0;
+      } else if (dia === 1) {
+        eq_disp = config.teamsPerHourDay2?.[hora] ?? config.teamsPerHour[hora] ?? 0;
+        eq_perdas = config.lossTeamsPerHourDay2?.[hora] ?? config.lossTeamsPerHour?.[hora] ?? 0;
+      } else {
+        eq_disp = config.teamsPerHourDay3?.[hora] ?? config.teamsPerHour[hora] ?? 0;
+        eq_perdas = config.lossTeamsPerHourDay3?.[hora] ?? config.lossTeamsPerHour?.[hora] ?? 0;
+      }
 
       // Alocação de equipes: MT primeiro (mais importante), resto para BT
       // Equipes necessárias para MT = backlog_mt atual (1 equipe por incidente, no máximo)
