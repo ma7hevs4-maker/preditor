@@ -10,8 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Cloud, CloudRain, Thermometer, Wind } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Cloud, CloudRain, Download, Thermometer, Wind } from "lucide-react";
 import { HourDetailDialog } from "./HourDetailDialog";
+import * as XLSX from "xlsx";
 
 interface PlanningTableProps {
   data: SimulationRow[];
@@ -47,9 +49,124 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
     setDialogOpen(true);
   };
 
+  const handleExportXLSX = () => {
+    if (data.length === 0) return;
+
+    // Prepare data for export with all detailed columns
+    const exportData = data.map((row) => ({
+      "Dia": row.dia + 1,
+      "Hora": `${String(row.hora).padStart(2, "0")}:00`,
+      "Data/Hora": new Date(row.datetime).toLocaleString("pt-BR"),
+      "Turno": getTurno(row.hora),
+      // Weather
+      "Temperatura (°C)": row.temp_c,
+      "Chuva (mm)": row.precip_mm,
+      "Vento (m/s)": row.wind_ms,
+      "Clima": row.weather_description,
+      "Uplift BT (%)": row.uplift_bt_pct,
+      "Uplift MT (%)": row.uplift_mt_pct,
+      // Entries
+      "Entrada BT Base": row.entrada_bt_base,
+      "Entrada BT Ajustada": row.entrada_bt_adj,
+      "Entrada MT Base": row.entrada_mt_base,
+      "Entrada MT Ajustada": row.entrada_mt_adj,
+      // Operator removal
+      "Ret. Operador BT": row.ret_op_bt,
+      "Ret. Operador MT": row.ret_op_mt,
+      // Remoto (first 8 hours only)
+      "Ret. Remoto BT": row.remoto_bt_retirado || 0,
+      // Teams
+      "Equipes Disponíveis": row.eq_disp,
+      "Equipes BT": row.eq_bt,
+      "Equipes MT": row.eq_mt,
+      "Equipes Perdas": row.eq_perdas,
+      // Productivity
+      "Produtividade BT": row.bt_productivity,
+      "Produtividade MT": row.mt_productivity,
+      // Capacity
+      "Capacidade BT/h": row.cap_bt_h,
+      "Capacidade MT/h": row.cap_mt_h,
+      // Balance
+      "Saldo BT": row.incidentes_bt_saldo,
+      "Saldo MT": row.incidentes_mt_saldo,
+      "Saldo Total": row.incidentes_bt_saldo + row.incidentes_mt_saldo,
+      // Additional teams needed
+      "Eq. Adicional BT": row.eq_bt_add,
+      "Eq. Adicional MT": row.eq_mt_add,
+      // Ideal scenario
+      "Saldo BT Ideal": row.saldo_bt_ideal,
+      "Saldo MT Ideal": row.saldo_mt_ideal,
+      "Eq. Ideal Total": row.eq_ideal_total,
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    const colWidths = [
+      { wch: 5 },  // Dia
+      { wch: 8 },  // Hora
+      { wch: 18 }, // Data/Hora
+      { wch: 6 },  // Turno
+      { wch: 14 }, // Temperatura
+      { wch: 10 }, // Chuva
+      { wch: 12 }, // Vento
+      { wch: 15 }, // Clima
+      { wch: 12 }, // Uplift BT
+      { wch: 12 }, // Uplift MT
+      { wch: 15 }, // Entrada BT Base
+      { wch: 18 }, // Entrada BT Ajustada
+      { wch: 15 }, // Entrada MT Base
+      { wch: 18 }, // Entrada MT Ajustada
+      { wch: 15 }, // Ret. Operador BT
+      { wch: 15 }, // Ret. Operador MT
+      { wch: 15 }, // Ret. Remoto BT
+      { wch: 18 }, // Equipes Disponíveis
+      { wch: 12 }, // Equipes BT
+      { wch: 12 }, // Equipes MT
+      { wch: 14 }, // Equipes Perdas
+      { wch: 15 }, // Produtividade BT
+      { wch: 15 }, // Produtividade MT
+      { wch: 15 }, // Capacidade BT/h
+      { wch: 15 }, // Capacidade MT/h
+      { wch: 10 }, // Saldo BT
+      { wch: 10 }, // Saldo MT
+      { wch: 12 }, // Saldo Total
+      { wch: 14 }, // Eq. Adicional BT
+      { wch: 14 }, // Eq. Adicional MT
+      { wch: 14 }, // Saldo BT Ideal
+      { wch: 14 }, // Saldo MT Ideal
+      { wch: 14 }, // Eq. Ideal Total
+    ];
+    ws["!cols"] = colWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Planejamento Detalhado");
+
+    // Generate filename with current date
+    const now = new Date();
+    const filename = `planejamento_${now.toISOString().slice(0, 10)}_${String(now.getHours()).padStart(2, "0")}h.xlsx`;
+
+    // Download file
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="glass-card p-4 animate-slide-up">
-      <h3 className="text-lg font-semibold mb-4">Planejamento Detalhado</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Planejamento Detalhado</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportXLSX}
+          disabled={data.length === 0}
+          className="gap-2"
+        >
+          <Download className="w-4 h-4" />
+          Exportar XLSX
+        </Button>
+      </div>
 
       <ScrollArea className="w-full whitespace-nowrap">
         <Table>
