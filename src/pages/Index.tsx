@@ -13,6 +13,7 @@ import { useBases } from "@/hooks/useBases";
 import { useHistoricalData } from "@/hooks/useHistoricalData";
 import { useWeather } from "@/hooks/useWeather";
 import { useSimulation, SimulationConfig } from "@/hooks/useSimulation";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 const defaultTeamsPerHour = [
   0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
@@ -46,6 +47,9 @@ const Index = () => {
   // Fetch bases from Supabase
   const { data: bases, isLoading: basesLoading } = useBases();
   
+  // Fetch system settings
+  const { data: systemSettings } = useSystemSettings();
+  
   // Set first base as default when loaded
   useEffect(() => {
     if (bases && bases.length > 0 && !config.baseId) {
@@ -73,7 +77,8 @@ const Index = () => {
   const simulationData = useSimulation(
     config,
     historicalData,
-    weatherData?.forecast
+    weatherData?.forecast,
+    systemSettings
   );
 
   const handleConfigChange = (newConfig: SimulationConfig) => {
@@ -128,8 +133,12 @@ const Index = () => {
   const totalBacklog = displayBtSaldo + displayMtSaldo;
   
   // Equipes adicionais - baseado no saldo FINAL da simulação vs metas
-  const TARGET_BT = 70;
-  const TARGET_MT = 10;
+  const getSettingValue = (key: string, defaultValue: number): number => {
+    const setting = systemSettings?.find(s => s.key === key);
+    return setting ? parseFloat(setting.value) : defaultValue;
+  };
+  const TARGET_BT = getSettingValue("bt_target", 70);
+  const TARGET_MT = getSettingValue("mt_target", 10);
   const finalData = simulationData[simulationData.length - 1];
   
   // Se já atingiu a meta no final do horizonte, não precisa de equipes adicionais
