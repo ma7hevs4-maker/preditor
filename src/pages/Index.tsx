@@ -157,7 +157,7 @@ const Index = () => {
             value={totalBacklog}
             subtitle="BT + MT combinados"
             icon={AlertTriangle}
-            variant={totalBacklog > 30 ? "destructive" : totalBacklog > 15 ? "warning" : "success"}
+            variant={totalBacklog > 165 ? "destructive" : totalBacklog > 80 ? "warning" : "success"}
           />
           <KPICard
             title="Incidentes BT"
@@ -165,11 +165,11 @@ const Index = () => {
             subtitle="Saldo atual previsto"
             icon={Zap}
             variant={
-              currentData.incidentes_bt_saldo > 25
+              currentData.incidentes_bt_saldo > 150
                 ? "destructive"
-                : currentData.incidentes_bt_saldo > 15
+                : currentData.incidentes_bt_saldo > 70
                 ? "warning"
-                : "default"
+                : "success"
             }
           />
           <KPICard
@@ -178,11 +178,11 @@ const Index = () => {
             subtitle="Saldo atual previsto"
             icon={TrendingDown}
             variant={
-              currentData.incidentes_mt_saldo > 5
+              currentData.incidentes_mt_saldo > 15
                 ? "destructive"
-                : currentData.incidentes_mt_saldo > 2
+                : currentData.incidentes_mt_saldo > 10
                 ? "warning"
-                : "default"
+                : "success"
             }
           />
           <KPICard
