@@ -122,18 +122,18 @@ const Index = () => {
   };
 
   // Calculate totals - show 0 if no meaningful simulation input
-  const totalBacklog = hasSimulationInput ? (currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo) : 0;
+  // Backlog total usa o valor ORIGINAL configurado (sem redução de 40%)
+  const totalBacklog = hasSimulationInput ? (config.btInitialBacklog + config.mtInitialBacklog) : 0;
   const displayBtSaldo = hasSimulationInput ? currentData.incidentes_bt_saldo : 0;
   const displayMtSaldo = hasSimulationInput ? currentData.incidentes_mt_saldo : 0;
   
-  // Equipes adicionais baseado no saldo FINAL vs meta
+  // Equipes adicionais baseado no backlog ORIGINAL vs meta
   const TARGET_BT = 70;
   const TARGET_MT = 10;
-  const finalData = simulationData[simulationData.length - 1];
   
-  // Calcula gap TOTAL do saldo final em relação às metas
-  const gapBt = (finalData && hasSimulationInput) ? Math.max(0, finalData.incidentes_bt_saldo - TARGET_BT) : 0;
-  const gapMt = (finalData && hasSimulationInput) ? Math.max(0, finalData.incidentes_mt_saldo - TARGET_MT) : 0;
+  // Calcula gap usando backlog ORIGINAL (sem redução de 40%)
+  const gapBt = hasSimulationInput ? Math.max(0, config.btInitialBacklog - TARGET_BT) : 0;
+  const gapMt = hasSimulationInput ? Math.max(0, config.mtInitialBacklog - TARGET_MT) : 0;
   const totalGap = gapBt + gapMt;
   
   // Calcula capacidade média real usando dados históricos
