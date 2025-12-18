@@ -127,13 +127,16 @@ const Index = () => {
   // Backlog total = soma dos saldos BT + MT (KPIs previstos)
   const totalBacklog = displayBtSaldo + displayMtSaldo;
   
-  // Equipes adicionais - cálculo baseado no backlog ORIGINAL (sem redução de 40%)
+  // Equipes adicionais - baseado no saldo FINAL da simulação vs metas
   const TARGET_BT = 70;
   const TARGET_MT = 10;
+  const finalData = simulationData[simulationData.length - 1];
   
-  // Gap usa backlog INICIAL configurado pelo usuário (sem redução de 40%)
-  const gapBt = hasSimulationInput ? Math.max(0, config.btInitialBacklog - TARGET_BT) : 0;
-  const gapMt = hasSimulationInput ? Math.max(0, config.mtInitialBacklog - TARGET_MT) : 0;
+  // Se já atingiu a meta no final do horizonte, não precisa de equipes adicionais
+  const finalBtSaldo = finalData?.incidentes_bt_saldo ?? 0;
+  const finalMtSaldo = finalData?.incidentes_mt_saldo ?? 0;
+  const gapBt = hasSimulationInput ? Math.max(0, finalBtSaldo - TARGET_BT) : 0;
+  const gapMt = hasSimulationInput ? Math.max(0, finalMtSaldo - TARGET_MT) : 0;
   const totalGap = gapBt + gapMt;
   
   // Calcula capacidade média real usando dados históricos
