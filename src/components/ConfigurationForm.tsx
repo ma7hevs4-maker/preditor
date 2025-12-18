@@ -17,10 +17,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { Play, RotateCcw, Users, Copy, Trash2 } from "lucide-react";
+import { Play, RotateCcw, Users, Copy, Trash2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBases } from "@/hooks/useBases";
+import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
 import { SimulationConfig } from "@/hooks/useSimulation";
 
 interface ConfigurationFormProps {
@@ -55,6 +61,7 @@ export const ConfigurationForm = ({
   const [isOpen, setIsOpen] = useState(false);
   const [localConfig, setLocalConfig] = useState<SimulationConfig>(config);
   const { data: bases, isLoading: basesLoading } = useBases();
+  const { data: teamStructures } = useTeamStructures(localConfig.baseId || null);
 
   useEffect(() => {
     setLocalConfig(config);
@@ -92,6 +99,35 @@ export const ConfigurationForm = ({
         ...prev,
         teamsPerHourDay3: [...prev.teamsPerHour],
         lossTeamsPerHourDay3: [...(prev.lossTeamsPerHour || defaultLossTeamsPerHour)],
+      }));
+    }
+  };
+
+  // Load structure from database
+  const loadStructure = (structureId: string, day: number) => {
+    const structure = teamStructures?.find(s => s.id === structureId);
+    if (!structure) return;
+
+    const teams = structureToTeamsArray(structure);
+    const lossTeams = structureToLossTeamsArray(structure);
+
+    if (day === 1) {
+      setLocalConfig((prev) => ({
+        ...prev,
+        teamsPerHour: teams,
+        lossTeamsPerHour: lossTeams,
+      }));
+    } else if (day === 2) {
+      setLocalConfig((prev) => ({
+        ...prev,
+        teamsPerHourDay2: teams,
+        lossTeamsPerHourDay2: lossTeams,
+      }));
+    } else if (day === 3) {
+      setLocalConfig((prev) => ({
+        ...prev,
+        teamsPerHourDay3: teams,
+        lossTeamsPerHourDay3: lossTeams,
       }));
     }
   };
@@ -266,16 +302,49 @@ export const ConfigurationForm = ({
                   Dia 1 - Equipes por Hora
                 </h4>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => zeroDay(1, false)}
-                className="gap-1 text-xs"
-              >
-                <Trash2 className="w-3 h-3" />
-                Zerar Dia
-              </Button>
+              <div className="flex items-center gap-2">
+                {teamStructures && teamStructures.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-xs"
+                      >
+                        <Download className="w-3 h-3" />
+                        Carregar Estrutura
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2" align="end">
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a estrutura:</p>
+                        {teamStructures.map((structure) => (
+                          <Button
+                            key={structure.id}
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => loadStructure(structure.id, 1)}
+                          >
+                            {structure.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => zeroDay(1, false)}
+                  className="gap-1 text-xs"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Zerar Dia
+                </Button>
+              </div>
             </div>
 
             {turnos.map((turno) => {
@@ -432,6 +501,37 @@ export const ConfigurationForm = ({
                     </h4>
                   </div>
                   <div className="flex items-center gap-2">
+                    {teamStructures && teamStructures.length > 0 && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 text-xs"
+                          >
+                            <Download className="w-3 h-3" />
+                            Carregar Estrutura
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="end">
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a estrutura:</p>
+                            {teamStructures.map((structure) => (
+                              <Button
+                                key={structure.id}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-xs"
+                                onClick={() => loadStructure(structure.id, 2)}
+                              >
+                                {structure.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
@@ -612,6 +712,37 @@ export const ConfigurationForm = ({
                     </h4>
                   </div>
                   <div className="flex items-center gap-2">
+                    {teamStructures && teamStructures.length > 0 && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 text-xs"
+                          >
+                            <Download className="w-3 h-3" />
+                            Carregar Estrutura
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2" align="end">
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a estrutura:</p>
+                            {teamStructures.map((structure) => (
+                              <Button
+                                key={structure.id}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-xs"
+                                onClick={() => loadStructure(structure.id, 3)}
+                              >
+                                {structure.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
