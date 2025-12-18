@@ -268,10 +268,10 @@ export const ConfigurationForm = ({
               </div>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => zeroDay(1, false)}
-                className="gap-1 text-xs text-destructive hover:text-destructive"
+                className="gap-1 text-xs"
               >
                 <Trash2 className="w-3 h-3" />
                 Zerar Dia
@@ -306,7 +306,7 @@ export const ConfigurationForm = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => zeroShift(turno.range, 1, false)}
-                        className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                        className="h-6 px-2 text-xs"
                         title="Zerar turno"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -349,10 +349,10 @@ export const ConfigurationForm = ({
               </div>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => zeroDay(1, true)}
-                className="gap-1 text-xs text-destructive hover:text-destructive"
+                className="gap-1 text-xs"
               >
                 <Trash2 className="w-3 h-3" />
                 Zerar Dia
@@ -388,7 +388,7 @@ export const ConfigurationForm = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => zeroShift(turno.range, 1, true)}
-                        className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                        className="h-6 px-2 text-xs text-orange-400"
                         title="Zerar turno"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -444,10 +444,10 @@ export const ConfigurationForm = ({
                     </Button>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => zeroDay(2, false)}
-                      className="gap-1 text-xs text-destructive hover:text-destructive"
+                      className="gap-1 text-xs"
                     >
                       <Trash2 className="w-3 h-3" />
                       Zerar Dia
@@ -484,7 +484,7 @@ export const ConfigurationForm = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => zeroShift(turno.range, 2, false)}
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            className="h-6 px-2 text-xs"
                             title="Zerar turno"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -527,10 +527,10 @@ export const ConfigurationForm = ({
                   </div>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => zeroDay(2, true)}
-                    className="gap-1 text-xs text-destructive hover:text-destructive"
+                    className="gap-1 text-xs"
                   >
                     <Trash2 className="w-3 h-3" />
                     Zerar Dia
@@ -566,7 +566,7 @@ export const ConfigurationForm = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => zeroShift(turno.range, 2, true)}
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            className="h-6 px-2 text-xs text-orange-400"
                             title="Zerar turno"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -624,10 +624,10 @@ export const ConfigurationForm = ({
                     </Button>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => zeroDay(3, false)}
-                      className="gap-1 text-xs text-destructive hover:text-destructive"
+                      className="gap-1 text-xs"
                     >
                       <Trash2 className="w-3 h-3" />
                       Zerar Dia
@@ -664,7 +664,7 @@ export const ConfigurationForm = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => zeroShift(turno.range, 3, false)}
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            className="h-6 px-2 text-xs"
                             title="Zerar turno"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -707,10 +707,10 @@ export const ConfigurationForm = ({
                   </div>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => zeroDay(3, true)}
-                    className="gap-1 text-xs text-destructive hover:text-destructive"
+                    className="gap-1 text-xs"
                   >
                     <Trash2 className="w-3 h-3" />
                     Zerar Dia
@@ -746,7 +746,7 @@ export const ConfigurationForm = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => zeroShift(turno.range, 3, true)}
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                            className="h-6 px-2 text-xs text-orange-400"
                             title="Zerar turno"
                           >
                             <Trash2 className="w-3 h-3" />
