@@ -311,7 +311,7 @@ export const ConfigurationForm = ({
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
-                      <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                      <span className="text-xs font-mono">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
                     </div>
                   </div>
                   
@@ -393,7 +393,7 @@ export const ConfigurationForm = ({
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
-                      <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                      <span className="text-xs font-mono text-orange-400">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
                     </div>
                   </div>
                   
@@ -489,7 +489,7 @@ export const ConfigurationForm = ({
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
-                          <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                          <span className="text-xs font-mono">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
                         </div>
                       </div>
                       
@@ -571,7 +571,7 @@ export const ConfigurationForm = ({
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
-                          <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                          <span className="text-xs font-mono text-orange-400">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
                         </div>
                       </div>
                       
@@ -669,7 +669,7 @@ export const ConfigurationForm = ({
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
-                          <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                          <span className="text-xs font-mono">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
                         </div>
                       </div>
                       
@@ -751,7 +751,7 @@ export const ConfigurationForm = ({
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
-                          <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                          <span className="text-xs font-mono text-orange-400">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
                         </div>
                       </div>
                       
