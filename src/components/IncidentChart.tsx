@@ -31,8 +31,8 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
     "Saldo MT": row.incidentes_mt_saldo,
     "Entrada BT": row.entrada_bt_adj,
     "Entrada MT": row.entrada_mt_adj,
-    "Retirada BT": Math.round((row.ret_op_bt + row.cap_bt_h) * 100) / 100,
-    "Retirada MT": Math.round((row.ret_op_mt + row.cap_mt_h) * 100) / 100,
+    "Retirada BT": Math.round(row.ret_op_bt + row.cap_bt_h),
+    "Retirada MT": Math.round(row.ret_op_mt + row.cap_mt_h),
     // Entrada base (sem impacto clima) - só mostra se houver uplift
     "Entrada BT Base": row.uplift_bt_pct > 0 ? row.entrada_bt_base : null,
     "Entrada MT Base": row.uplift_mt_pct > 0 ? row.entrada_mt_base : null,
