@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw } from "lucide-react";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
@@ -279,6 +279,34 @@ export const AdminConfigDialog = () => {
     const newTeams = [...structureLossTeams];
     newTeams[hour] = Math.max(0, Math.min(200, value));
     setStructureLossTeams(newTeams);
+  };
+
+  const handleCopyFirstHourToShiftStructure = (turnoRange: number[], isLoss: boolean) => {
+    const sourceArray = isLoss ? structureLossTeams : structureTeams;
+    const firstHour = turnoRange[0];
+    const firstValue = sourceArray[firstHour];
+    const newTeams = [...sourceArray];
+    turnoRange.forEach((hour) => {
+      newTeams[hour] = firstValue;
+    });
+    if (isLoss) {
+      setStructureLossTeams(newTeams);
+    } else {
+      setStructureTeams(newTeams);
+    }
+  };
+
+  const handleZeroShiftStructure = (turnoRange: number[], isLoss: boolean) => {
+    const sourceArray = isLoss ? structureLossTeams : structureTeams;
+    const newTeams = [...sourceArray];
+    turnoRange.forEach((hour) => {
+      newTeams[hour] = 0;
+    });
+    if (isLoss) {
+      setStructureLossTeams(newTeams);
+    } else {
+      setStructureTeams(newTeams);
+    }
   };
 
   const getTriggerTypeLabel = (type: string) => {
@@ -620,7 +648,29 @@ export const AdminConfigDialog = () => {
                                 </span>
                                 <span className="text-xs text-muted-foreground">{turno.hours}</span>
                               </div>
-                              <span className="text-xs font-mono">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs gap-1"
+                                  onClick={() => handleCopyFirstHourToShiftStructure(turno.range, false)}
+                                  title="Copiar 1º horário para todo o turno"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  Copiar 1º h
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs gap-1"
+                                  onClick={() => handleZeroShiftStructure(turno.range, false)}
+                                  title="Zerar turno"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  Zerar
+                                </Button>
+                                <span className="text-xs font-mono">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
+                              </div>
                             </div>
                             <div className="grid grid-cols-8 gap-1">
                               {turno.range.map((hour) => (
@@ -659,7 +709,29 @@ export const AdminConfigDialog = () => {
                                 </span>
                                 <span className="text-xs text-muted-foreground">{turno.hours}</span>
                               </div>
-                              <span className="text-xs font-mono text-orange-400">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs gap-1 text-orange-400 hover:text-orange-300"
+                                  onClick={() => handleCopyFirstHourToShiftStructure(turno.range, true)}
+                                  title="Copiar 1º horário para todo o turno"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  Copiar 1º h
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs gap-1 text-orange-400 hover:text-orange-300"
+                                  onClick={() => handleZeroShiftStructure(turno.range, true)}
+                                  title="Zerar turno"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  Zerar
+                                </Button>
+                                <span className="text-xs font-mono text-orange-400">Média: {(totalTurno / 8).toFixed(1)} eq/h</span>
+                              </div>
                             </div>
                             <div className="grid grid-cols-8 gap-1">
                               {turno.range.map((hour) => (
