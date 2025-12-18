@@ -68,7 +68,7 @@ export const WeatherIndicator = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs gap-1.5"
+                className="h-7 text-xs gap-1.5 bg-secondary/50 border-border hover:bg-secondary"
                 onClick={() => setMapDialogOpen(true)}
               >
                 <Map className="w-3.5 h-3.5" />
