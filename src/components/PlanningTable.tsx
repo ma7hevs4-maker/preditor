@@ -28,9 +28,17 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const currentHour = new Date().getHours();
 
-  const getStatusColor = (value: number, threshold: number) => {
-    if (value >= threshold * 2) return "text-destructive";
-    if (value >= threshold) return "text-warning";
+  // Color thresholds: BT: verde ≤70, laranja ≤150, vermelho >150
+  // MT: verde ≤10, laranja ≤15, vermelho >15
+  const getBtStatusColor = (value: number) => {
+    if (value > 150) return "text-destructive";
+    if (value > 70) return "text-warning";
+    return "text-success";
+  };
+
+  const getMtStatusColor = (value: number) => {
+    if (value > 15) return "text-destructive";
+    if (value > 10) return "text-warning";
     return "text-success";
   };
 
@@ -144,7 +152,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                   <TableCell
                     className={cn(
                       "data-cell text-right font-semibold",
-                      getStatusColor(row.incidentes_bt_saldo, 15)
+                      getBtStatusColor(row.incidentes_bt_saldo)
                     )}
                   >
                     {row.incidentes_bt_saldo}
@@ -152,7 +160,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                   <TableCell
                     className={cn(
                       "data-cell text-right font-semibold",
-                      getStatusColor(row.incidentes_mt_saldo, 5)
+                      getMtStatusColor(row.incidentes_mt_saldo)
                     )}
                   >
                     {row.incidentes_mt_saldo}
