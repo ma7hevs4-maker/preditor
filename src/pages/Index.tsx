@@ -246,7 +246,7 @@ const Index = () => {
             )}
           </div>
           <div className="xl:col-span-1">
-            <ConfigPanel config={config} className="h-full" />
+            <ConfigPanel config={config} simulationData={simulationData} className="h-full" />
           </div>
         </div>
 

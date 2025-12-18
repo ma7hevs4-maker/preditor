@@ -1,9 +1,11 @@
-import { SimulationConfig } from "@/hooks/useSimulation";
+import { SimulationConfig, SimulationRow } from "@/hooks/useSimulation";
 import { Settings, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DailySummaryDialog } from "./DailySummaryDialog";
 
 interface ConfigPanelProps {
   config: SimulationConfig;
+  simulationData?: SimulationRow[];
   className?: string;
 }
 
@@ -13,7 +15,7 @@ const turnos = [
   { id: "C", name: "Turno C", range: [16, 17, 18, 19, 20, 21, 22, 23], colorClass: "text-purple-400 bg-purple-500/10" },
 ];
 
-export const ConfigPanel = ({ config, className }: ConfigPanelProps) => {
+export const ConfigPanel = ({ config, simulationData = [], className }: ConfigPanelProps) => {
   return (
     <div className={cn("glass-card p-5 animate-slide-up", className)}>
       <h3 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
@@ -68,6 +70,8 @@ export const ConfigPanel = ({ config, className }: ConfigPanelProps) => {
               );
             })}
           </div>
+          
+          <DailySummaryDialog simulationData={simulationData} />
         </div>
       </div>
     </div>
