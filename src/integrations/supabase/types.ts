@@ -213,6 +213,83 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      weather_triggers: {
+        Row: {
+          active: boolean
+          base_id: string | null
+          condition_max: number | null
+          condition_min: number | null
+          created_at: string
+          description: string | null
+          id: string
+          impact_percent: number
+          name: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          base_id?: string | null
+          condition_max?: number | null
+          condition_min?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_percent: number
+          name: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          base_id?: string | null
+          condition_max?: number | null
+          condition_min?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_percent?: number
+          name?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weather_triggers_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

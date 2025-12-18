@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2 } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save } from "lucide-react";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
+import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
+import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -28,16 +37,50 @@ export const AdminConfigDialog = () => {
   
   const { data: bases, isLoading: basesLoading } = useBases();
   const { data: historicalData } = useHistoricalData(selectedBaseId);
+  const { data: systemSettings, isLoading: settingsLoading } = useSystemSettings();
+  const { data: weatherTriggers, isLoading: triggersLoading } = useAllWeatherTriggers();
+  
   const addBase = useAddBase();
   const updateHistoricalData = useUpdateHistoricalData();
+  const updateSystemSetting = useUpdateSystemSetting();
+  const addWeatherTrigger = useAddWeatherTrigger();
+  const updateWeatherTrigger = useUpdateWeatherTrigger();
+  const deleteWeatherTrigger = useDeleteWeatherTrigger();
 
   // New base form
   const [newBaseName, setNewBaseName] = useState("");
   const [newBaseLat, setNewBaseLat] = useState("");
   const [newBaseLon, setNewBaseLon] = useState("");
 
-  // Operator removal percentage (currently hardcoded at 40%)
-  const [operatorRemovalPercent, setOperatorRemovalPercent] = useState(40);
+  // Settings state
+  const [operatorRemovalPercent, setOperatorRemovalPercent] = useState("40");
+  const [btTarget, setBtTarget] = useState("70");
+  const [mtTarget, setMtTarget] = useState("10");
+
+  // New trigger form
+  const [showNewTriggerForm, setShowNewTriggerForm] = useState(false);
+  const [newTrigger, setNewTrigger] = useState({
+    name: "",
+    trigger_type: "precip",
+    condition_min: "",
+    condition_max: "",
+    impact_percent: "",
+    description: "",
+    base_id: null as string | null,
+  });
+
+  // Load settings from database
+  useEffect(() => {
+    if (systemSettings) {
+      const opRemoval = systemSettings.find(s => s.key === "operator_removal_percent");
+      const btTgt = systemSettings.find(s => s.key === "bt_target");
+      const mtTgt = systemSettings.find(s => s.key === "mt_target");
+      
+      if (opRemoval) setOperatorRemovalPercent(opRemoval.value);
+      if (btTgt) setBtTarget(btTgt.value);
+      if (mtTgt) setMtTarget(mtTgt.value);
+    }
+  }, [systemSettings]);
 
   const handlePasswordSubmit = () => {
     if (password === ADMIN_PASSWORD) {
@@ -89,17 +132,97 @@ export const AdminConfigDialog = () => {
     }
   };
 
-  // Weather triggers (hardcoded for now, could be moved to database)
-  const defaultTriggers = [
-    { name: "Chuva Fraca", condition: "precip >= 0.2 && precip < 1", impact: 15 },
-    { name: "Chuva Moderada", condition: "precip >= 1 && precip < 5", impact: 35 },
-    { name: "Chuva Forte", condition: "precip >= 5", impact: 60 },
-    { name: "Vento Moderado", condition: "wind >= 4 && wind < 6", impact: 10 },
-    { name: "Vento Forte", condition: "wind >= 6 && wind < 10", impact: 25 },
-    { name: "Vento Muito Forte", condition: "wind >= 10", impact: 50 },
-    { name: "Calor Extremo", condition: "temp >= 35", impact: 20 },
-    { name: "Frio Intenso", condition: "temp <= 10", impact: 10 },
-  ];
+  const handleSaveSettings = async () => {
+    try {
+      await Promise.all([
+        updateSystemSetting.mutateAsync({ key: "operator_removal_percent", value: operatorRemovalPercent }),
+        updateSystemSetting.mutateAsync({ key: "bt_target", value: btTarget }),
+        updateSystemSetting.mutateAsync({ key: "mt_target", value: mtTarget }),
+      ]);
+      toast.success("Configurações salvas com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar configurações");
+    }
+  };
+
+  const handleAddTrigger = async () => {
+    if (!newTrigger.name || !newTrigger.impact_percent) {
+      toast.error("Preencha nome e impacto do gatilho");
+      return;
+    }
+
+    try {
+      await addWeatherTrigger.mutateAsync({
+        name: newTrigger.name,
+        trigger_type: newTrigger.trigger_type,
+        condition_min: newTrigger.condition_min ? parseFloat(newTrigger.condition_min) : null,
+        condition_max: newTrigger.condition_max ? parseFloat(newTrigger.condition_max) : null,
+        impact_percent: parseFloat(newTrigger.impact_percent),
+        description: newTrigger.description || null,
+        base_id: newTrigger.base_id,
+        active: true,
+      });
+      toast.success("Gatilho adicionado com sucesso!");
+      setNewTrigger({
+        name: "",
+        trigger_type: "precip",
+        condition_min: "",
+        condition_max: "",
+        impact_percent: "",
+        description: "",
+        base_id: null,
+      });
+      setShowNewTriggerForm(false);
+    } catch (error) {
+      toast.error("Erro ao adicionar gatilho");
+    }
+  };
+
+  const handleDeleteTrigger = async (id: string) => {
+    try {
+      await deleteWeatherTrigger.mutateAsync(id);
+      toast.success("Gatilho removido!");
+    } catch (error) {
+      toast.error("Erro ao remover gatilho");
+    }
+  };
+
+  const getTriggerTypeLabel = (type: string) => {
+    switch (type) {
+      case "precip": return "Precipitação";
+      case "wind": return "Vento";
+      case "temp": return "Temperatura";
+      default: return type;
+    }
+  };
+
+  const formatCondition = (trigger: any) => {
+    const type = trigger.trigger_type;
+    const min = trigger.condition_min;
+    const max = trigger.condition_max;
+    
+    let unit = "";
+    switch (type) {
+      case "precip": unit = "mm"; break;
+      case "wind": unit = "m/s"; break;
+      case "temp": unit = "°C"; break;
+    }
+
+    if (min !== null && max !== null) {
+      return `${min} - ${max} ${unit}`;
+    } else if (min !== null) {
+      return `≥ ${min} ${unit}`;
+    } else if (max !== null) {
+      return `≤ ${max} ${unit}`;
+    }
+    return "-";
+  };
+
+  // Filter triggers by selected base
+  const filteredTriggers = weatherTriggers?.filter(t => {
+    if (!selectedBaseId) return t.base_id === null; // Show only defaults
+    return t.base_id === null || t.base_id === selectedBaseId;
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -406,13 +529,13 @@ export const AdminConfigDialog = () => {
               {/* TRIGGERS TAB */}
               <TabsContent value="triggers" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Selecione a Base (gatilhos podem variar por base)</Label>
+                  <Label>Filtrar por Base (gatilhos podem variar por base)</Label>
                   <select
                     value={selectedBaseId || ""}
                     onChange={(e) => setSelectedBaseId(e.target.value || null)}
                     className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-foreground"
                   >
-                    <option value="">Todos (padrão)</option>
+                    <option value="">Padrão (todas as bases)</option>
                     {bases?.map((base) => (
                       <option key={base.id} value={base.id}>{base.name}</option>
                     ))}
@@ -421,35 +544,157 @@ export const AdminConfigDialog = () => {
 
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-foreground">Gatilhos Climáticos</h4>
-                  <Button variant="outline" size="sm" className="gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => setShowNewTriggerForm(!showNewTriggerForm)}
+                  >
                     <Plus className="w-3 h-3" />
                     Novo Gatilho
                   </Button>
                 </div>
+
+                {showNewTriggerForm && (
+                  <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 space-y-3">
+                    <h5 className="font-medium text-foreground">Novo Gatilho</h5>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Nome</Label>
+                        <Input
+                          value={newTrigger.name}
+                          onChange={(e) => setNewTrigger(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Ex: Chuva Forte"
+                          className="bg-secondary border-border"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Tipo</Label>
+                        <Select
+                          value={newTrigger.trigger_type}
+                          onValueChange={(v) => setNewTrigger(prev => ({ ...prev, trigger_type: v }))}
+                        >
+                          <SelectTrigger className="bg-secondary border-border">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="precip">Precipitação (mm)</SelectItem>
+                            <SelectItem value="wind">Vento (m/s)</SelectItem>
+                            <SelectItem value="temp">Temperatura (°C)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Valor Mínimo (deixe vazio para ≤)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={newTrigger.condition_min}
+                          onChange={(e) => setNewTrigger(prev => ({ ...prev, condition_min: e.target.value }))}
+                          placeholder="Ex: 5"
+                          className="bg-secondary border-border"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Valor Máximo (deixe vazio para ≥)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={newTrigger.condition_max}
+                          onChange={(e) => setNewTrigger(prev => ({ ...prev, condition_max: e.target.value }))}
+                          placeholder="Ex: 10"
+                          className="bg-secondary border-border"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Impacto (%)</Label>
+                        <Input
+                          type="number"
+                          value={newTrigger.impact_percent}
+                          onChange={(e) => setNewTrigger(prev => ({ ...prev, impact_percent: e.target.value }))}
+                          placeholder="Ex: 35"
+                          className="bg-secondary border-border"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Base Específica (opcional)</Label>
+                        <Select
+                          value={newTrigger.base_id || "default"}
+                          onValueChange={(v) => setNewTrigger(prev => ({ ...prev, base_id: v === "default" ? null : v }))}
+                        >
+                          <SelectTrigger className="bg-secondary border-border">
+                            <SelectValue placeholder="Padrão (todas)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">Padrão (todas as bases)</SelectItem>
+                            {bases?.map((base) => (
+                              <SelectItem key={base.id} value={base.id}>{base.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Descrição</Label>
+                      <Input
+                        value={newTrigger.description}
+                        onChange={(e) => setNewTrigger(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Ex: Aumento de 35% nas ocorrências"
+                        className="bg-secondary border-border"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleAddTrigger} disabled={addWeatherTrigger.isPending} className="gap-1">
+                        <Save className="w-3 h-3" />
+                        Salvar
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowNewTriggerForm(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="border border-border rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50">
                       <tr>
                         <th className="text-left px-3 py-2 text-muted-foreground font-medium">Nome</th>
+                        <th className="text-left px-3 py-2 text-muted-foreground font-medium">Tipo</th>
                         <th className="text-left px-3 py-2 text-muted-foreground font-medium">Condição</th>
+                        <th className="text-left px-3 py-2 text-muted-foreground font-medium">Base</th>
                         <th className="text-right px-3 py-2 text-muted-foreground font-medium">Impacto</th>
                         <th className="text-right px-3 py-2 text-muted-foreground font-medium">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {defaultTriggers.map((trigger, index) => (
-                        <tr key={trigger.name} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                      {triggersLoading ? (
+                        <tr>
+                          <td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
+                            Carregando...
+                          </td>
+                        </tr>
+                      ) : filteredTriggers?.map((trigger, index) => (
+                        <tr key={trigger.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
                           <td className="px-3 py-2 text-foreground font-medium">{trigger.name}</td>
-                          <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{trigger.condition}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{getTriggerTypeLabel(trigger.trigger_type)}</td>
+                          <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{formatCondition(trigger)}</td>
+                          <td className="px-3 py-2 text-muted-foreground text-xs">
+                            {trigger.base_id ? bases?.find(b => b.id === trigger.base_id)?.name : "Padrão"}
+                          </td>
                           <td className="px-3 py-2 text-right">
-                            <span className="font-semibold text-warning">+{trigger.impact}%</span>
+                            <span className="font-semibold text-warning">+{trigger.impact_percent}%</span>
                           </td>
                           <td className="px-3 py-2 text-right">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                               <Pencil className="w-3 h-3" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 w-7 p-0 text-destructive"
+                              onClick={() => handleDeleteTrigger(trigger.id)}
+                            >
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </td>
@@ -465,60 +710,70 @@ export const AdminConfigDialog = () => {
                 <div className="border border-border rounded-lg p-4 space-y-4">
                   <h4 className="font-semibold text-foreground">Configurações Gerais</h4>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="operator-removal">
-                      Porcentagem de Retirada de Operador do Backlog Inicial
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="operator-removal"
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={operatorRemovalPercent}
-                        onChange={(e) => setOperatorRemovalPercent(parseInt(e.target.value) || 0)}
-                        className="w-24 bg-secondary border-border font-mono"
-                      />
-                      <span className="text-muted-foreground">%</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Porcentagem do backlog inicial que é removida na primeira hora da simulação 
-                      (representa incidentes que vão direto para operadores fora do sistema de equipes).
-                      Atualmente configurado em {operatorRemovalPercent}%.
-                    </p>
-                  </div>
-
-                  <div className="border-t border-border pt-4 space-y-2">
-                    <h5 className="font-medium text-foreground">Metas de Backlog Estável</h5>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Meta BT (incidentes)</Label>
-                        <Input
-                          type="number"
-                          defaultValue={70}
-                          className="bg-secondary border-border font-mono"
-                          disabled
-                        />
+                  {settingsLoading ? (
+                    <div className="text-center py-4 text-muted-foreground">Carregando...</div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="operator-removal">
+                          Porcentagem de Retirada de Operador do Backlog Inicial
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="operator-removal"
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={operatorRemovalPercent}
+                            onChange={(e) => setOperatorRemovalPercent(e.target.value)}
+                            className="w-24 bg-secondary border-border font-mono"
+                          />
+                          <span className="text-muted-foreground">%</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Porcentagem do backlog inicial que é removida na primeira hora da simulação 
+                          (representa incidentes que vão direto para operadores fora do sistema de equipes).
+                        </p>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Meta MT (incidentes)</Label>
-                        <Input
-                          type="number"
-                          defaultValue={10}
-                          className="bg-secondary border-border font-mono"
-                          disabled
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Metas de backlog estável ao final do horizonte de simulação. 
-                      Usado para calcular equipes adicionais necessárias.
-                    </p>
-                  </div>
 
-                  <Button className="w-full" onClick={() => toast.success("Configurações salvas!")}>
-                    Salvar Configurações
-                  </Button>
+                      <div className="border-t border-border pt-4 space-y-2">
+                        <h5 className="font-medium text-foreground">Metas de Backlog Estável</h5>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Meta BT (incidentes)</Label>
+                            <Input
+                              type="number"
+                              value={btTarget}
+                              onChange={(e) => setBtTarget(e.target.value)}
+                              className="bg-secondary border-border font-mono"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Meta MT (incidentes)</Label>
+                            <Input
+                              type="number"
+                              value={mtTarget}
+                              onChange={(e) => setMtTarget(e.target.value)}
+                              className="bg-secondary border-border font-mono"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Metas de backlog estável ao final do horizonte de simulação. 
+                          Usado para calcular equipes adicionais necessárias.
+                        </p>
+                      </div>
+
+                      <Button 
+                        className="w-full gap-2" 
+                        onClick={handleSaveSettings}
+                        disabled={updateSystemSetting.isPending}
+                      >
+                        <Save className="w-4 h-4" />
+                        Salvar Configurações
+                      </Button>
+                    </>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
