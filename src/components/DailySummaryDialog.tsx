@@ -26,10 +26,12 @@ interface DaySummary {
   totalRetEqBt: number;
   totalRetEqMt: number;
   triggersActive: number;
+  avgUpliftBt: number;
+  avgUpliftMt: number;
   totalEntradaAdicionalBt: number;
   totalEntradaAdicionalMt: number;
-  avgProdBt: number;
-  avgProdMt: number;
+  retPerHourBt: number;
+  retPerHourMt: number;
   hoursInDay: number;
 }
 
@@ -51,6 +53,10 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
     dayGroups.forEach((rows, day) => {
       const dayLabel = day === 0 ? "Hoje" : day === 1 ? "Amanhã" : `Dia ${day + 1}`;
       
+      const hoursWithTrigger = rows.filter((r) => r.uplift_bt_pct > 0 || r.uplift_mt_pct > 0);
+      const totalRetEqBt = rows.reduce((sum, r) => sum + r.cap_bt_h, 0);
+      const totalRetEqMt = rows.reduce((sum, r) => sum + r.cap_mt_h, 0);
+      
       const summary: DaySummary = {
         day,
         dayLabel,
@@ -58,17 +64,23 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
         totalEntradaMt: Math.round(rows.reduce((sum, r) => sum + r.entrada_mt_adj, 0)),
         totalRetOpBt: Math.round(rows.reduce((sum, r) => sum + r.ret_op_bt, 0)),
         totalRetOpMt: Math.round(rows.reduce((sum, r) => sum + r.ret_op_mt, 0)),
-        totalRetEqBt: Math.round(rows.reduce((sum, r) => sum + r.cap_bt_h, 0)),
-        totalRetEqMt: Math.round(rows.reduce((sum, r) => sum + r.cap_mt_h, 0)),
-        triggersActive: rows.filter((r) => r.uplift_bt_pct > 0 || r.uplift_mt_pct > 0).length,
+        totalRetEqBt: Math.round(totalRetEqBt),
+        totalRetEqMt: Math.round(totalRetEqMt),
+        triggersActive: hoursWithTrigger.length,
+        avgUpliftBt: hoursWithTrigger.length > 0 
+          ? hoursWithTrigger.reduce((sum, r) => sum + r.uplift_bt_pct, 0) / hoursWithTrigger.length 
+          : 0,
+        avgUpliftMt: hoursWithTrigger.length > 0 
+          ? hoursWithTrigger.reduce((sum, r) => sum + r.uplift_mt_pct, 0) / hoursWithTrigger.length 
+          : 0,
         totalEntradaAdicionalBt: Math.round(
           rows.reduce((sum, r) => sum + (r.entrada_bt_adj - r.entrada_bt_base), 0)
         ),
         totalEntradaAdicionalMt: Math.round(
           rows.reduce((sum, r) => sum + (r.entrada_mt_adj - r.entrada_mt_base), 0)
         ),
-        avgProdBt: rows.reduce((sum, r) => sum + r.bt_productivity, 0) / rows.length,
-        avgProdMt: rows.reduce((sum, r) => sum + r.mt_productivity, 0) / rows.length,
+        retPerHourBt: rows.length > 0 ? totalRetEqBt / rows.length : 0,
+        retPerHourMt: rows.length > 0 ? totalRetEqMt / rows.length : 0,
         hoursInDay: rows.length,
       };
       
@@ -187,20 +199,31 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                     </div>
                   </div>
 
-                  {/* Gatilhos Ativos */}
+                  {/* Gatilhos */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">
                       <CloudRain className="w-3 h-3" />
-                      Gatilhos Clima
+                      Gatilhos
                     </div>
                     <div className="bg-amber-500/10 rounded p-2">
-                      <p className="text-xs text-muted-foreground">Horas com gatilho</p>
-                      <p className={cn(
-                        "font-mono font-semibold",
-                        summary.triggersActive > 0 ? "text-amber-400" : "text-muted-foreground"
-                      )}>
-                        {summary.triggersActive}h
-                      </p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">Horas</p>
+                        <p className={cn(
+                          "font-mono font-semibold text-sm",
+                          summary.triggersActive > 0 ? "text-amber-400" : "text-muted-foreground"
+                        )}>
+                          {summary.triggersActive}h
+                        </p>
+                      </div>
+                      {summary.triggersActive > 0 && (
+                        <div className="mt-1 pt-1 border-t border-amber-500/20">
+                          <p className="text-xs text-muted-foreground">Uplift médio</p>
+                          <div className="flex gap-2 text-xs font-mono">
+                            <span className="text-primary">BT: +{summary.avgUpliftBt.toFixed(0)}%</span>
+                            <span className="text-purple-400">MT: +{summary.avgUpliftMt.toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -232,23 +255,23 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                     </div>
                   </div>
 
-                  {/* Produtividade Média */}
+                  {/* Retirada Média por Hora */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">
                       <Zap className="w-3 h-3" />
-                      Prod. Média (inc/eq/h)
+                      Ret. Equipe/h
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-secondary rounded p-2">
                         <p className="text-xs text-muted-foreground">BT</p>
                         <p className="font-mono font-semibold text-foreground">
-                          {summary.avgProdBt.toFixed(2)}
+                          {summary.retPerHourBt.toFixed(1)}
                         </p>
                       </div>
                       <div className="bg-secondary rounded p-2">
                         <p className="text-xs text-muted-foreground">MT</p>
                         <p className="font-mono font-semibold text-foreground">
-                          {summary.avgProdMt.toFixed(2)}
+                          {summary.retPerHourMt.toFixed(1)}
                         </p>
                       </div>
                     </div>
