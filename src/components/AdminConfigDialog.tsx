@@ -531,8 +531,8 @@ export const AdminConfigDialog = () => {
                           <thead className="bg-muted/50">
                             <tr>
                               <th className="text-left px-3 py-2 text-muted-foreground font-medium">Nome</th>
-                              <th className="text-center px-3 py-2 text-muted-foreground font-medium">Equipes (24h)</th>
-                              <th className="text-center px-3 py-2 text-muted-foreground font-medium">Perdas (24h)</th>
+                              <th className="text-center px-3 py-2 text-muted-foreground font-medium">Equipes (média)</th>
+                              <th className="text-center px-3 py-2 text-muted-foreground font-medium">Perdas (média)</th>
                               <th className="text-right px-3 py-2 text-muted-foreground font-medium">Ações</th>
                             </tr>
                           </thead>
@@ -543,10 +543,10 @@ export const AdminConfigDialog = () => {
                                 <tr key={structure.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
                                   <td className="px-3 py-2 text-foreground font-medium">{structure.name}</td>
                                   <td className="px-3 py-2 text-center text-muted-foreground font-mono">
-                                    {totals.totalTeams} eq-h
+                                    {(totals.totalTeams / 24).toFixed(1)} eq/h
                                   </td>
                                   <td className="px-3 py-2 text-center text-orange-400 font-mono">
-                                    {totals.totalLoss} eq-h
+                                    {(totals.totalLoss / 24).toFixed(1)} eq/h
                                   </td>
                                   <td className="px-3 py-2 text-right">
                                     <Button 
