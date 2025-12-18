@@ -33,6 +33,10 @@ const Index = () => {
     mtInitialBacklog: 0,
     teamsPerHour: [...defaultTeamsPerHour],
     lossTeamsPerHour: [...defaultLossTeamsPerHour],
+    teamsPerHourDay2: [...defaultTeamsPerHour],
+    lossTeamsPerHourDay2: [...defaultLossTeamsPerHour],
+    teamsPerHourDay3: [...defaultTeamsPerHour],
+    lossTeamsPerHourDay3: [...defaultLossTeamsPerHour],
     horizonHours: 24,
   });
   const [simulationKey, setSimulationKey] = useState(0);

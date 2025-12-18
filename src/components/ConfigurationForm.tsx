@@ -18,7 +18,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Settings, Play, RotateCcw, Users } from "lucide-react";
+import { Settings, Play, RotateCcw, Users, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBases } from "@/hooks/useBases";
 import { SimulationConfig } from "@/hooks/useSimulation";
@@ -64,16 +64,36 @@ export const ConfigurationForm = ({
     setLocalConfig((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleTeamHourChange = (hour: number, value: number) => {
-    const newTeams = [...localConfig.teamsPerHour];
+  const handleTeamHourChange = (hour: number, value: number, day: number = 1) => {
+    const fieldName = day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3";
+    const currentTeams = localConfig[fieldName] || [...defaultTeamsPerHour];
+    const newTeams = [...currentTeams];
     newTeams[hour] = Math.max(0, Math.min(200, value));
-    setLocalConfig((prev) => ({ ...prev, teamsPerHour: newTeams }));
+    setLocalConfig((prev) => ({ ...prev, [fieldName]: newTeams }));
   };
 
-  const handleLossTeamHourChange = (hour: number, value: number) => {
-    const newTeams = [...(localConfig.lossTeamsPerHour || defaultLossTeamsPerHour)];
+  const handleLossTeamHourChange = (hour: number, value: number, day: number = 1) => {
+    const fieldName = day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3";
+    const currentTeams = localConfig[fieldName] || [...defaultLossTeamsPerHour];
+    const newTeams = [...currentTeams];
     newTeams[hour] = Math.max(0, Math.min(200, value));
-    setLocalConfig((prev) => ({ ...prev, lossTeamsPerHour: newTeams }));
+    setLocalConfig((prev) => ({ ...prev, [fieldName]: newTeams }));
+  };
+
+  const copyFromDay1 = (day: number) => {
+    if (day === 2) {
+      setLocalConfig((prev) => ({
+        ...prev,
+        teamsPerHourDay2: [...prev.teamsPerHour],
+        lossTeamsPerHourDay2: [...(prev.lossTeamsPerHour || defaultLossTeamsPerHour)],
+      }));
+    } else if (day === 3) {
+      setLocalConfig((prev) => ({
+        ...prev,
+        teamsPerHourDay3: [...prev.teamsPerHour],
+        lossTeamsPerHourDay3: [...(prev.lossTeamsPerHour || defaultLossTeamsPerHour)],
+      }));
+    }
   };
 
   const handleApply = () => {
@@ -87,6 +107,10 @@ export const ConfigurationForm = ({
       ...config,
       teamsPerHour: [...defaultTeamsPerHour],
       lossTeamsPerHour: [...defaultLossTeamsPerHour],
+      teamsPerHourDay2: [...defaultTeamsPerHour],
+      lossTeamsPerHourDay2: [...defaultLossTeamsPerHour],
+      teamsPerHourDay3: [...defaultTeamsPerHour],
+      lossTeamsPerHourDay3: [...defaultLossTeamsPerHour],
       horizonHours: 24,
       btInitialBacklog: 0,
       mtInitialBacklog: 0,
@@ -94,6 +118,10 @@ export const ConfigurationForm = ({
   };
 
   const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
+
+  // Determine which days to show based on horizon
+  const showDay2 = localConfig.horizonHours > 24;
+  const showDay3 = localConfig.horizonHours > 48;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -195,12 +223,12 @@ export const ConfigurationForm = ({
             </div>
           </div>
 
-          {/* Equipes por Turno */}
+          {/* Day 1 - Equipes por Turno */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Equipes por Hora (por Turno)
+                Dia 1 - Equipes por Hora
               </h4>
             </div>
 
@@ -230,7 +258,7 @@ export const ConfigurationForm = ({
                           min={0}
                           max={200}
                           value={localConfig.teamsPerHour[hour]}
-                          onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0, 1)}
                           onFocus={(e) => e.target.select()}
                           className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
@@ -242,12 +270,12 @@ export const ConfigurationForm = ({
             })}
           </div>
 
-          {/* Equipes de Perdas (só BT) */}
+          {/* Day 1 - Equipes de Perdas (só BT) */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-orange-400" />
               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                Dia 1 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
               </h4>
             </div>
 
@@ -278,7 +306,7 @@ export const ConfigurationForm = ({
                           min={0}
                           max={200}
                           value={lossTeams[hour]}
-                          onChange={(e) => handleLossTeamHourChange(hour, parseInt(e.target.value) || 0)}
+                          onChange={(e) => handleLossTeamHourChange(hour, parseInt(e.target.value) || 0, 1)}
                           onFocus={(e) => e.target.select()}
                           className="bg-orange-500/10 border-orange-500/30 font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
@@ -289,6 +317,230 @@ export const ConfigurationForm = ({
               );
             })}
           </div>
+
+          {/* Day 2 - Equipes por Turno */}
+          {showDay2 && (
+            <>
+              <div className="space-y-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Dia 2 - Equipes por Hora
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyFromDay1(2)}
+                    className="gap-1 text-xs"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copiar do Dia 1
+                  </Button>
+                </div>
+
+                {turnos.map((turno) => {
+                  const teams = localConfig.teamsPerHourDay2 || defaultTeamsPerHour;
+                  const totalTurno = turno.range.reduce((sum, h) => sum + teams[h], 0);
+                  
+                  return (
+                    <div key={`day2-${turno.id}`} className={cn("space-y-2 p-3 rounded-lg border bg-secondary/20", turno.colorClass)}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("turno-badge", `turno-${turno.id.toLowerCase()}`)}>
+                            {turno.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                        </div>
+                        <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-8 gap-1">
+                        {turno.range.map((hour) => (
+                          <div key={hour} className="space-y-1">
+                            <Label className="text-xs text-center block text-muted-foreground">
+                              {hour.toString().padStart(2, "0")}h
+                            </Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={200}
+                              value={teams[hour]}
+                              onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0, 2)}
+                              onFocus={(e) => e.target.select()}
+                              className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Day 2 - Equipes de Perdas (só BT) */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-orange-400" />
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Dia 2 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                  </h4>
+                </div>
+
+                {turnos.map((turno) => {
+                  const lossTeams = localConfig.lossTeamsPerHourDay2 || defaultLossTeamsPerHour;
+                  const totalTurno = turno.range.reduce((sum, h) => sum + lossTeams[h], 0);
+                  
+                  return (
+                    <div key={`loss-day2-${turno.id}`} className={cn("space-y-2 p-3 rounded-lg border bg-orange-500/10 border-orange-500/30", turno.colorClass.replace(/text-\w+-400/, 'text-orange-400').replace(/border-\w+-500\/30/, ''))}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("turno-badge bg-orange-500/20 text-orange-400")}>
+                            {turno.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                        </div>
+                        <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-8 gap-1">
+                        {turno.range.map((hour) => (
+                          <div key={hour} className="space-y-1">
+                            <Label className="text-xs text-center block text-muted-foreground">
+                              {hour.toString().padStart(2, "0")}h
+                            </Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={200}
+                              value={lossTeams[hour]}
+                              onChange={(e) => handleLossTeamHourChange(hour, parseInt(e.target.value) || 0, 2)}
+                              onFocus={(e) => e.target.select()}
+                              className="bg-orange-500/10 border-orange-500/30 font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {/* Day 3 - Equipes por Turno */}
+          {showDay3 && (
+            <>
+              <div className="space-y-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-muted-foreground" />
+                    <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      Dia 3 - Equipes por Hora
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyFromDay1(3)}
+                    className="gap-1 text-xs"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copiar do Dia 1
+                  </Button>
+                </div>
+
+                {turnos.map((turno) => {
+                  const teams = localConfig.teamsPerHourDay3 || defaultTeamsPerHour;
+                  const totalTurno = turno.range.reduce((sum, h) => sum + teams[h], 0);
+                  
+                  return (
+                    <div key={`day3-${turno.id}`} className={cn("space-y-2 p-3 rounded-lg border bg-secondary/20", turno.colorClass)}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("turno-badge", `turno-${turno.id.toLowerCase()}`)}>
+                            {turno.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                        </div>
+                        <span className="text-xs font-mono">Total: {totalTurno} eq-h</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-8 gap-1">
+                        {turno.range.map((hour) => (
+                          <div key={hour} className="space-y-1">
+                            <Label className="text-xs text-center block text-muted-foreground">
+                              {hour.toString().padStart(2, "0")}h
+                            </Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={200}
+                              value={teams[hour]}
+                              onChange={(e) => handleTeamHourChange(hour, parseInt(e.target.value) || 0, 3)}
+                              onFocus={(e) => e.target.select()}
+                              className="bg-secondary border-border font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Day 3 - Equipes de Perdas (só BT) */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-orange-400" />
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Dia 3 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                  </h4>
+                </div>
+
+                {turnos.map((turno) => {
+                  const lossTeams = localConfig.lossTeamsPerHourDay3 || defaultLossTeamsPerHour;
+                  const totalTurno = turno.range.reduce((sum, h) => sum + lossTeams[h], 0);
+                  
+                  return (
+                    <div key={`loss-day3-${turno.id}`} className={cn("space-y-2 p-3 rounded-lg border bg-orange-500/10 border-orange-500/30", turno.colorClass.replace(/text-\w+-400/, 'text-orange-400').replace(/border-\w+-500\/30/, ''))}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("turno-badge bg-orange-500/20 text-orange-400")}>
+                            {turno.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{turno.hours}</span>
+                        </div>
+                        <span className="text-xs font-mono text-orange-400">Total: {totalTurno} eq-h</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-8 gap-1">
+                        {turno.range.map((hour) => (
+                          <div key={hour} className="space-y-1">
+                            <Label className="text-xs text-center block text-muted-foreground">
+                              {hour.toString().padStart(2, "0")}h
+                            </Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={200}
+                              value={lossTeams[hour]}
+                              onChange={(e) => handleLossTeamHourChange(hour, parseInt(e.target.value) || 0, 3)}
+                              onFocus={(e) => e.target.select()}
+                              className="bg-orange-500/10 border-orange-500/30 font-mono text-center h-8 px-1 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t border-border">
