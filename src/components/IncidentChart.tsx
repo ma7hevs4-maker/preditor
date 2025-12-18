@@ -22,6 +22,7 @@ type ViewMode = "BT" | "MT" | "BOTH";
 
 export const IncidentChart = ({ data }: IncidentChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>("BOTH");
+  const [showSaldo, setShowSaldo] = useState(true);
 
   const chartData = data.map((row) => ({
     hora: row.dia > 0 
@@ -52,31 +53,43 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
     <div className="glass-card p-5 animate-slide-up h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Evolução de Incidentes</h3>
-        <ToggleGroup 
-          type="single" 
-          value={viewMode} 
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-          className="bg-muted/30 p-1 rounded-lg"
-        >
-          <ToggleGroupItem 
-            value="BOTH" 
-            className="text-xs px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSaldo(!showSaldo)}
+            className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
+              showSaldo 
+                ? "bg-primary/20 border-primary text-primary" 
+                : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/50"
+            }`}
           >
-            Ambos
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="BT" 
-            className="text-xs px-3 data-[state=on]:bg-cyan-500 data-[state=on]:text-white"
+            Saldo
+          </button>
+          <ToggleGroup 
+            type="single" 
+            value={viewMode} 
+            onValueChange={(value) => value && setViewMode(value as ViewMode)}
+            className="bg-muted/30 p-1 rounded-lg"
           >
-            BT
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="MT" 
-            className="text-xs px-3 data-[state=on]:bg-purple-500 data-[state=on]:text-white"
-          >
-            MT
-          </ToggleGroupItem>
-        </ToggleGroup>
+            <ToggleGroupItem 
+              value="BOTH" 
+              className="text-xs px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+            >
+              Ambos
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="BT" 
+              className="text-xs px-3 data-[state=on]:bg-cyan-500 data-[state=on]:text-white"
+            >
+              BT
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="MT" 
+              className="text-xs px-3 data-[state=on]:bg-purple-500 data-[state=on]:text-white"
+            >
+              MT
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
 
       <div className="h-[300px] w-full">
@@ -124,14 +137,16 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
             />
             {showBT && (
               <>
-                <Area
-                  type="monotone"
-                  dataKey="Saldo BT"
-                  stroke={btColor}
-                  fillOpacity={1}
-                  fill="url(#colorSaldoBT)"
-                  strokeWidth={2}
-                />
+                {showSaldo && (
+                  <Area
+                    type="monotone"
+                    dataKey="Saldo BT"
+                    stroke={btColor}
+                    fillOpacity={1}
+                    fill="url(#colorSaldoBT)"
+                    strokeWidth={2}
+                  />
+                )}
                 <Line
                   type="monotone"
                   dataKey="Entrada BT"
@@ -159,14 +174,16 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
             )}
             {showMT && (
               <>
-                <Area
-                  type="monotone"
-                  dataKey="Saldo MT"
-                  stroke={mtColor}
-                  fillOpacity={1}
-                  fill="url(#colorSaldoMT)"
-                  strokeWidth={2}
-                />
+                {showSaldo && (
+                  <Area
+                    type="monotone"
+                    dataKey="Saldo MT"
+                    stroke={mtColor}
+                    fillOpacity={1}
+                    fill="url(#colorSaldoMT)"
+                    strokeWidth={2}
+                  />
+                )}
                 <Line
                   type="monotone"
                   dataKey="Entrada MT"
