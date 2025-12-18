@@ -100,6 +100,16 @@ const Index = () => {
     );
   }
 
+  // Check if simulation has meaningful input (backlog or teams configured)
+  const hasBacklog = config.btInitialBacklog > 0 || config.mtInitialBacklog > 0;
+  const hasTeams = config.teamsPerHour.some(t => t > 0) || 
+                   config.lossTeamsPerHour.some(t => t > 0) ||
+                   config.teamsPerHourDay2.some(t => t > 0) ||
+                   config.lossTeamsPerHourDay2.some(t => t > 0) ||
+                   config.teamsPerHourDay3.some(t => t > 0) ||
+                   config.lossTeamsPerHourDay3.some(t => t > 0);
+  const hasSimulationInput = hasBacklog || hasTeams;
+
   // Get current data for KPIs (first row or defaults)
   const currentData = simulationData[0] || {
     incidentes_bt_saldo: 0,
@@ -111,8 +121,10 @@ const Index = () => {
     temp_c: 25,
   };
 
-  // Calculate totals
-  const totalBacklog = currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo;
+  // Calculate totals - show 0 if no meaningful simulation input
+  const totalBacklog = hasSimulationInput ? (currentData.incidentes_bt_saldo + currentData.incidentes_mt_saldo) : 0;
+  const displayBtSaldo = hasSimulationInput ? currentData.incidentes_bt_saldo : 0;
+  const displayMtSaldo = hasSimulationInput ? currentData.incidentes_mt_saldo : 0;
   
   // Equipes adicionais baseado no saldo FINAL vs meta
   const TARGET_BT = 70;
@@ -120,8 +132,8 @@ const Index = () => {
   const finalData = simulationData[simulationData.length - 1];
   
   // Calcula gap TOTAL do saldo final em relação às metas
-  const gapBt = finalData ? Math.max(0, finalData.incidentes_bt_saldo - TARGET_BT) : 0;
-  const gapMt = finalData ? Math.max(0, finalData.incidentes_mt_saldo - TARGET_MT) : 0;
+  const gapBt = (finalData && hasSimulationInput) ? Math.max(0, finalData.incidentes_bt_saldo - TARGET_BT) : 0;
+  const gapMt = (finalData && hasSimulationInput) ? Math.max(0, finalData.incidentes_mt_saldo - TARGET_MT) : 0;
   const totalGap = gapBt + gapMt;
   
   // Calcula capacidade média real usando dados históricos
@@ -137,7 +149,7 @@ const Index = () => {
     : (avgBtProd / 8);
   
   // Equipes adicionais por hora = gap total / (horas * capacidade ponderada)
-  const avgEquipesAddPerHour = totalGap > 0 && config.horizonHours > 0
+  const avgEquipesAddPerHour = (totalGap > 0 && config.horizonHours > 0 && hasSimulationInput)
     ? Math.ceil(totalGap / (config.horizonHours * weightedCap)) 
     : 0;
 
@@ -165,26 +177,26 @@ const Index = () => {
           />
           <KPICard
             title="Incidentes BT"
-            value={currentData.incidentes_bt_saldo}
+            value={displayBtSaldo}
             subtitle="Saldo atual previsto"
             icon={Zap}
             variant={
-              currentData.incidentes_bt_saldo > 150
+              displayBtSaldo > 150
                 ? "destructive"
-                : currentData.incidentes_bt_saldo > 70
+                : displayBtSaldo > 70
                 ? "warning"
                 : "success"
             }
           />
           <KPICard
             title="Incidentes MT"
-            value={currentData.incidentes_mt_saldo}
+            value={displayMtSaldo}
             subtitle="Saldo atual previsto"
             icon={TrendingDown}
             variant={
-              currentData.incidentes_mt_saldo > 15
+              displayMtSaldo > 15
                 ? "destructive"
-                : currentData.incidentes_mt_saldo > 10
+                : displayMtSaldo > 10
                 ? "warning"
                 : "success"
             }
