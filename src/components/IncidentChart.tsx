@@ -24,30 +24,50 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>("BOTH");
   const [showSaldo, setShowSaldo] = useState(true);
 
-  const chartData = data.map((row) => ({
-    hora: row.dia > 0 
-      ? `D${row.dia + 1} ${String(row.hora).padStart(2, "0")}h` 
-      : `${String(row.hora).padStart(2, "0")}h`,
-    "Saldo BT": row.incidentes_bt_saldo,
-    "Saldo MT": row.incidentes_mt_saldo,
-    "Entrada BT": row.entrada_bt_adj,
-    "Entrada MT": row.entrada_mt_adj,
-    "Retirada BT": Math.round(row.ret_op_bt + row.cap_bt_h),
-    "Retirada MT": Math.round(row.ret_op_mt + row.cap_mt_h),
-    // Entrada base (sem impacto clima) - só mostra se houver uplift
-    "Entrada BT Base": row.uplift_bt_pct > 0 ? row.entrada_bt_base : null,
-    "Entrada MT Base": row.uplift_mt_pct > 0 ? row.entrada_mt_base : null,
-  }));
+  const chartData = data.map((row) => {
+    const entradaBT = row.entrada_bt_adj;
+    const entradaMT = row.entrada_mt_adj;
+    const retiradaBT = Math.round(row.ret_op_bt + row.cap_bt_h);
+    const retiradaMT = Math.round(row.ret_op_mt + row.cap_mt_h);
+    const entradaBTBase = row.uplift_bt_pct > 0 ? row.entrada_bt_base : null;
+    const entradaMTBase = row.uplift_mt_pct > 0 ? row.entrada_mt_base : null;
+    
+    return {
+      hora: row.dia > 0 
+        ? `D${row.dia + 1} ${String(row.hora).padStart(2, "0")}h` 
+        : `${String(row.hora).padStart(2, "0")}h`,
+      // Valores individuais
+      "Saldo BT": row.incidentes_bt_saldo,
+      "Saldo MT": row.incidentes_mt_saldo,
+      "Entrada BT": entradaBT,
+      "Entrada MT": entradaMT,
+      "Retirada BT": retiradaBT,
+      "Retirada MT": retiradaMT,
+      "Entrada BT Base": entradaBTBase,
+      "Entrada MT Base": entradaMTBase,
+      // Valores combinados (para modo "Ambos")
+      "Saldo Total": row.incidentes_bt_saldo + row.incidentes_mt_saldo,
+      "Entrada Total": Math.round(entradaBT + entradaMT),
+      "Retirada Total": retiradaBT + retiradaMT,
+      "Entrada Base": (entradaBTBase !== null || entradaMTBase !== null) 
+        ? Math.round((entradaBTBase ?? entradaBT) + (entradaMTBase ?? entradaMT))
+        : null,
+    };
+  });
 
   const btColor = "hsl(190, 95%, 50%)";
   const mtColor = "hsl(280, 70%, 60%)";
+  const combinedColor = "hsl(220, 80%, 60%)";
   const btEntradaColor = "hsl(45, 93%, 47%)";
   const mtEntradaColor = "hsl(340, 80%, 55%)";
+  const combinedEntradaColor = "hsl(35, 90%, 50%)";
   const btRetiradaColor = "hsl(120, 60%, 45%)";
   const mtRetiradaColor = "hsl(160, 60%, 50%)";
+  const combinedRetiradaColor = "hsl(140, 65%, 45%)";
 
-  const showBT = viewMode === "BT" || viewMode === "BOTH";
-  const showMT = viewMode === "MT" || viewMode === "BOTH";
+  const showBT = viewMode === "BT";
+  const showMT = viewMode === "MT";
+  const showCombined = viewMode === "BOTH";
 
   return (
     <div className="glass-card p-5 animate-slide-up h-full">
@@ -104,6 +124,10 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
                 <stop offset="5%" stopColor={mtColor} stopOpacity={0.3} />
                 <stop offset="95%" stopColor={mtColor} stopOpacity={0} />
               </linearGradient>
+              <linearGradient id="colorSaldoCombined" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={combinedColor} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={combinedColor} stopOpacity={0} />
+              </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 20%)" />
             <XAxis
@@ -135,6 +159,45 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
                 <span style={{ color: "hsl(215, 20%, 55%)" }}>{value}</span>
               )}
             />
+            {/* Modo Combinado (Ambos) - 3 linhas com soma */}
+            {showCombined && (
+              <>
+                {showSaldo && (
+                  <Area
+                    type="monotone"
+                    dataKey="Saldo Total"
+                    stroke={combinedColor}
+                    fillOpacity={1}
+                    fill="url(#colorSaldoCombined)"
+                    strokeWidth={2}
+                  />
+                )}
+                <Line
+                  type="monotone"
+                  dataKey="Entrada Total"
+                  stroke={combinedEntradaColor}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Entrada Base"
+                  stroke={combinedEntradaColor}
+                  strokeWidth={1.5}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  connectNulls={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Retirada Total"
+                  stroke={combinedRetiradaColor}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </>
+            )}
+            {/* Modo BT - linhas individuais */}
             {showBT && (
               <>
                 {showSaldo && (
@@ -172,6 +235,7 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
                 />
               </>
             )}
+            {/* Modo MT - linhas individuais */}
             {showMT && (
               <>
                 {showSaldo && (
