@@ -1,9 +1,12 @@
-import { Cloud, MapPin, Zap, Clock } from "lucide-react";
+import { Cloud, MapPin, Zap, Clock, Sun, Moon } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
+import { useTheme } from "@/hooks/useTheme";
+import { Button } from "@/components/ui/button";
+
 interface HeaderProps {
   config: SimulationConfig;
   selectedBase: Base | undefined;
@@ -14,6 +17,7 @@ interface HeaderProps {
 
 export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weatherStatus = "success" }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -76,6 +80,20 @@ export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weat
           />
 
           <AdminConfigDialog />
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleTheme}
+            className="bg-secondary/50 border-border hover:bg-secondary"
+            title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </Button>
         </div>
       </div>
     </header>
