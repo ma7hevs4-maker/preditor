@@ -1,4 +1,4 @@
-import { Cloud, MapPin, Zap, Clock, Sun, Moon } from "lucide-react";
+import { Cloud, MapPin, Zap, Clock, Sun, Moon, CloudOff } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { useEffect, useState } from "react";
@@ -17,9 +17,11 @@ interface HeaderProps {
   weatherStatus?: "loading" | "success" | "error";
   weatherProvider?: WeatherProvider;
   onWeatherProviderChange?: (provider: WeatherProvider) => void;
+  weatherImpactEnabled?: boolean;
+  onWeatherImpactChange?: (enabled: boolean) => void;
 }
 
-export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weatherStatus = "success", weatherProvider = "openmeteo", onWeatherProviderChange }: HeaderProps) => {
+export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weatherStatus = "success", weatherProvider = "openmeteo", onWeatherProviderChange, weatherImpactEnabled = true, onWeatherImpactChange }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { theme, toggleTheme } = useTheme();
 
@@ -60,6 +62,20 @@ export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weat
               weatherStatus === "error" ? "bg-destructive" : "bg-success"
             }`} />
           </div>
+
+          {/* Weather Impact Toggle */}
+          {onWeatherImpactChange && (
+            <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-lg">
+              <CloudOff className={`w-4 h-4 transition-colors ${!weatherImpactEnabled ? "text-primary" : "text-muted-foreground"}`} />
+              <Switch
+                checked={weatherImpactEnabled}
+                onCheckedChange={onWeatherImpactChange}
+                className="data-[state=checked]:bg-primary"
+              />
+              <Cloud className={`w-4 h-4 transition-colors ${weatherImpactEnabled ? "text-primary" : "text-muted-foreground"}`} />
+              <span className="text-xs font-medium text-muted-foreground">Impacto</span>
+            </div>
+          )}
 
           {/* Weather Provider Switch */}
           {onWeatherProviderChange && (
