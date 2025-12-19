@@ -14,6 +14,7 @@ import { useHistoricalData } from "@/hooks/useHistoricalData";
 import { useWeather } from "@/hooks/useWeather";
 import { useSimulation, SimulationConfig } from "@/hooks/useSimulation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 
 const defaultTeamsPerHour = [
   0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
@@ -62,6 +63,9 @@ const Index = () => {
   // Fetch historical data for selected base
   const { data: historicalData, isLoading: historicalLoading } = useHistoricalData(config.baseId);
 
+  // Weather provider state
+  const { provider: weatherProvider, setProvider: setWeatherProvider } = useWeatherProvider();
+
   // Fetch weather forecast
   const { 
     data: weatherData, 
@@ -70,7 +74,8 @@ const Index = () => {
   } = useWeather(
     selectedBase?.lat || null, 
     selectedBase?.lon || null, 
-    config.horizonHours
+    config.horizonHours,
+    weatherProvider
   );
 
   // Run simulation
@@ -176,6 +181,8 @@ const Index = () => {
           onConfigChange={handleConfigChange}
           onCalculate={handleCalculate}
           weatherStatus={weatherStatus}
+          weatherProvider={weatherProvider}
+          onWeatherProviderChange={setWeatherProvider}
         />
 
         {/* KPI Cards */}
