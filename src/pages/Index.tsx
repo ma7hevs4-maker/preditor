@@ -15,6 +15,7 @@ import { useWeather } from "@/hooks/useWeather";
 import { useSimulation, SimulationConfig } from "@/hooks/useSimulation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
+import { useWeatherImpact } from "@/hooks/useWeatherImpact";
 
 const defaultTeamsPerHour = [
   0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
@@ -66,6 +67,9 @@ const Index = () => {
   // Weather provider state
   const { provider: weatherProvider, setProvider: setWeatherProvider } = useWeatherProvider();
 
+  // Weather impact toggle
+  const { enabled: weatherImpactEnabled, setEnabled: setWeatherImpactEnabled } = useWeatherImpact();
+
   // Fetch weather forecast
   const { 
     data: weatherData, 
@@ -83,7 +87,8 @@ const Index = () => {
     config,
     historicalData,
     weatherData?.forecast,
-    systemSettings
+    systemSettings,
+    weatherImpactEnabled
   );
 
   const handleConfigChange = (newConfig: SimulationConfig) => {
@@ -183,6 +188,8 @@ const Index = () => {
           weatherStatus={weatherStatus}
           weatherProvider={weatherProvider}
           onWeatherProviderChange={setWeatherProvider}
+          weatherImpactEnabled={weatherImpactEnabled}
+          onWeatherImpactChange={setWeatherImpactEnabled}
         />
 
         {/* KPI Cards */}

@@ -79,7 +79,8 @@ export const useSimulation = (
   config: SimulationConfig,
   historicalData: HistoricalDataRow[] | undefined,
   weatherData: WeatherHour[] | undefined,
-  systemSettings?: SystemSetting[]
+  systemSettings?: SystemSetting[],
+  weatherImpactEnabled: boolean = true
 ) => {
   return useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
@@ -136,9 +137,9 @@ export const useSimulation = (
         description: "",
       };
 
-      // Apply rain uplift to entry rates
-      const uplift_bt = getUplift(weather.precip_mm, "bt");
-      const uplift_mt = getUplift(weather.precip_mm, "mt");
+      // Apply rain uplift to entry rates (only if weather impact is enabled)
+      const uplift_bt = weatherImpactEnabled ? getUplift(weather.precip_mm, "bt") : 0;
+      const uplift_mt = weatherImpactEnabled ? getUplift(weather.precip_mm, "mt") : 0;
 
       // Entrada ajustada = entrada histórica * (1 + uplift do clima)
       const entrada_bt_adj = historical.bt_entry_rate * (1 + uplift_bt);
@@ -253,5 +254,5 @@ export const useSimulation = (
     }
 
     return result;
-  }, [config, historicalData, weatherData, systemSettings]);
+  }, [config, historicalData, weatherData, systemSettings, weatherImpactEnabled]);
 };
