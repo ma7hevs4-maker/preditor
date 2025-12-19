@@ -6,6 +6,8 @@ import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { WeatherProvider } from "@/hooks/useWeatherProvider";
 
 interface HeaderProps {
   config: SimulationConfig;
@@ -13,9 +15,11 @@ interface HeaderProps {
   onConfigChange: (config: SimulationConfig) => void;
   onCalculate: () => void;
   weatherStatus?: "loading" | "success" | "error";
+  weatherProvider?: WeatherProvider;
+  onWeatherProviderChange?: (provider: WeatherProvider) => void;
 }
 
-export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weatherStatus = "success" }: HeaderProps) => {
+export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weatherStatus = "success", weatherProvider = "openmeteo", onWeatherProviderChange }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { theme, toggleTheme } = useTheme();
 
@@ -56,6 +60,23 @@ export const Header = ({ config, selectedBase, onConfigChange, onCalculate, weat
               weatherStatus === "error" ? "bg-destructive" : "bg-success"
             }`} />
           </div>
+
+          {/* Weather Provider Switch */}
+          {onWeatherProviderChange && (
+            <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-lg">
+              <span className={`text-xs font-medium transition-colors ${weatherProvider === "openmeteo" ? "text-primary" : "text-muted-foreground"}`}>
+                Open-Meteo
+              </span>
+              <Switch
+                checked={weatherProvider === "openweathermap"}
+                onCheckedChange={(checked) => onWeatherProviderChange(checked ? "openweathermap" : "openmeteo")}
+                className="data-[state=checked]:bg-primary"
+              />
+              <span className={`text-xs font-medium transition-colors ${weatherProvider === "openweathermap" ? "text-primary" : "text-muted-foreground"}`}>
+                OpenWeather
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 text-muted-foreground">
             <span className="text-sm font-medium">Horizonte:</span>

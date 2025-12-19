@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { WeatherProvider } from "./useWeatherProvider";
 
 export interface WeatherHour {
   hour: number;
@@ -14,19 +15,25 @@ export interface WeatherHour {
 
 interface WeatherResponse {
   forecast: WeatherHour[];
+  provider?: string;
   city?: string;
   country?: string;
   error?: string;
 }
 
-export const useWeather = (lat: number | null, lon: number | null, hours: number = 72) => {
+export const useWeather = (
+  lat: number | null, 
+  lon: number | null, 
+  hours: number = 72,
+  provider: WeatherProvider = "openmeteo"
+) => {
   return useQuery({
-    queryKey: ["weather", lat, lon, hours],
+    queryKey: ["weather", lat, lon, hours, provider],
     queryFn: async () => {
       if (!lat || !lon) return null;
       
       const { data, error } = await supabase.functions.invoke<WeatherResponse>("weather-forecast", {
-        body: { lat, lon, hours },
+        body: { lat, lon, hours, provider },
       });
       
       if (error) {
