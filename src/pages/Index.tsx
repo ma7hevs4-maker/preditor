@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { KPICard } from "@/components/KPICard";
 import { WeatherIndicator } from "@/components/WeatherIndicator";
@@ -12,10 +12,11 @@ import { toast } from "@/hooks/use-toast";
 import { useBases } from "@/hooks/useBases";
 import { useHistoricalData } from "@/hooks/useHistoricalData";
 import { useWeather } from "@/hooks/useWeather";
-import { useSimulation, SimulationConfig } from "@/hooks/useSimulation";
+import { useSimulation, SimulationConfig, SimulationRow } from "@/hooks/useSimulation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherImpact } from "@/hooks/useWeatherImpact";
+import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
 
 const defaultTeamsPerHour = [
   0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
@@ -43,7 +44,7 @@ const Index = () => {
     horizonHours: 24,
   });
   const [simulationKey, setSimulationKey] = useState(0);
-
+  const [loadedSimulation, setLoadedSimulation] = useState<SimulationRow[] | null>(null);
   const currentHour = new Date().getHours();
 
   // Fetch bases from Supabase
@@ -83,7 +84,7 @@ const Index = () => {
   );
 
   // Run simulation
-  const simulationData = useSimulation(
+  const liveSimulationData = useSimulation(
     config,
     historicalData,
     weatherData?.forecast,
@@ -91,17 +92,40 @@ const Index = () => {
     weatherImpactEnabled
   );
 
+  // Use loaded simulation or live data
+  const simulationData = loadedSimulation || liveSimulationData;
+
   const handleConfigChange = (newConfig: SimulationConfig) => {
     setConfig(newConfig);
+    setLoadedSimulation(null); // Clear loaded simulation when config changes
   };
 
   const handleCalculate = () => {
     setSimulationKey((prev) => prev + 1);
+    setLoadedSimulation(null); // Clear loaded simulation
     toast({
       title: "Simulação Calculada",
       description: `Horizonte: ${config.horizonHours}h | Base: ${selectedBase?.name || "N/A"}`,
     });
   };
+
+  const handleLoadSimulation = useCallback((entry: SimulationHistoryEntry) => {
+    // Load the simulation config
+    setConfig(prev => ({
+      ...prev,
+      baseId: entry.base_id,
+      btInitialBacklog: entry.bt_initial_backlog,
+      mtInitialBacklog: entry.mt_initial_backlog,
+      horizonHours: entry.horizon_hours,
+    }));
+    
+    // Set weather settings
+    setWeatherProvider(entry.weather_provider);
+    setWeatherImpactEnabled(entry.weather_impact_enabled);
+    
+    // Load the saved simulation results
+    setLoadedSimulation(entry.results_snapshot);
+  }, [setWeatherProvider, setWeatherImpactEnabled]);
 
   // Loading state
   if (basesLoading) {
@@ -190,6 +214,9 @@ const Index = () => {
           onWeatherProviderChange={setWeatherProvider}
           weatherImpactEnabled={weatherImpactEnabled}
           onWeatherImpactChange={setWeatherImpactEnabled}
+          simulationResults={liveSimulationData}
+          weatherData={weatherData?.forecast}
+          onLoadSimulation={handleLoadSimulation}
         />
 
         {/* KPI Cards */}
