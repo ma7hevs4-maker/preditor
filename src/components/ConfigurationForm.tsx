@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { Play, RotateCcw, Users, Copy, Trash2, Download } from "lucide-react";
+import { Play, RotateCcw, Users, Copy, Trash2, Download, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
@@ -33,6 +33,8 @@ interface ConfigurationFormProps {
   config: SimulationConfig;
   onConfigChange: (config: SimulationConfig) => void;
   onCalculate: () => void;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
 const defaultTeamsPerHour = [
@@ -57,6 +59,8 @@ export const ConfigurationForm = ({
   config,
   onConfigChange,
   onCalculate,
+  onSave,
+  isSaving,
 }: ConfigurationFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localConfig, setLocalConfig] = useState<SimulationConfig>(config);
@@ -928,6 +932,20 @@ export const ConfigurationForm = ({
               <Play className="w-4 h-4" />
               Simular
             </Button>
+            {onSave && (
+              <Button
+                onClick={() => {
+                  handleApply();
+                  onSave();
+                }}
+                disabled={isSaving}
+                variant="outline"
+                className="gap-2 border-primary text-primary hover:bg-primary/10"
+              >
+                <Save className="w-4 h-4" />
+                Salvar
+              </Button>
+            )}
           </div>
         </div>
       </SheetContent>

@@ -3,14 +3,14 @@ import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
 import { useEffect, useState } from "react";
-import { SimulationConfig, SimulationRow } from "@/hooks/useSimulation";
+import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { WeatherProvider } from "@/hooks/useWeatherProvider";
-import { WeatherHour } from "@/hooks/useWeather";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
+
 interface HeaderProps {
   config: SimulationConfig;
   selectedBase: Base | undefined;
@@ -21,9 +21,9 @@ interface HeaderProps {
   onWeatherProviderChange?: (provider: WeatherProvider) => void;
   weatherImpactEnabled?: boolean;
   onWeatherImpactChange?: (enabled: boolean) => void;
-  simulationResults?: SimulationRow[];
-  weatherData?: WeatherHour[];
   onLoadSimulation?: (entry: SimulationHistoryEntry) => void;
+  onSaveSimulation?: () => void;
+  isSaving?: boolean;
 }
 
 export const Header = ({ 
@@ -36,9 +36,9 @@ export const Header = ({
   onWeatherProviderChange, 
   weatherImpactEnabled = true, 
   onWeatherImpactChange,
-  simulationResults,
-  weatherData,
-  onLoadSimulation
+  onLoadSimulation,
+  onSaveSimulation,
+  isSaving
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { theme, toggleTheme } = useTheme();
@@ -132,23 +132,14 @@ export const Header = ({
             config={config}
             onConfigChange={onConfigChange}
             onCalculate={onCalculate}
+            onSave={onSaveSimulation}
+            isSaving={isSaving}
           />
 
           <AdminConfigDialog />
 
           <SimulationHistoryDialog
             baseId={selectedBase?.id}
-            currentSimulation={simulationResults && simulationResults.length > 0 ? {
-              results: simulationResults,
-              config: {
-                btInitialBacklog: config.btInitialBacklog,
-                mtInitialBacklog: config.mtInitialBacklog,
-                horizonHours: config.horizonHours,
-              },
-              weatherProvider: weatherProvider,
-              weatherImpactEnabled: weatherImpactEnabled,
-              weatherData: weatherData,
-            } : undefined}
             onLoadSimulation={onLoadSimulation}
           />
 
