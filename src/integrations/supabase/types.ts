@@ -213,6 +213,72 @@ export type Database = {
           },
         ]
       }
+      simulation_history: {
+        Row: {
+          base_id: string
+          bt_initial_backlog: number
+          created_at: string
+          horizon_hours: number
+          id: string
+          mt_initial_backlog: number
+          name: string
+          notes: string | null
+          results_snapshot: Json
+          team_structure_id: string | null
+          team_structure_snapshot: Json | null
+          weather_impact_enabled: boolean
+          weather_provider: string
+          weather_snapshot: Json | null
+        }
+        Insert: {
+          base_id: string
+          bt_initial_backlog?: number
+          created_at?: string
+          horizon_hours?: number
+          id?: string
+          mt_initial_backlog?: number
+          name?: string
+          notes?: string | null
+          results_snapshot: Json
+          team_structure_id?: string | null
+          team_structure_snapshot?: Json | null
+          weather_impact_enabled?: boolean
+          weather_provider?: string
+          weather_snapshot?: Json | null
+        }
+        Update: {
+          base_id?: string
+          bt_initial_backlog?: number
+          created_at?: string
+          horizon_hours?: number
+          id?: string
+          mt_initial_backlog?: number
+          name?: string
+          notes?: string | null
+          results_snapshot?: Json
+          team_structure_id?: string | null
+          team_structure_snapshot?: Json | null
+          weather_impact_enabled?: boolean
+          weather_provider?: string
+          weather_snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_history_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_history_team_structure_id_fkey"
+            columns: ["team_structure_id"]
+            isOneToOne: false
+            referencedRelation: "team_structures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           created_at: string
