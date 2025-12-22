@@ -16,7 +16,8 @@ import { useSimulation, SimulationConfig, SimulationRow } from "@/hooks/useSimul
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherImpact } from "@/hooks/useWeatherImpact";
-import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
+import { useSimulationHistory, SimulationHistoryEntry, SaveSimulationParams } from "@/hooks/useSimulationHistory";
+import { format } from "date-fns";
 
 const defaultTeamsPerHour = [
   0, 0, 0, 0, 0, 0, 0, 0, // Turno A (0-7h)
@@ -127,6 +128,46 @@ const Index = () => {
     setLoadedSimulation(entry.results_snapshot);
   }, [setWeatherProvider, setWeatherImpactEnabled]);
 
+  // Save simulation hook
+  const { saveSimulation } = useSimulationHistory(config.baseId);
+
+  const handleSaveSimulation = useCallback(async () => {
+    if (!config.baseId || liveSimulationData.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma simulação para salvar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const params: SaveSimulationParams = {
+      baseId: config.baseId,
+      name: `Simulação ${format(new Date(), "dd/MM HH:mm")}`,
+      btInitialBacklog: config.btInitialBacklog,
+      mtInitialBacklog: config.mtInitialBacklog,
+      horizonHours: config.horizonHours,
+      weatherProvider: weatherProvider,
+      weatherImpactEnabled: weatherImpactEnabled,
+      resultsSnapshot: liveSimulationData,
+      weatherSnapshot: weatherData?.forecast,
+    };
+
+    try {
+      await saveSimulation.mutateAsync(params);
+      toast({
+        title: "Simulação Salva",
+        description: "Você pode acessá-la no histórico",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a simulação",
+        variant: "destructive",
+      });
+    }
+  }, [config, liveSimulationData, weatherProvider, weatherImpactEnabled, weatherData?.forecast, saveSimulation]);
+
   // Loading state
   if (basesLoading) {
     return (
@@ -214,9 +255,9 @@ const Index = () => {
           onWeatherProviderChange={setWeatherProvider}
           weatherImpactEnabled={weatherImpactEnabled}
           onWeatherImpactChange={setWeatherImpactEnabled}
-          simulationResults={liveSimulationData}
-          weatherData={weatherData?.forecast}
           onLoadSimulation={handleLoadSimulation}
+          onSaveSimulation={handleSaveSimulation}
+          isSaving={saveSimulation.isPending}
         />
 
         {/* KPI Cards */}
