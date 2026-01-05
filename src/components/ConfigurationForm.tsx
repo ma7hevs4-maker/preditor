@@ -294,16 +294,15 @@ export const ConfigurationForm = ({
                   value={[localConfig.horizonHours]}
                   onValueChange={([value]) => handleChange("horizonHours", value)}
                   min={1}
-                  max={180}
+                  max={72}
                   step={1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>1h</span>
+                  <span>24h</span>
                   <span>48h</span>
-                  <span>96h</span>
-                  <span>144h</span>
-                  <span>180h</span>
+                  <span>72h</span>
                 </div>
               </>
             ) : (
