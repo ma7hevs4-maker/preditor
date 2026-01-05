@@ -14,6 +14,7 @@ export interface SimulationConfig {
   teamsPerHourDay3: number[]; // 24 values for day 3
   lossTeamsPerHourDay3: number[]; // 24 values - equipes de perdas day 3
   horizonHours: number;
+  horizonUnit?: "hours" | "days"; // UI preference for horizon selection
 }
 
 export interface SimulationRow {

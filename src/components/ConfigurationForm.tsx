@@ -240,26 +240,89 @@ export const ConfigurationForm = ({
             )}
           </div>
 
+          {/* Horizon Unit Selection */}
+          <div className="space-y-2">
+            <Label className="text-foreground">Unidade do Horizonte</Label>
+            <Select
+              value={localConfig.horizonUnit || "hours"}
+              onValueChange={(value) => {
+                const newUnit = value as "hours" | "days";
+                // Convert current value when switching units
+                let newHorizon = localConfig.horizonHours;
+                if (newUnit === "days") {
+                  // Convert hours to days (round up)
+                  newHorizon = Math.min(7, Math.ceil(localConfig.horizonHours / 24));
+                } else {
+                  // Convert days to hours
+                  const currentDays = Math.ceil(localConfig.horizonHours / 24);
+                  newHorizon = Math.min(180, currentDays * 24);
+                }
+                setLocalConfig((prev) => ({
+                  ...prev,
+                  horizonUnit: newUnit,
+                  horizonHours: newUnit === "days" ? newHorizon * 24 : newHorizon,
+                }));
+              }}
+            >
+              <SelectTrigger className="bg-secondary border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="hours">Horas</SelectItem>
+                <SelectItem value="days">Dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Horizon Selection */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-foreground">Horizonte de Simulação</Label>
-              <span className="text-sm font-mono text-primary">{localConfig.horizonHours}h</span>
+              <span className="text-sm font-mono text-primary">
+                {(localConfig.horizonUnit || "hours") === "days"
+                  ? `${Math.ceil(localConfig.horizonHours / 24)}d (${localConfig.horizonHours}h)`
+                  : `${localConfig.horizonHours}h`}
+              </span>
             </div>
-            <Slider
-              value={[localConfig.horizonHours]}
-              onValueChange={([value]) => handleChange("horizonHours", value)}
-              min={1}
-              max={72}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>1h</span>
-              <span>24h</span>
-              <span>48h</span>
-              <span>72h</span>
-            </div>
+            {(localConfig.horizonUnit || "hours") === "hours" ? (
+              <>
+                <Slider
+                  value={[localConfig.horizonHours]}
+                  onValueChange={([value]) => handleChange("horizonHours", value)}
+                  min={1}
+                  max={180}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1h</span>
+                  <span>48h</span>
+                  <span>96h</span>
+                  <span>144h</span>
+                  <span>180h</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Slider
+                  value={[Math.ceil(localConfig.horizonHours / 24)]}
+                  onValueChange={([value]) => handleChange("horizonHours", value * 24)}
+                  min={1}
+                  max={7}
+                  step={1}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1d</span>
+                  <span>2d</span>
+                  <span>3d</span>
+                  <span>4d</span>
+                  <span>5d</span>
+                  <span>6d</span>
+                  <span>7d</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Backlog Inicial */}
