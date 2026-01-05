@@ -240,27 +240,26 @@ export const ConfigurationForm = ({
             )}
           </div>
 
-          {/* Horizon Unit Selection */}
+          {/* Simulation Mode Selection */}
           <div className="space-y-2">
-            <Label className="text-foreground">Unidade do Horizonte</Label>
+            <Label className="text-foreground">Tipo de Simulação</Label>
             <Select
               value={localConfig.horizonUnit || "hours"}
               onValueChange={(value) => {
                 const newUnit = value as "hours" | "days";
-                // Convert current value when switching units
+                // Convert current value when switching modes
                 let newHorizon = localConfig.horizonHours;
                 if (newUnit === "days") {
-                  // Convert hours to days (round up)
-                  newHorizon = Math.min(7, Math.ceil(localConfig.horizonHours / 24));
+                  // Convert hours to days (round up, max 7 days)
+                  newHorizon = Math.min(7, Math.max(1, Math.ceil(localConfig.horizonHours / 24))) * 24;
                 } else {
-                  // Convert days to hours
-                  const currentDays = Math.ceil(localConfig.horizonHours / 24);
-                  newHorizon = Math.min(180, currentDays * 24);
+                  // Keep same horizon but cap at 180
+                  newHorizon = Math.min(180, localConfig.horizonHours);
                 }
                 setLocalConfig((prev) => ({
                   ...prev,
                   horizonUnit: newUnit,
-                  horizonHours: newUnit === "days" ? newHorizon * 24 : newHorizon,
+                  horizonHours: newHorizon,
                 }));
               }}
             >
@@ -268,10 +267,15 @@ export const ConfigurationForm = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-card border-border">
-                <SelectItem value="hours">Horas</SelectItem>
-                <SelectItem value="days">Dias</SelectItem>
+                <SelectItem value="hours">Simulação Micro</SelectItem>
+                <SelectItem value="days">Simulação Macro</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {(localConfig.horizonUnit || "hours") === "hours"
+                ? "Modo detalhado com alocação de equipes por hora"
+                : "Modo simplificado apenas com horizonte em dias"}
+            </p>
           </div>
 
           {/* Horizon Selection */}
@@ -360,6 +364,9 @@ export const ConfigurationForm = ({
             </div>
           </div>
 
+          {/* Team sections only show in Micro mode */}
+          {(localConfig.horizonUnit || "hours") === "hours" && (
+          <>
           {/* Day 1 - Equipes por Turno */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -976,6 +983,8 @@ export const ConfigurationForm = ({
                 })}
               </div>
             </>
+          )}
+          </>
           )}
 
           {/* Actions */}
