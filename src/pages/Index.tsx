@@ -17,6 +17,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherImpact } from "@/hooks/useWeatherImpact";
 import { useSimulationHistory, SimulationHistoryEntry, SaveSimulationParams } from "@/hooks/useSimulationHistory";
+import { useWeatherTriggers } from "@/hooks/useWeatherTriggers";
 import { format } from "date-fns";
 
 const defaultTeamsPerHour = [
@@ -66,6 +67,9 @@ const Index = () => {
   // Fetch historical data for selected base
   const { data: historicalData, isLoading: historicalLoading } = useHistoricalData(config.baseId);
 
+  // Fetch weather triggers for selected base
+  const { data: weatherTriggers } = useWeatherTriggers(config.baseId || null);
+
   // Weather provider state
   const { provider: weatherProvider, setProvider: setWeatherProvider } = useWeatherProvider();
 
@@ -90,7 +94,8 @@ const Index = () => {
     historicalData,
     weatherData?.forecast,
     systemSettings,
-    weatherImpactEnabled
+    weatherImpactEnabled,
+    weatherTriggers
   );
 
   // Use loaded simulation or live data
@@ -314,6 +319,7 @@ const Index = () => {
               lat={selectedBase?.lat}
               lon={selectedBase?.lon}
               baseName={selectedBase?.name}
+              baseId={config.baseId || null}
             />
           </div>
           <div className="xl:col-span-2">

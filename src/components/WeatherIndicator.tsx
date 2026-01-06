@@ -12,6 +12,7 @@ interface WeatherIndicatorProps {
   lat?: number;
   lon?: number;
   baseName?: string;
+  baseId?: string | null;
   className?: string;
 }
 
@@ -22,6 +23,7 @@ export const WeatherIndicator = ({
   lat,
   lon,
   baseName = "Base",
+  baseId = null,
   className,
 }: WeatherIndicatorProps) => {
   const [triggersDialogOpen, setTriggersDialogOpen] = useState(false);
@@ -145,6 +147,7 @@ export const WeatherIndicator = ({
         precip_mm={precip_mm}
         wind_ms={wind_ms}
         temp_c={temp_c}
+        baseId={baseId}
       />
 
       {lat && lon && (

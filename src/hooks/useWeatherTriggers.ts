@@ -9,6 +9,8 @@ export interface WeatherTrigger {
   condition_min: number | null;
   condition_max: number | null;
   impact_percent: number;
+  impact_percent_bt: number | null;
+  impact_percent_mt: number | null;
   description: string | null;
   active: boolean;
 }

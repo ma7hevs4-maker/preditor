@@ -77,6 +77,8 @@ export const AdminConfigDialog = () => {
     condition_min: "",
     condition_max: "",
     impact_percent: "",
+    impact_percent_bt: "",
+    impact_percent_mt: "",
     description: "",
     base_id: null as string | null,
   });
@@ -165,10 +167,17 @@ export const AdminConfigDialog = () => {
   };
 
   const handleAddTrigger = async () => {
-    if (!newTrigger.name || !newTrigger.impact_percent) {
-      toast.error("Preencha nome e impacto do gatilho");
+    if (!newTrigger.name || (!newTrigger.impact_percent_bt && !newTrigger.impact_percent_mt)) {
+      toast.error("Preencha nome e ao menos um impacto (BT ou MT)");
       return;
     }
+
+    const btImpact = newTrigger.impact_percent_bt ? parseFloat(newTrigger.impact_percent_bt) : null;
+    const mtImpact = newTrigger.impact_percent_mt ? parseFloat(newTrigger.impact_percent_mt) : null;
+    // Use média dos dois ou o que estiver preenchido para impact_percent legado
+    const legacyImpact = btImpact !== null && mtImpact !== null 
+      ? (btImpact + mtImpact) / 2 
+      : btImpact ?? mtImpact ?? 0;
 
     try {
       await addWeatherTrigger.mutateAsync({
@@ -176,7 +185,9 @@ export const AdminConfigDialog = () => {
         trigger_type: newTrigger.trigger_type,
         condition_min: newTrigger.condition_min ? parseFloat(newTrigger.condition_min) : null,
         condition_max: newTrigger.condition_max ? parseFloat(newTrigger.condition_max) : null,
-        impact_percent: parseFloat(newTrigger.impact_percent),
+        impact_percent: legacyImpact,
+        impact_percent_bt: btImpact,
+        impact_percent_mt: mtImpact,
         description: newTrigger.description || null,
         base_id: newTrigger.base_id,
         active: true,
@@ -188,6 +199,8 @@ export const AdminConfigDialog = () => {
         condition_min: "",
         condition_max: "",
         impact_percent: "",
+        impact_percent_bt: "",
+        impact_percent_mt: "",
         description: "",
         base_id: null,
       });
@@ -954,12 +967,22 @@ export const AdminConfigDialog = () => {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Impacto (%)</Label>
+                        <Label className="text-xs">Impacto BT (%)</Label>
                         <Input
                           type="number"
-                          value={newTrigger.impact_percent}
-                          onChange={(e) => setNewTrigger(prev => ({ ...prev, impact_percent: e.target.value }))}
-                          placeholder="Ex: 35"
+                          value={newTrigger.impact_percent_bt}
+                          onChange={(e) => setNewTrigger(prev => ({ ...prev, impact_percent_bt: e.target.value }))}
+                          placeholder="Ex: 28"
+                          className="bg-secondary border-border"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Impacto MT (%)</Label>
+                        <Input
+                          type="number"
+                          value={newTrigger.impact_percent_mt}
+                          onChange={(e) => setNewTrigger(prev => ({ ...prev, impact_percent_mt: e.target.value }))}
+                          placeholder="Ex: 40"
                           className="bg-secondary border-border"
                         />
                       </div>
@@ -1006,11 +1029,12 @@ export const AdminConfigDialog = () => {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50">
                       <tr>
-                        <th className="text-left px-3 py-2 text-muted-foreground font-medium">Nome</th>
+                      <th className="text-left px-3 py-2 text-muted-foreground font-medium">Nome</th>
                         <th className="text-left px-3 py-2 text-muted-foreground font-medium">Tipo</th>
                         <th className="text-left px-3 py-2 text-muted-foreground font-medium">Condição</th>
                         <th className="text-left px-3 py-2 text-muted-foreground font-medium">Base</th>
-                        <th className="text-right px-3 py-2 text-muted-foreground font-medium">Impacto</th>
+                        <th className="text-right px-3 py-2 text-muted-foreground font-medium">BT</th>
+                        <th className="text-right px-3 py-2 text-muted-foreground font-medium">MT</th>
                         <th className="text-right px-3 py-2 text-muted-foreground font-medium">Ações</th>
                       </tr>
                     </thead>
@@ -1030,7 +1054,14 @@ export const AdminConfigDialog = () => {
                             {trigger.base_id ? bases?.find(b => b.id === trigger.base_id)?.name : "Padrão"}
                           </td>
                           <td className="px-3 py-2 text-right">
-                            <span className="font-semibold text-warning">+{trigger.impact_percent}%</span>
+                            <span className="font-semibold text-blue-400">
+                              {trigger.impact_percent_bt !== null ? `+${trigger.impact_percent_bt}%` : '-'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <span className="font-semibold text-orange-400">
+                              {trigger.impact_percent_mt !== null ? `+${trigger.impact_percent_mt}%` : '-'}
+                            </span>
                           </td>
                           <td className="px-3 py-2 text-right">
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
