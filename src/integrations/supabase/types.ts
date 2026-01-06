@@ -495,6 +495,8 @@ export type Database = {
           description: string | null
           id: string
           impact_percent: number
+          impact_percent_bt: number | null
+          impact_percent_mt: number | null
           name: string
           trigger_type: string
           updated_at: string
@@ -508,6 +510,8 @@ export type Database = {
           description?: string | null
           id?: string
           impact_percent: number
+          impact_percent_bt?: number | null
+          impact_percent_mt?: number | null
           name: string
           trigger_type: string
           updated_at?: string
@@ -521,6 +525,8 @@ export type Database = {
           description?: string | null
           id?: string
           impact_percent?: number
+          impact_percent_bt?: number | null
+          impact_percent_mt?: number | null
           name?: string
           trigger_type?: string
           updated_at?: string

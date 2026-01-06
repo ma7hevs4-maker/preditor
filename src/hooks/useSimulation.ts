@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { HistoricalDataRow } from "./useHistoricalData";
 import { WeatherHour } from "./useWeather";
 import { SystemSetting } from "./useSystemSettings";
+import { WeatherTrigger } from "./useWeatherTriggers";
+import { calculateWeatherUplift } from "./useWeatherUplift";
 
 export interface SimulationConfig {
   baseId: string;
@@ -55,33 +57,13 @@ export interface SimulationRow {
   remoto_bt_retirado: number; // quantidade retirada pelo remoto nesta hora
 }
 
-// Uplift tables from Python
-const UPLIFT_CHUVA = {
-  bt_total: { "0.2-1": 28.0, "1-5": 52.13, "5-10": 79.90, "gt10": 141.46 },
-  mt_total: { "0.2-1": 40.0, "1-5": 104.12, "5-10": 97.33, "gt10": 265.33 },
-};
-
-const getFaixaChuva = (mm: number): string => {
-  if (mm < 0.2) return "seco";
-  if (mm < 1.0) return "0.2-1";
-  if (mm < 5.0) return "1-5";
-  if (mm < 10.0) return "5-10";
-  return "gt10";
-};
-
-const getUplift = (precip: number, type: "bt" | "mt"): number => {
-  const faixa = getFaixaChuva(precip);
-  if (faixa === "seco") return 0;
-  const table = type === "bt" ? UPLIFT_CHUVA.bt_total : UPLIFT_CHUVA.mt_total;
-  return (table[faixa as keyof typeof table] || 0) / 100;
-};
-
 export const useSimulation = (
   config: SimulationConfig,
   historicalData: HistoricalDataRow[] | undefined,
   weatherData: WeatherHour[] | undefined,
   systemSettings?: SystemSetting[],
-  weatherImpactEnabled: boolean = true
+  weatherImpactEnabled: boolean = true,
+  weatherTriggers?: WeatherTrigger[]
 ) => {
   return useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
@@ -138,9 +120,20 @@ export const useSimulation = (
         description: "",
       };
 
-      // Apply rain uplift to entry rates (only if weather impact is enabled)
-      const uplift_bt = weatherImpactEnabled ? getUplift(weather.precip_mm, "bt") : 0;
-      const uplift_mt = weatherImpactEnabled ? getUplift(weather.precip_mm, "mt") : 0;
+      // Apply weather uplift using database triggers (only if weather impact is enabled)
+      let uplift_bt = 0;
+      let uplift_mt = 0;
+      
+      if (weatherImpactEnabled) {
+        const { upliftBT, upliftMT } = calculateWeatherUplift(
+          weatherTriggers,
+          weather.precip_mm,
+          weather.wind_ms,
+          weather.temp_c
+        );
+        uplift_bt = upliftBT;
+        uplift_mt = upliftMT;
+      }
 
       // Entrada ajustada = entrada histórica * (1 + uplift do clima)
       const entrada_bt_adj = historical.bt_entry_rate * (1 + uplift_bt);
@@ -255,5 +248,5 @@ export const useSimulation = (
     }
 
     return result;
-  }, [config, historicalData, weatherData, systemSettings, weatherImpactEnabled]);
+  }, [config, historicalData, weatherData, systemSettings, weatherImpactEnabled, weatherTriggers]);
 };

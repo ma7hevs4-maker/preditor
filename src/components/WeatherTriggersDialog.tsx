@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useWeatherTriggers, isTriggerActive, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 
 interface WeatherTriggersDialogProps {
   open: boolean;
@@ -19,14 +20,7 @@ interface WeatherTriggersDialogProps {
   precip_mm: number;
   wind_ms: number;
   temp_c: number;
-}
-
-interface Trigger {
-  name: string;
-  condition: string;
-  impact: string;
-  description: string;
-  isActive: boolean;
+  baseId?: string | null;
 }
 
 export const WeatherTriggersDialog = ({
@@ -35,73 +29,48 @@ export const WeatherTriggersDialog = ({
   precip_mm,
   wind_ms,
   temp_c,
+  baseId = null,
 }: WeatherTriggersDialogProps) => {
   const [showAllTriggers, setShowAllTriggers] = useState(false);
+  const { data: triggers } = useWeatherTriggers(baseId);
 
-  const allTriggers: Trigger[] = [
-    {
-      name: "Chuva Fraca",
-      condition: "Precipitação ≥ 0.2 mm",
-      impact: "+15%",
-      description: "Aumento de 15% nas ocorrências de curto-circuito",
-      isActive: precip_mm >= 0.2 && precip_mm < 1,
-    },
-    {
-      name: "Chuva Moderada",
-      condition: "Precipitação ≥ 1 mm",
-      impact: "+35%",
-      description: "Aumento de 35% nas ocorrências de curto-circuito",
-      isActive: precip_mm >= 1 && precip_mm < 5,
-    },
-    {
-      name: "Chuva Forte",
-      condition: "Precipitação ≥ 5 mm",
-      impact: "+60%",
-      description: "Aumento de 60% nas ocorrências de curto-circuito",
-      isActive: precip_mm >= 5,
-    },
-    {
-      name: "Vento Moderado",
-      condition: "Vento ≥ 4 m/s",
-      impact: "+10%",
-      description: "Aumento de 10% em quedas de árvores sobre rede",
-      isActive: wind_ms >= 4 && wind_ms < 6,
-    },
-    {
-      name: "Vento Forte",
-      condition: "Vento ≥ 6 m/s",
-      impact: "+25%",
-      description: "Aumento de 25% em quedas de árvores sobre rede",
-      isActive: wind_ms >= 6 && wind_ms < 10,
-    },
-    {
-      name: "Vento Muito Forte",
-      condition: "Vento ≥ 10 m/s",
-      impact: "+50%",
-      description: "Aumento de 50% em quedas de árvores sobre rede",
-      isActive: wind_ms >= 10,
-    },
-    {
-      name: "Calor Extremo",
-      condition: "Temperatura ≥ 35°C",
-      impact: "+20%",
-      description: "Aumento de 20% em sobrecarga de transformadores",
-      isActive: temp_c >= 35,
-    },
-    {
-      name: "Frio Intenso",
-      condition: "Temperatura ≤ 10°C",
-      impact: "+10%",
-      description: "Aumento de 10% em falhas de equipamentos",
-      isActive: temp_c <= 10,
-    },
-  ];
+  const getConditionText = (trigger: WeatherTrigger) => {
+    const type = trigger.trigger_type;
+    const min = trigger.condition_min;
+    const max = trigger.condition_max;
+    
+    let unit = "";
+    switch (type) {
+      case "precip": unit = "mm"; break;
+      case "wind": unit = "m/s"; break;
+      case "temp": unit = "°C"; break;
+    }
+
+    if (min !== null && max !== null) {
+      return `${min} - ${max} ${unit}`;
+    } else if (min !== null) {
+      return `≥ ${min} ${unit}`;
+    } else if (max !== null) {
+      return `≤ ${max} ${unit}`;
+    }
+    return "-";
+  };
+
+  const allTriggers = triggers?.map(trigger => ({
+    ...trigger,
+    condition: getConditionText(trigger),
+    isActive: isTriggerActive(trigger, precip_mm, wind_ms, temp_c),
+  })) || [];
 
   const activeTriggers = allTriggers.filter((t) => t.isActive);
 
-  const totalImpact = activeTriggers.reduce((acc, t) => {
-    const value = parseInt(t.impact.replace(/[^0-9]/g, ""));
-    return acc + value;
+  // Calculate total impact for BT and MT separately
+  const totalImpactBT = activeTriggers.reduce((acc, t) => {
+    return acc + (t.impact_percent_bt ?? t.impact_percent ?? 0);
+  }, 0);
+
+  const totalImpactMT = activeTriggers.reduce((acc, t) => {
+    return acc + (t.impact_percent_mt ?? t.impact_percent ?? 0);
   }, 0);
 
   return (
@@ -116,14 +85,18 @@ export const WeatherTriggersDialog = ({
 
         <div className="space-y-4">
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-xs text-muted-foreground">Gatilhos Ativos</p>
               <p className="text-2xl font-bold text-warning">{activeTriggers.length}</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-xs text-muted-foreground">Impacto Total</p>
-              <p className="text-2xl font-bold text-destructive">+{totalImpact}%</p>
+            <div className="bg-blue-500/10 rounded-lg p-4">
+              <p className="text-xs text-blue-400">Impacto BT</p>
+              <p className="text-2xl font-bold text-blue-400">+{totalImpactBT.toFixed(0)}%</p>
+            </div>
+            <div className="bg-orange-500/10 rounded-lg p-4">
+              <p className="text-xs text-orange-400">Impacto MT</p>
+              <p className="text-2xl font-bold text-orange-400">+{totalImpactMT.toFixed(0)}%</p>
             </div>
           </div>
 
@@ -136,17 +109,28 @@ export const WeatherTriggersDialog = ({
               <div className="space-y-2">
                 {activeTriggers.map((trigger) => (
                   <div
-                    key={trigger.name}
+                    key={trigger.id}
                     className="bg-warning/10 border border-warning/30 rounded-lg p-3"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground">{trigger.name}</span>
-                      <span className="text-xs font-bold bg-warning/20 text-warning px-2 py-1 rounded">
-                        {trigger.impact}
-                      </span>
+                      <div className="flex gap-2">
+                        {trigger.impact_percent_bt !== null && (
+                          <span className="text-xs font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+                            BT +{trigger.impact_percent_bt}%
+                          </span>
+                        )}
+                        {trigger.impact_percent_mt !== null && (
+                          <span className="text-xs font-bold bg-orange-500/20 text-orange-400 px-2 py-1 rounded">
+                            MT +{trigger.impact_percent_mt}%
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{trigger.condition}</p>
-                    <p className="text-xs text-muted-foreground">{trigger.description}</p>
+                    {trigger.description && (
+                      <p className="text-xs text-muted-foreground">{trigger.description}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -176,13 +160,14 @@ export const WeatherTriggersDialog = ({
                     <tr>
                       <th className="text-left px-3 py-2 text-muted-foreground font-medium">Gatilho</th>
                       <th className="text-left px-3 py-2 text-muted-foreground font-medium">Condição</th>
-                      <th className="text-right px-3 py-2 text-muted-foreground font-medium">Impacto</th>
+                      <th className="text-right px-3 py-2 text-muted-foreground font-medium">BT</th>
+                      <th className="text-right px-3 py-2 text-muted-foreground font-medium">MT</th>
                     </tr>
                   </thead>
                   <tbody>
                     {allTriggers.map((trigger, index) => (
                       <tr
-                        key={trigger.name}
+                        key={trigger.id}
                         className={cn(
                           index % 2 === 0 ? "bg-background" : "bg-muted/20",
                           trigger.isActive && "bg-warning/10 border-l-2 border-l-warning"
@@ -193,8 +178,13 @@ export const WeatherTriggersDialog = ({
                         </td>
                         <td className="px-3 py-2 text-muted-foreground">{trigger.condition}</td>
                         <td className="px-3 py-2 text-right">
-                          <span className={cn("font-semibold", trigger.isActive ? "text-warning" : "text-muted-foreground")}>
-                            {trigger.impact}
+                          <span className={cn("font-semibold", trigger.isActive ? "text-blue-400" : "text-muted-foreground")}>
+                            {trigger.impact_percent_bt !== null ? `+${trigger.impact_percent_bt}%` : '-'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <span className={cn("font-semibold", trigger.isActive ? "text-orange-400" : "text-muted-foreground")}>
+                            {trigger.impact_percent_mt !== null ? `+${trigger.impact_percent_mt}%` : '-'}
                           </span>
                         </td>
                       </tr>
