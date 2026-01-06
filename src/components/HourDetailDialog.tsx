@@ -32,7 +32,8 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
   if (!row) return null;
 
   const turno = getTurno(row.hora);
-  const hasRainTrigger = row.precip_mm >= 0.2;
+  // Gatilho está ativo se há qualquer impacto BT ou MT calculado
+  const hasActiveTrigger = row.uplift_bt_pct > 0 || row.uplift_mt_pct > 0;
 
   const DataRow = ({ label, value, color, subtext }: { label: string; value: string | number; color?: string; subtext?: string }) => (
     <div className="flex justify-between items-center py-1.5 border-b border-border/20">
@@ -76,12 +77,12 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
             <DataRow 
               label="Faixa de Chuva" 
               value={getFaixaChuvaLabel(row.precip_mm)} 
-              color={hasRainTrigger ? "text-blue-400" : "text-muted-foreground"}
+              color={row.precip_mm >= 0.2 ? "text-blue-400" : "text-muted-foreground"}
             />
             <DataRow 
               label="Gatilho Ativo" 
-              value={hasRainTrigger ? "Sim" : "Não"} 
-              color={hasRainTrigger ? "text-warning" : "text-success"}
+              value={hasActiveTrigger ? "Sim" : "Não"} 
+              color={hasActiveTrigger ? "text-warning" : "text-success"}
             />
             <DataRow 
               label="Impacto BT" 
