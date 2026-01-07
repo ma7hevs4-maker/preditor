@@ -117,7 +117,7 @@ export const useDeleteWeatherTrigger = () => {
 export const isTriggerActive = (
   trigger: WeatherTrigger,
   precip_mm: number,
-  wind_kmh: number,
+  wind_ms: number,
   temp_c: number
 ): boolean => {
   let value: number;
@@ -126,7 +126,7 @@ export const isTriggerActive = (
       value = precip_mm;
       break;
     case "wind":
-      value = wind_kmh;
+      value = wind_ms;
       break;
     case "temp":
       value = temp_c;

@@ -73,7 +73,7 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
             <SectionTitle icon={CloudRain} title="Clima e Gatilhos" color="text-blue-400" />
             <DataRow label="Temperatura" value={`${row.temp_c.toFixed(0)}°C`} />
             <DataRow label="Precipitação" value={`${row.precip_mm.toFixed(1)} mm`} />
-            <DataRow label="Vento" value={`${row.wind_kmh.toFixed(1)} km/h`} />
+            <DataRow label="Vento" value={`${row.wind_ms.toFixed(1)} m/s`} />
             <DataRow 
               label="Faixa de Chuva" 
               value={getFaixaChuvaLabel(row.precip_mm)} 

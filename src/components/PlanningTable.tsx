@@ -61,7 +61,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
       // Weather
       "Temperatura (°C)": row.temp_c,
       "Chuva (mm)": row.precip_mm,
-      "Vento (km/h)": row.wind_kmh,
+      "Vento (m/s)": row.wind_ms,
       "Clima": row.weather_description,
       "Uplift BT (%)": row.uplift_bt_pct,
       "Uplift MT (%)": row.uplift_mt_pct,
@@ -248,7 +248,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Wind className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs text-emerald-400">{row.wind_kmh.toFixed(0)}</span>
+                      <span className="text-xs text-emerald-400">{row.wind_ms.toFixed(1)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="data-cell text-right text-cyan-400">

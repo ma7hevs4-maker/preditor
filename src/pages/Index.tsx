@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { KPICard } from "@/components/KPICard";
 import { WeatherIndicator } from "@/components/WeatherIndicator";
@@ -11,14 +11,13 @@ import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useBases } from "@/hooks/useBases";
 import { useHistoricalData } from "@/hooks/useHistoricalData";
-import { useWeather, WeatherHour } from "@/hooks/useWeather";
+import { useWeather } from "@/hooks/useWeather";
 import { useSimulation, SimulationConfig, SimulationRow } from "@/hooks/useSimulation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherImpact } from "@/hooks/useWeatherImpact";
 import { useSimulationHistory, SimulationHistoryEntry, SaveSimulationParams } from "@/hooks/useSimulationHistory";
 import { useWeatherTriggers } from "@/hooks/useWeatherTriggers";
-import { WeatherOverride } from "@/components/WeatherSimulationDialog";
 import { format } from "date-fns";
 
 const defaultTeamsPerHour = [
@@ -48,12 +47,6 @@ const Index = () => {
   });
   const [simulationKey, setSimulationKey] = useState(0);
   const [loadedSimulation, setLoadedSimulation] = useState<SimulationRow[] | null>(null);
-  const [weatherOverride, setWeatherOverride] = useState<WeatherOverride>({
-    enabled: false,
-    precip_mm: 0,
-    wind_kmh: 0,
-    temp_c: 25,
-  });
   const currentHour = new Date().getHours();
 
   // Fetch bases from Supabase
@@ -95,42 +88,11 @@ const Index = () => {
     weatherProvider
   );
 
-  // Create weather data with override if enabled
-  const effectiveWeatherData = useMemo(() => {
-    if (!weatherOverride.enabled) {
-      return weatherData?.forecast;
-    }
-    
-    // If weather override is enabled, create synthetic weather data with override values
-    const baseWeather = weatherData?.forecast || [];
-    const now = new Date();
-    const currentHourValue = now.getHours();
-    
-    return Array.from({ length: config.horizonHours }, (_, i): WeatherHour => {
-      const hora = (currentHourValue + i) % 24;
-      const targetDate = new Date(now);
-      targetDate.setHours(currentHourValue + i, 0, 0, 0);
-      
-      // Use override values, fall back to real weather for other fields
-      const baseHour = baseWeather[i];
-      return {
-        hour: hora,
-        datetime: targetDate.toISOString(),
-        temp_c: weatherOverride.temp_c,
-        precip_mm: weatherOverride.precip_mm,
-        wind_kmh: weatherOverride.wind_kmh,
-        humidity: baseHour?.humidity ?? 70,
-        description: "Simulado",
-        icon: "01d",
-      };
-    });
-  }, [weatherData?.forecast, weatherOverride, config.horizonHours]);
-
   // Run simulation
   const liveSimulationData = useSimulation(
     config,
     historicalData,
-    effectiveWeatherData,
+    weatherData?.forecast,
     systemSettings,
     weatherImpactEnabled,
     weatherTriggers
@@ -240,7 +202,7 @@ const Index = () => {
     eq_bt_add: 0,
     eq_mt_add: 0,
     precip_mm: 0,
-    wind_kmh: 0,
+    wind_ms: 0,
     temp_c: 25,
   };
 
@@ -301,8 +263,6 @@ const Index = () => {
           onLoadSimulation={handleLoadSimulation}
           onSaveSimulation={handleSaveSimulation}
           isSaving={saveSimulation.isPending}
-          weatherOverride={weatherOverride}
-          onWeatherOverrideChange={setWeatherOverride}
         />
 
         {/* KPI Cards */}
@@ -354,7 +314,7 @@ const Index = () => {
           <div className="xl:col-span-2">
             <WeatherIndicator
               precip_mm={currentData.precip_mm}
-              wind_kmh={currentData.wind_kmh}
+              wind_ms={currentData.wind_ms}
               temp_c={currentData.temp_c}
               lat={selectedBase?.lat}
               lon={selectedBase?.lon}

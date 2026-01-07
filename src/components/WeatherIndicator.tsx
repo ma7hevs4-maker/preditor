@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface WeatherIndicatorProps {
   precip_mm: number;
-  wind_kmh: number;
+  wind_ms: number;
   temp_c: number;
   lat?: number;
   lon?: number;
@@ -18,7 +18,7 @@ interface WeatherIndicatorProps {
 
 export const WeatherIndicator = ({
   precip_mm,
-  wind_kmh,
+  wind_ms,
   temp_c,
   lat,
   lon,
@@ -36,10 +36,10 @@ export const WeatherIndicator = ({
     return { label: "Seco", color: "text-muted-foreground" };
   };
 
-  const getWindStatus = (kmh: number) => {
-    if (kmh >= 70) return { label: "Muito forte", color: "text-destructive" };
-    if (kmh >= 50) return { label: "Forte", color: "text-warning" };
-    if (kmh >= 30) return { label: "Moderado", color: "text-primary" };
+  const getWindStatus = (ms: number) => {
+    if (ms >= 10) return { label: "Muito forte", color: "text-destructive" };
+    if (ms >= 6) return { label: "Forte", color: "text-warning" };
+    if (ms >= 4) return { label: "Moderado", color: "text-primary" };
     return { label: "Fraco", color: "text-muted-foreground" };
   };
 
@@ -47,14 +47,14 @@ export const WeatherIndicator = ({
   const getActiveTriggers = () => {
     let count = 0;
     if (precip_mm >= 0.2) count++;
-    if (wind_kmh >= 30) count++;
+    if (wind_ms >= 4) count++;
     if (temp_c >= 35) count++;
     if (temp_c <= 10) count++;
     return count;
   };
 
   const rainStatus = getRainStatus(precip_mm);
-  const windStatus = getWindStatus(wind_kmh);
+  const windStatus = getWindStatus(wind_ms);
   const activeTriggers = getActiveTriggers();
 
   return (
@@ -112,7 +112,7 @@ export const WeatherIndicator = ({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Vento</p>
-              <p className="font-mono text-sm font-semibold">{wind_kmh.toFixed(0)} km/h</p>
+              <p className="font-mono text-sm font-semibold">{wind_ms.toFixed(1)} m/s</p>
               <p className={cn("text-xs", windStatus.color)}>{windStatus.label}</p>
             </div>
           </div>
@@ -145,7 +145,7 @@ export const WeatherIndicator = ({
         open={triggersDialogOpen}
         onOpenChange={setTriggersDialogOpen}
         precip_mm={precip_mm}
-        wind_kmh={wind_kmh}
+        wind_ms={wind_ms}
         temp_c={temp_c}
         baseId={baseId}
       />

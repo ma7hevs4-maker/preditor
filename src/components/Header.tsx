@@ -2,7 +2,6 @@ import { Cloud, MapPin, Zap, Clock, Sun, Moon, CloudOff } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
-import { WeatherSimulationDialog, WeatherOverride } from "@/components/WeatherSimulationDialog";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
@@ -25,8 +24,6 @@ interface HeaderProps {
   onLoadSimulation?: (entry: SimulationHistoryEntry) => void;
   onSaveSimulation?: () => void;
   isSaving?: boolean;
-  weatherOverride?: WeatherOverride;
-  onWeatherOverrideChange?: (override: WeatherOverride) => void;
 }
 
 export const Header = ({ 
@@ -41,9 +38,7 @@ export const Header = ({
   onWeatherImpactChange,
   onLoadSimulation,
   onSaveSimulation,
-  isSaving,
-  weatherOverride,
-  onWeatherOverrideChange
+  isSaving
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { theme, toggleTheme } = useTheme();
@@ -115,14 +110,6 @@ export const Header = ({
                 OpenWeather
               </span>
             </div>
-          )}
-
-          {/* Weather Simulation Button */}
-          {weatherOverride && onWeatherOverrideChange && (
-            <WeatherSimulationDialog
-              weatherOverride={weatherOverride}
-              onWeatherOverrideChange={onWeatherOverrideChange}
-            />
           )}
 
           <div className="flex items-center gap-2 text-muted-foreground">
