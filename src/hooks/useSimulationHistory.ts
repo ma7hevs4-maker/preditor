@@ -99,6 +99,33 @@ export const useSimulationHistory = (baseId?: string) => {
     },
   });
 
+  const updateSimulation = useMutation({
+    mutationFn: async ({ id, ...params }: { id: string } & Partial<SaveSimulationParams>) => {
+      const updateData: Record<string, unknown> = {};
+      
+      if (params.name !== undefined) updateData.name = params.name;
+      if (params.btInitialBacklog !== undefined) updateData.bt_initial_backlog = params.btInitialBacklog;
+      if (params.mtInitialBacklog !== undefined) updateData.mt_initial_backlog = params.mtInitialBacklog;
+      if (params.horizonHours !== undefined) updateData.horizon_hours = params.horizonHours;
+      if (params.weatherProvider !== undefined) updateData.weather_provider = params.weatherProvider;
+      if (params.weatherImpactEnabled !== undefined) updateData.weather_impact_enabled = params.weatherImpactEnabled;
+      if (params.teamStructureSnapshot !== undefined) updateData.team_structure_snapshot = params.teamStructureSnapshot;
+      if (params.resultsSnapshot !== undefined) updateData.results_snapshot = params.resultsSnapshot as unknown;
+      if (params.weatherSnapshot !== undefined) updateData.weather_snapshot = params.weatherSnapshot as unknown;
+      if (params.notes !== undefined) updateData.notes = params.notes;
+
+      const { error } = await supabase
+        .from("simulation_history")
+        .update(updateData as never)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["simulation-history"] });
+    },
+  });
+
   const deleteSimulation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -118,6 +145,7 @@ export const useSimulationHistory = (baseId?: string) => {
     isLoading,
     error,
     saveSimulation,
+    updateSimulation,
     deleteSimulation,
   };
 };

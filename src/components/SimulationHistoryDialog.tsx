@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { History, Trash2, Calendar, Clock, Cloud, CloudOff, Play } from "lucide-react";
+import { History, Trash2, Calendar, Clock, Cloud, CloudOff, Play, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSimulationHistory, SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
+import { SimulationEditDialog } from "./SimulationEditDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -25,7 +26,9 @@ export const SimulationHistoryDialog = ({
   onLoadSimulation,
 }: SimulationHistoryDialogProps) => {
   const [open, setOpen] = useState(false);
-  const { history, isLoading, deleteSimulation } = useSimulationHistory(baseId);
+  const [editEntry, setEditEntry] = useState<SimulationHistoryEntry | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { history, isLoading, deleteSimulation, updateSimulation } = useSimulationHistory(baseId);
 
   const handleLoad = (entry: SimulationHistoryEntry) => {
     if (onLoadSimulation) {
@@ -44,101 +47,136 @@ export const SimulationHistoryDialog = ({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="bg-secondary/50 border-border hover:bg-secondary"
-          title="Histórico de Simulações"
-        >
-          <History className="w-4 h-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="w-5 h-5" />
-            Histórico de Simulações
-          </DialogTitle>
-          <DialogDescription>
-            Carregue simulações salvas para comparar com a atual.
-          </DialogDescription>
-        </DialogHeader>
+  const handleEdit = (entry: SimulationHistoryEntry) => {
+    setEditEntry(entry);
+    setEditDialogOpen(true);
+  };
 
-        <ScrollArea className="h-[400px] pr-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhuma simulação salva ainda.</p>
-              <p className="text-sm">Use o botão "Salvar" ao lado de "Simular" para salvar uma simulação.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {history.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="p-4 bg-secondary/20 rounded-lg border border-border hover:border-primary/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-foreground truncate">{entry.name}</h4>
-                      <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {format(new Date(entry.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          {format(new Date(entry.created_at), "HH:mm", { locale: ptBR })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          {entry.weather_impact_enabled ? (
-                            <Cloud className="w-3.5 h-3.5 text-primary" />
-                          ) : (
-                            <CloudOff className="w-3.5 h-3.5" />
-                          )}
-                          {entry.weather_provider === "openweathermap" ? "OpenWeather" : "Open-Meteo"}
-                        </span>
+  const handleSaveEdit = async (id: string, teamStructureSnapshot: Record<string, unknown>) => {
+    try {
+      await updateSimulation.mutateAsync({ 
+        id, 
+        teamStructureSnapshot 
+      });
+      toast.success("Equipes atualizadas com sucesso");
+    } catch (error) {
+      toast.error("Erro ao atualizar equipes");
+      throw error;
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="bg-secondary/50 border-border hover:bg-secondary"
+            title="Histórico de Simulações"
+          >
+            <History className="w-4 h-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Histórico de Simulações
+            </DialogTitle>
+            <DialogDescription>
+              Carregue, edite ou exclua simulações salvas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="h-[400px] pr-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhuma simulação salva ainda.</p>
+                <p className="text-sm">Use o botão "Salvar" ao lado de "Simular" para salvar uma simulação.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {history.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="p-4 bg-secondary/20 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-foreground truncate">{entry.name}</h4>
+                        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {format(new Date(entry.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {format(new Date(entry.created_at), "HH:mm", { locale: ptBR })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            {entry.weather_impact_enabled ? (
+                              <Cloud className="w-3.5 h-3.5 text-primary" />
+                            ) : (
+                              <CloudOff className="w-3.5 h-3.5" />
+                            )}
+                            {entry.weather_provider === "openweathermap" ? "OpenWeather" : "Open-Meteo"}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                          <span>BT: {entry.bt_initial_backlog}</span>
+                          <span>MT: {entry.mt_initial_backlog}</span>
+                          <span>Horizonte: {entry.horizon_hours}h</span>
+                        </div>
                       </div>
-                      <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                        <span>BT: {entry.bt_initial_backlog}</span>
-                        <span>MT: {entry.mt_initial_backlog}</span>
-                        <span>Horizonte: {entry.horizon_hours}h</span>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleLoad(entry)}
+                          title="Carregar simulação"
+                        >
+                          <Play className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(entry)}
+                          title="Editar equipes"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(entry.id, entry.name)}
+                          disabled={deleteSimulation.isPending}
+                          className="text-destructive hover:text-destructive"
+                          title="Excluir simulação"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleLoad(entry)}
-                        title="Carregar simulação"
-                      >
-                        <Play className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(entry.id, entry.name)}
-                        disabled={deleteSimulation.isPending}
-                        className="text-destructive hover:text-destructive"
-                        title="Excluir simulação"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <SimulationEditDialog
+        entry={editEntry}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSave={handleSaveEdit}
+      />
+    </>
   );
 };
