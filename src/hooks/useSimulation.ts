@@ -38,7 +38,7 @@ export interface SimulationRow {
   eq_mt_add: number;
   // Weather
   precip_mm: number;
-  wind_ms: number;
+  wind_kmh: number;
   temp_c: number;
   weather_description: string;
   // Detailed data
@@ -115,7 +115,7 @@ export const useSimulation = (
       // Get weather for this hour
       const weather = weatherData?.[i] || {
         precip_mm: 0,
-        wind_ms: 3,
+        wind_kmh: 10,
         temp_c: 25,
         description: "",
       };
@@ -128,7 +128,7 @@ export const useSimulation = (
         const { upliftBT, upliftMT } = calculateWeatherUplift(
           weatherTriggers,
           weather.precip_mm,
-          weather.wind_ms,
+          weather.wind_kmh,
           weather.temp_c
         );
         uplift_bt = upliftBT;
@@ -223,7 +223,7 @@ export const useSimulation = (
         incidentes_mt_saldo: Math.round(saldo_mt),
         eq_mt_add,
         precip_mm: weather.precip_mm,
-        wind_ms: weather.wind_ms,
+        wind_kmh: weather.wind_kmh,
         temp_c: weather.temp_c,
         weather_description: weather.description || "",
         // Detailed data

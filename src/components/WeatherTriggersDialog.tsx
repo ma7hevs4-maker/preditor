@@ -18,7 +18,7 @@ interface WeatherTriggersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   precip_mm: number;
-  wind_ms: number;
+  wind_kmh: number;
   temp_c: number;
   baseId?: string | null;
 }
@@ -27,7 +27,7 @@ export const WeatherTriggersDialog = ({
   open,
   onOpenChange,
   precip_mm,
-  wind_ms,
+  wind_kmh,
   temp_c,
   baseId = null,
 }: WeatherTriggersDialogProps) => {
@@ -42,7 +42,7 @@ export const WeatherTriggersDialog = ({
     let unit = "";
     switch (type) {
       case "precip": unit = "mm"; break;
-      case "wind": unit = "m/s"; break;
+      case "wind": unit = "km/h"; break;
       case "temp": unit = "°C"; break;
     }
 
@@ -59,7 +59,7 @@ export const WeatherTriggersDialog = ({
   const allTriggers = triggers?.map(trigger => ({
     ...trigger,
     condition: getConditionText(trigger),
-    isActive: isTriggerActive(trigger, precip_mm, wind_ms, temp_c),
+    isActive: isTriggerActive(trigger, precip_mm, wind_kmh, temp_c),
   })) || [];
 
   const activeTriggers = allTriggers.filter((t) => t.isActive);
