@@ -202,7 +202,7 @@ const Index = () => {
     eq_bt_add: 0,
     eq_mt_add: 0,
     precip_mm: 0,
-    wind_ms: 0,
+    wind_kmh: 0,
     temp_c: 25,
   };
 
@@ -314,7 +314,7 @@ const Index = () => {
           <div className="xl:col-span-2">
             <WeatherIndicator
               precip_mm={currentData.precip_mm}
-              wind_ms={currentData.wind_ms}
+              wind_kmh={currentData.wind_kmh}
               temp_c={currentData.temp_c}
               lat={selectedBase?.lat}
               lon={selectedBase?.lon}
