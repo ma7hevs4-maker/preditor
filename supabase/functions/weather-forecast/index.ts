@@ -10,7 +10,7 @@ interface WeatherHour {
   datetime: string;
   temp_c: number;
   precip_mm: number;
-  wind_ms: number;
+  wind_kmh: number;
   humidity: number;
   description: string;
   icon: string;
@@ -92,7 +92,7 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Prom
         datetime: datetime.toISOString(),
         temp_c: Math.round(hourlyData.temperature_2m[i] * 10) / 10,
         precip_mm: Math.round(hourlyData.precipitation[i] * 100) / 100,
-        wind_ms: Math.round((hourlyData.wind_speed_10m[i] / 3.6) * 10) / 10,
+        wind_kmh: Math.round(hourlyData.wind_speed_10m[i] * 10) / 10, // Already in km/h from Open-Meteo
         humidity: hourlyData.relative_humidity_2m[i],
         description: weatherInfo.description,
         icon: weatherInfo.icon,
@@ -163,7 +163,7 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
           datetime: interpTime.toISOString(),
           temp_c: Math.round(temp * 10) / 10,
           precip_mm: Math.round(precipPerHour * 100) / 100,
-          wind_ms: Math.round(windSpeed * 10) / 10, // OWM already returns m/s
+          wind_kmh: Math.round(windSpeed * 3.6 * 10) / 10, // OWM returns m/s, convert to km/h
           humidity: humidity,
           description: weather.description,
           icon: weather.icon.replace(/[dn]$/, dayNight), // Ensure correct day/night icon
