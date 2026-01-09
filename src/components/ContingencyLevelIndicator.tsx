@@ -73,7 +73,7 @@ export const ContingencyLevelIndicator = ({
             <span>{contingency.label}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-xs z-[100]">
+        <TooltipContent side="bottom" className="max-w-xs z-[9999] bg-popover border border-border shadow-xl">
           <div className="space-y-2 text-xs">
             <p><strong>Base:</strong> {baseName}</p>
             <p><strong>Total de Incidentes (fim do horizonte):</strong> {totalIncidents}</p>

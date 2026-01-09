@@ -66,9 +66,18 @@ export const Header = ({
             <Zap className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Preditor de Incidentes
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-foreground">
+                Preditor de Incidentes
+              </h1>
+              {/* Contingency Level Indicator - inline with title */}
+              {selectedBase && totalIncidents > 0 && (
+                <ContingencyLevelIndicator
+                  baseName={selectedBase.name}
+                  totalIncidents={totalIncidents}
+                />
+              )}
+            </div>
             <p className="text-muted-foreground text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               {selectedBase?.name || "Selecione uma base"}
@@ -79,14 +88,6 @@ export const Header = ({
               )}
             </p>
           </div>
-          
-          {/* Contingency Level Indicator */}
-          {selectedBase && totalIncidents > 0 && (
-            <ContingencyLevelIndicator
-              baseName={selectedBase.name}
-              totalIncidents={totalIncidents}
-            />
-          )}
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
