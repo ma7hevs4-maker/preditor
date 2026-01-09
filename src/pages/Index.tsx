@@ -280,6 +280,7 @@ const Index = () => {
   // Se já atingiu a meta no final do horizonte, não precisa de equipes adicionais
   const finalBtSaldo = finalData?.incidentes_bt_saldo ?? 0;
   const finalMtSaldo = finalData?.incidentes_mt_saldo ?? 0;
+  const finalTotalBacklog = finalBtSaldo + finalMtSaldo; // Total no final do horizonte para contingência
   const gapBt = hasSimulationInput ? Math.max(0, finalBtSaldo - TARGET_BT) : 0;
   const gapMt = hasSimulationInput ? Math.max(0, finalMtSaldo - TARGET_MT) : 0;
   const totalGap = gapBt + gapMt;
@@ -321,7 +322,7 @@ const Index = () => {
           isSaving={saveSimulation.isPending}
           weatherOverride={weatherOverride}
           onWeatherOverrideChange={setWeatherOverride}
-          totalIncidents={totalBacklog}
+          totalIncidents={hasSimulationInput ? finalTotalBacklog : 0}
         />
 
         {/* KPI Cards */}
