@@ -84,6 +84,11 @@ const Index = () => {
     wind_kmh: 10,
     gust_kmh: 15,
     temp_c: 25,
+    startDay: 1,
+    startHour: 0,
+    endDay: 1,
+    endHour: 23,
+    untilEnd: true,
   });
 
   // Fetch weather forecast
@@ -104,17 +109,28 @@ const Index = () => {
   // Create effective weather forecast - use override if enabled
   const effectiveWeatherForecast = useMemo(() => {
     if (weatherOverride.enabled && weatherData?.forecast) {
-      // Apply override values to all forecast hours
-      return weatherData.forecast.map(hour => ({
-        ...hour,
-        precip_mm: weatherOverride.precip_mm,
-        wind_kmh: weatherOverride.wind_kmh,
-        gust_kmh: weatherOverride.gust_kmh,
-        temp_c: weatherOverride.temp_c,
-      }));
+      // Calculate which hours fall within the override period
+      const startHourIndex = (weatherOverride.startDay - 1) * 24 + weatherOverride.startHour;
+      const endHourIndex = weatherOverride.untilEnd 
+        ? config.horizonHours 
+        : (weatherOverride.endDay - 1) * 24 + weatherOverride.endHour;
+      
+      return weatherData.forecast.map((hour, index) => {
+        // Check if this hour falls within the override period
+        if (index >= startHourIndex && index <= endHourIndex) {
+          return {
+            ...hour,
+            precip_mm: weatherOverride.precip_mm,
+            wind_kmh: weatherOverride.wind_kmh,
+            gust_kmh: weatherOverride.gust_kmh,
+            temp_c: weatherOverride.temp_c,
+          };
+        }
+        return hour;
+      });
     }
     return weatherData?.forecast;
-  }, [weatherData?.forecast, weatherOverride]);
+  }, [weatherData?.forecast, weatherOverride, config.horizonHours]);
   
   // Run simulation
   const liveSimulationData = useSimulation(
