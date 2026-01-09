@@ -33,8 +33,9 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
   if (!row) return null;
 
   const turno = getTurno(row.hora);
-  // Gatilho está ativo se há qualquer impacto BT ou MT calculado
-  const hasActiveTrigger = row.uplift_bt_pct > 0 || row.uplift_mt_pct > 0;
+  // Gatilho está ativo APENAS se há impacto BRUTO (condições climáticas no momento)
+  // Impacto de decay não conta como gatilho ativo
+  const hasActiveTrigger = row.uplift_bt_raw_pct > 0 || row.uplift_mt_raw_pct > 0;
 
   const DataRow = ({ label, value, color, subtext }: { label: string; value: string | number; color?: string; subtext?: string }) => (
     <div className="flex justify-between items-center py-1.5 border-b border-border/20">
