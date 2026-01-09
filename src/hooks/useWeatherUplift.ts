@@ -1,5 +1,36 @@
 import { WeatherTrigger, isTriggerActive } from "./useWeatherTriggers";
-import { DecayInfo, applyDecay } from "./useHalfLife";
+import { DecayInfo, applyDecay, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
+
+/**
+ * Calculate the base rain uplift from triggers (what would apply during active rain)
+ * This is needed to calculate residual impact after rain stops
+ */
+const calculateRainTriggersUplift = (
+  triggers: WeatherTrigger[],
+  lastEpisodeSumMm: number
+): { rainUpliftBT: number; rainUpliftMT: number } => {
+  let totalBT = 0;
+  let totalMT = 0;
+
+  // Simulate what triggers would be active based on the episode's rain intensity
+  for (const trigger of triggers) {
+    if (!trigger.active) continue;
+    
+    // Check rain triggers based on the episode's intensity
+    if (trigger.trigger_type === "rain") {
+      const min = trigger.condition_min ?? -Infinity;
+      const max = trigger.condition_max ?? Infinity;
+      // Use hourly average approximation from episode sum
+      const avgHourlyMm = lastEpisodeSumMm > 10 ? 5 : lastEpisodeSumMm > 5 ? 2.5 : lastEpisodeSumMm > 1 ? 0.5 : 0.3;
+      if (avgHourlyMm >= min && avgHourlyMm < max) {
+        totalBT += (trigger.impact_percent_bt ?? trigger.impact_percent ?? 0);
+        totalMT += (trigger.impact_percent_mt ?? trigger.impact_percent ?? 0);
+      }
+    }
+  }
+
+  return { rainUpliftBT: totalBT / 100, rainUpliftMT: totalMT / 100 };
+};
 
 /**
  * Calculate combined weather uplift for BT and MT based on active triggers
@@ -32,15 +63,35 @@ export const calculateWeatherUplift = (
   const rawBT = totalBT / 100;
   const rawMT = totalMT / 100;
 
-  // Apply decay if we have decay info and are in a post-rain period
-  // Only apply decay to rain-related triggers (when it's not actively raining)
   let finalBT = rawBT;
   let finalMT = rawMT;
 
-  if (decayInfo && decayInfo.tslr !== null && precip_mm < 0.2) {
-    // We're in a decay period - apply half-life reduction
-    finalBT = applyDecay(rawBT, decayInfo.tslr, decayInfo.lastEpisodeSumMm, "bt_total");
-    finalMT = applyDecay(rawMT, decayInfo.tslr, decayInfo.lastEpisodeSumMm, "mt_total");
+  // Apply decay if we're in a post-rain period (not actively raining)
+  if (decayInfo && decayInfo.tslr !== null && decayInfo.lastEpisodeSumMm !== null && precip_mm < 0.2) {
+    // Calculate what the rain impact would have been based on the last episode
+    const { rainUpliftBT, rainUpliftMT } = calculateRainTriggersUplift(triggers, decayInfo.lastEpisodeSumMm);
+    
+    // Apply decay to the rain-related uplift
+    const halfLifeBT = getHalfLifeHours("bt_total", decayInfo.lastEpisodeSumMm);
+    const halfLifeMT = getHalfLifeHours("mt_total", decayInfo.lastEpisodeSumMm);
+    
+    const decayedRainBT = rainUpliftBT * calculateDecayMultiplier(decayInfo.tslr, halfLifeBT);
+    const decayedRainMT = rainUpliftMT * calculateDecayMultiplier(decayInfo.tslr, halfLifeMT);
+    
+    // Add any non-rain triggers (wind, gust, temp) that are currently active + decayed rain residual
+    // Non-rain triggers are NOT decayed, only rain-related impacts are
+    let nonRainBT = 0;
+    let nonRainMT = 0;
+    
+    for (const trigger of triggers) {
+      if (trigger.trigger_type !== "rain" && isTriggerActive(trigger, precip_mm, wind_kmh, temp_c, gust_kmh)) {
+        nonRainBT += (trigger.impact_percent_bt ?? trigger.impact_percent ?? 0);
+        nonRainMT += (trigger.impact_percent_mt ?? trigger.impact_percent ?? 0);
+      }
+    }
+    
+    finalBT = (nonRainBT / 100) + decayedRainBT;
+    finalMT = (nonRainMT / 100) + decayedRainMT;
   }
 
   return {

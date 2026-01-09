@@ -131,15 +131,16 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
                   value={`${(row.decayMultiplier * 100).toFixed(0)}%`} 
                   color={row.decayMultiplier < 0.5 ? "text-success" : "text-amber-400"}
                 />
-                {row.uplift_bt_raw_pct > 0 || row.uplift_mt_raw_pct > 0 ? (
+                {(row.uplift_bt_pct > 0 || row.uplift_mt_pct > 0) ? (
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
-                    <p>Impacto reduzido de <span className="text-orange-400">{row.uplift_bt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span> (BT)</p>
-                    <p className="mt-1">Impacto reduzido de <span className="text-orange-400">{row.uplift_mt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span> (MT)</p>
+                    <p>Impacto residual BT: <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span></p>
+                    <p className="mt-1">Impacto residual MT: <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span></p>
+                    <p className="mt-1 text-amber-400">Decaindo com half-life baseado no episódio anterior</p>
                   </div>
                 ) : (
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
                     <p>Impacto residual da chuva anterior já decaiu completamente.</p>
-                    <p className="mt-1 text-success">Nenhum uplift aplicado nesta hora.</p>
+                    <p className="mt-1 text-success">Nenhum uplift de chuva aplicado nesta hora.</p>
                   </div>
                 )}
               </>
