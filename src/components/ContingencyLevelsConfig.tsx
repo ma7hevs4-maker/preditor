@@ -1,22 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Save, Pencil, X } from "lucide-react";
 import { useContingencyLevels, useUpdateContingencyLevel, ContingencyLevel } from "@/hooks/useContingencyLevels";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const POLO_ORDER = [
+const BASE_ORDER = [
   "Campos",
-  "Lagos",
+  "Araruama",
+  "Cabo Frio",
   "Macaé",
-  "Noroeste",
+  "Itaperuna",
+  "Pádua",
+  "Cantagalo",
   "Magé",
   "Niterói",
+  "Maricá",
   "São Gonçalo",
-  "Serrana",
-  "Sul",
+  "Petrópolis",
+  "Teresópolis",
+  "Angra dos Reis",
+  "Resende",
   "Enel Rio",
 ];
 
@@ -35,10 +40,10 @@ export const ContingencyLevelsConfig = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedData, setEditedData] = useState<Partial<ContingencyLevel>>({});
   
-  // Sort levels by POLO_ORDER
+  // Sort levels by BASE_ORDER
   const sortedLevels = levels?.slice().sort((a, b) => {
-    const indexA = POLO_ORDER.indexOf(a.polo);
-    const indexB = POLO_ORDER.indexOf(b.polo);
+    const indexA = BASE_ORDER.indexOf(a.base_name);
+    const indexB = BASE_ORDER.indexOf(b.base_name);
     if (indexA === -1) return 1;
     if (indexB === -1) return -1;
     return indexA - indexB;
@@ -97,7 +102,7 @@ export const ContingencyLevelsConfig = () => {
         <div>
           <h4 className="font-semibold text-foreground">Faixa de Incidências Ativas - Níveis de Contingência</h4>
           <p className="text-xs text-muted-foreground mt-1">
-            Configure os limites de incidentes para cada nível de contingência por polo
+            Configure os limites de incidentes para cada nível de contingência por base
           </p>
         </div>
       </div>
@@ -106,7 +111,7 @@ export const ContingencyLevelsConfig = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
             <tr>
-              <th className="text-left px-3 py-2 text-muted-foreground font-medium sticky left-0 bg-muted/50 z-10">Polo</th>
+              <th className="text-left px-3 py-2 text-muted-foreground font-medium sticky left-0 bg-muted/50 z-10">Base</th>
               <th colSpan={2} className={cn("text-center px-2 py-2 font-medium border-l border-border", levelColors.normal)}>
                 Normal
               </th>
@@ -143,7 +148,7 @@ export const ContingencyLevelsConfig = () => {
           <tbody>
             {sortedLevels?.map((level, index) => {
               const isEditing = editingId === level.id;
-              const isEnelRio = level.polo === "Enel Rio";
+              const isEnelRio = level.base_name === "Enel Rio";
               
               return (
                 <tr 
@@ -158,7 +163,7 @@ export const ContingencyLevelsConfig = () => {
                     index % 2 === 0 ? "bg-background" : "bg-muted/20",
                     isEnelRio && "bg-primary/10"
                   )}>
-                    {level.polo}
+                    {level.base_name}
                   </td>
                   
                   {/* Normal */}
@@ -317,17 +322,6 @@ export const ContingencyLevelsConfig = () => {
             })}
           </tbody>
         </table>
-      </div>
-      
-      <div className="text-xs text-muted-foreground space-y-1">
-        <p><strong>Mapeamento de bases para polos:</strong></p>
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-1 ml-4">
-          <li>• Lagos: Araruama, Cabo Frio</li>
-          <li>• Noroeste: Itaperuna, Pádua, Cantagalo</li>
-          <li>• Niterói: Niterói, Maricá</li>
-          <li>• Serrana: Petrópolis, Teresópolis</li>
-          <li>• Sul: Angra dos Reis, Resende</li>
-        </ul>
       </div>
     </div>
   );

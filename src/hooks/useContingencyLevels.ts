@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface ContingencyLevel {
   id: string;
-  polo: string;
+  base_name: string;
   normal_min: number;
   normal_max: number;
   nivel1_min: number;
@@ -26,7 +26,7 @@ export const useContingencyLevels = () => {
       const { data, error } = await supabase
         .from("contingency_levels")
         .select("*")
-        .order("polo");
+        .order("base_name");
       
       if (error) throw error;
       return data as ContingencyLevel[];
@@ -51,47 +51,6 @@ export const useUpdateContingencyLevel = () => {
       queryClient.invalidateQueries({ queryKey: ["contingency_levels"] });
     },
   });
-};
-
-// Mapeamento de bases para polos
-export const BASE_TO_POLO_MAP: Record<string, string> = {
-  // Campos
-  "Campos": "Campos",
-  
-  // Lagos (Araruama, Cabo Frio)
-  "Araruama": "Lagos",
-  "Cabo Frio": "Lagos",
-  
-  // Macaé
-  "Macaé": "Macaé",
-  
-  // Noroeste (Itaperuna, Pádua, Cantagalo)
-  "Itaperuna": "Noroeste",
-  "Pádua": "Noroeste",
-  "Cantagalo": "Noroeste",
-  
-  // Magé
-  "Magé": "Magé",
-  
-  // Niterói (Niterói, Maricá)
-  "Niterói": "Niterói",
-  "Maricá": "Niterói",
-  
-  // São Gonçalo
-  "São Gonçalo": "São Gonçalo",
-  
-  // Serrana (Petrópolis, Teresópolis)
-  "Petrópolis": "Serrana",
-  "Teresópolis": "Serrana",
-  
-  // Sul (Angra dos Reis, Resende)
-  "Angra dos Reis": "Sul",
-  "Resende": "Sul",
-};
-
-// Helper para obter o polo de uma base
-export const getPoloFromBase = (baseName: string): string | null => {
-  return BASE_TO_POLO_MAP[baseName] || null;
 };
 
 // Helper para determinar o nível de contingência baseado no total de incidentes

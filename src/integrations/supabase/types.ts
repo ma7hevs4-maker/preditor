@@ -49,6 +49,7 @@ export type Database = {
       }
       contingency_levels: {
         Row: {
+          base_name: string
           created_at: string
           crise_max: number
           crise_min: number
@@ -60,10 +61,10 @@ export type Database = {
           nivel2_min: number
           normal_max: number
           normal_min: number
-          polo: string
           updated_at: string
         }
         Insert: {
+          base_name: string
           created_at?: string
           crise_max?: number
           crise_min?: number
@@ -75,10 +76,10 @@ export type Database = {
           nivel2_min?: number
           normal_max?: number
           normal_min?: number
-          polo: string
           updated_at?: string
         }
         Update: {
+          base_name?: string
           created_at?: string
           crise_max?: number
           crise_min?: number
@@ -90,7 +91,6 @@ export type Database = {
           nivel2_min?: number
           normal_max?: number
           normal_min?: number
-          polo?: string
           updated_at?: string
         }
         Relationships: []
