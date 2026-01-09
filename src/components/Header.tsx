@@ -191,6 +191,7 @@ export const Header = ({
           onOpenChange={setWeatherOverrideOpen}
           override={weatherOverride}
           onOverrideChange={onWeatherOverrideChange}
+          horizonHours={config.horizonHours}
         />
       )}
     </header>

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Cloud, Thermometer, Wind, CloudRain } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Cloud, Thermometer, Wind, CloudRain, Clock, Calendar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface WeatherOverride {
   enabled: boolean;
@@ -18,6 +25,12 @@ export interface WeatherOverride {
   wind_kmh: number;
   gust_kmh: number;
   temp_c: number;
+  // Period controls
+  startDay: number; // 1, 2, or 3
+  startHour: number; // 0-23
+  endDay: number; // 1, 2, or 3
+  endHour: number; // 0-23
+  untilEnd: boolean; // If true, ignore endDay/endHour and go until simulation end
 }
 
 interface WeatherOverrideDialogProps {
@@ -25,6 +38,7 @@ interface WeatherOverrideDialogProps {
   onOpenChange: (open: boolean) => void;
   override: WeatherOverride;
   onOverrideChange: (override: WeatherOverride) => void;
+  horizonHours: number;
 }
 
 export const WeatherOverrideDialog = ({
@@ -32,8 +46,28 @@ export const WeatherOverrideDialog = ({
   onOpenChange,
   override,
   onOverrideChange,
+  horizonHours,
 }: WeatherOverrideDialogProps) => {
   const [localOverride, setLocalOverride] = useState<WeatherOverride>(override);
+
+  // Calculate number of days based on horizon
+  const numDays = Math.ceil(horizonHours / 24);
+
+  // Generate hour options
+  const hourOptions = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => ({
+      value: i,
+      label: `${i.toString().padStart(2, '0')}:00`,
+    }));
+  }, []);
+
+  // Generate day options
+  const dayOptions = useMemo(() => {
+    return Array.from({ length: numDays }, (_, i) => ({
+      value: i + 1,
+      label: `Dia ${i + 1}`,
+    }));
+  }, [numDays]);
 
   const handleApply = () => {
     onOverrideChange(localOverride);
@@ -47,6 +81,11 @@ export const WeatherOverrideDialog = ({
       wind_kmh: 10,
       gust_kmh: 15,
       temp_c: 25,
+      startDay: 1,
+      startHour: 0,
+      endDay: 1,
+      endHour: 23,
+      untilEnd: true,
     };
     setLocalOverride(resetOverride);
     onOverrideChange(resetOverride);
@@ -64,7 +103,7 @@ export const WeatherOverrideDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card border-border">
+      <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <Cloud className="w-5 h-5 text-primary" />
@@ -90,6 +129,123 @@ export const WeatherOverrideDialog = ({
             />
           </div>
 
+          {/* Period Selection */}
+          <div className="space-y-3 p-4 rounded-lg bg-secondary/20 border border-border">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-4 h-4 text-primary" />
+              <Label className="text-sm font-medium">Período do Clima Simulado</Label>
+            </div>
+            
+            {/* Start Period */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Início - Dia</Label>
+                <Select
+                  value={localOverride.startDay.toString()}
+                  onValueChange={(value) =>
+                    setLocalOverride((prev) => ({ ...prev, startDay: parseInt(value) }))
+                  }
+                >
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dayOptions.map((day) => (
+                      <SelectItem key={day.value} value={day.value.toString()}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Início - Hora</Label>
+                <Select
+                  value={localOverride.startHour.toString()}
+                  onValueChange={(value) =>
+                    setLocalOverride((prev) => ({ ...prev, startHour: parseInt(value) }))
+                  }
+                >
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hourOptions.map((hour) => (
+                      <SelectItem key={hour.value} value={hour.value.toString()}>
+                        {hour.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Until End Toggle */}
+            <div className="flex items-center justify-between py-2">
+              <Label className="text-sm">Até o final da simulação</Label>
+              <Switch
+                checked={localOverride.untilEnd}
+                onCheckedChange={(checked) =>
+                  setLocalOverride((prev) => ({ ...prev, untilEnd: checked }))
+                }
+              />
+            </div>
+
+            {/* End Period - only show if not untilEnd */}
+            {!localOverride.untilEnd && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Fim - Dia</Label>
+                  <Select
+                    value={localOverride.endDay.toString()}
+                    onValueChange={(value) =>
+                      setLocalOverride((prev) => ({ ...prev, endDay: parseInt(value) }))
+                    }
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dayOptions.map((day) => (
+                        <SelectItem key={day.value} value={day.value.toString()}>
+                          {day.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Fim - Hora</Label>
+                  <Select
+                    value={localOverride.endHour.toString()}
+                    onValueChange={(value) =>
+                      setLocalOverride((prev) => ({ ...prev, endHour: parseInt(value) }))
+                    }
+                  >
+                    <SelectTrigger className="bg-secondary border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hourOptions.map((hour) => (
+                        <SelectItem key={hour.value} value={hour.value.toString()}>
+                          {hour.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* Period Summary */}
+            <div className="text-xs text-muted-foreground mt-2 p-2 rounded bg-background/50">
+              <Calendar className="w-3 h-3 inline mr-1" />
+              {localOverride.untilEnd
+                ? `Dia ${localOverride.startDay} às ${localOverride.startHour.toString().padStart(2, '0')}:00 → Final da simulação`
+                : `Dia ${localOverride.startDay} às ${localOverride.startHour.toString().padStart(2, '0')}:00 → Dia ${localOverride.endDay} às ${localOverride.endHour.toString().padStart(2, '0')}:00`}
+            </div>
+          </div>
+
           {/* Presets */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -103,13 +259,14 @@ export const WeatherOverrideDialog = ({
                   size="sm"
                   className="text-xs"
                   onClick={() =>
-                    setLocalOverride({
+                    setLocalOverride((prev) => ({
+                      ...prev,
                       enabled: true,
                       precip_mm: preset.precip_mm,
                       wind_kmh: preset.wind_kmh,
                       gust_kmh: preset.gust_kmh,
                       temp_c: preset.temp_c,
-                    })
+                    }))
                   }
                 >
                   {preset.name}
