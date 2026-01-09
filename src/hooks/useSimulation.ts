@@ -40,6 +40,7 @@ export interface SimulationRow {
   // Weather
   precip_mm: number;
   wind_kmh: number;
+  gust_kmh: number;
   temp_c: number;
   weather_description: string;
   // Detailed data
@@ -126,6 +127,7 @@ export const useSimulation = (
       const weather = weatherData?.[i] || {
         precip_mm: 0,
         wind_kmh: 10,
+        gust_kmh: 15,
         temp_c: 25,
         description: "",
       };
@@ -149,7 +151,8 @@ export const useSimulation = (
           weather.precip_mm,
           weather.wind_kmh,
           weather.temp_c,
-          decayInfo
+          decayInfo,
+          weather.gust_kmh
         );
         uplift_bt = upliftBT;
         uplift_mt = upliftMT;
@@ -246,6 +249,7 @@ export const useSimulation = (
         eq_mt_add,
         precip_mm: weather.precip_mm,
         wind_kmh: weather.wind_kmh,
+        gust_kmh: weather.gust_kmh ?? weather.wind_kmh * 1.5,
         temp_c: weather.temp_c,
         weather_description: weather.description || "",
         // Detailed data

@@ -11,6 +11,7 @@ interface WeatherHour {
   temp_c: number;
   precip_mm: number;
   wind_kmh: number;
+  gust_kmh: number;
   humidity: number;
   description: string;
   icon: string;
@@ -58,7 +59,7 @@ function getWeatherInfoFromWMO(code: number, isDay: boolean): { description: str
 async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Promise<WeatherHour[]> {
   console.log(`Fetching from Open-Meteo for lat: ${lat}, lon: ${lon}`);
   
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,is_day&forecast_days=4&timezone=auto`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,is_day&forecast_days=4&timezone=auto`;
   
   const response = await fetch(url);
   
@@ -93,6 +94,7 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Prom
         temp_c: Math.round(hourlyData.temperature_2m[i] * 10) / 10,
         precip_mm: Math.round(hourlyData.precipitation[i] * 100) / 100,
         wind_kmh: Math.round(hourlyData.wind_speed_10m[i] * 10) / 10, // Already in km/h from Open-Meteo
+        gust_kmh: Math.round((hourlyData.wind_gusts_10m?.[i] || hourlyData.wind_speed_10m[i] * 1.5) * 10) / 10, // Gusts in km/h
         humidity: hourlyData.relative_humidity_2m[i],
         description: weatherInfo.description,
         icon: weatherInfo.icon,
@@ -149,6 +151,7 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
         const temp = current.main.temp + (next.main.temp - current.main.temp) * factor;
         const humidity = Math.round(current.main.humidity + (next.main.humidity - current.main.humidity) * factor);
         const windSpeed = current.wind.speed + (next.wind.speed - current.wind.speed) * factor;
+        const gustSpeed = (current.wind.gust || current.wind.speed * 1.5) + ((next.wind.gust || next.wind.speed * 1.5) - (current.wind.gust || current.wind.speed * 1.5)) * factor;
         
         // Rain is accumulated over 3h, distribute it
         const rain3h = current.rain?.['3h'] || 0;
@@ -164,6 +167,7 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
           temp_c: Math.round(temp * 10) / 10,
           precip_mm: Math.round(precipPerHour * 100) / 100,
           wind_kmh: Math.round(windSpeed * 3.6 * 10) / 10, // OWM returns m/s, convert to km/h
+          gust_kmh: Math.round(gustSpeed * 3.6 * 10) / 10, // OWM returns m/s, convert to km/h
           humidity: humidity,
           description: weather.description,
           icon: weather.icon.replace(/[dn]$/, dayNight), // Ensure correct day/night icon
