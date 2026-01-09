@@ -74,10 +74,6 @@ export const useSimulation = (
   weatherTriggers?: WeatherTrigger[]
 ) => {
   return useMemo(() => {
-    console.log('[useSimulation] Starting calculation');
-    console.log('[useSimulation] weatherTriggers:', weatherTriggers?.length ?? 'undefined');
-    console.log('[useSimulation] weatherImpactEnabled:', weatherImpactEnabled);
-    
     if (!historicalData || historicalData.length === 0) {
       return [];
     }
@@ -150,12 +146,6 @@ export const useSimulation = (
       let uplift_mt_raw = 0;
       
       if (weatherImpactEnabled) {
-        // Debug: log first iteration only
-        if (i === 0) {
-          console.log('[useSimulation] Hour 0 weather:', { precip: weather.precip_mm, wind: weather.wind_kmh, gust: weather.gust_kmh, temp: weather.temp_c });
-          console.log('[useSimulation] Calling calculateWeatherUplift with', weatherTriggers?.length ?? 0, 'triggers');
-        }
-        
         const { upliftBT, upliftMT, upliftBTRaw, upliftMTRaw } = calculateWeatherUplift(
           weatherTriggers,
           weather.precip_mm,
@@ -164,11 +154,6 @@ export const useSimulation = (
           decayInfo,
           weather.gust_kmh
         );
-        
-        if (i === 0) {
-          console.log('[useSimulation] Hour 0 uplift result:', { upliftBT, upliftMT, upliftBTRaw, upliftMTRaw });
-        }
-        
         uplift_bt = upliftBT;
         uplift_mt = upliftMT;
         uplift_bt_raw = upliftBTRaw;
