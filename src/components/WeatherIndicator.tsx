@@ -4,10 +4,12 @@ import { useState } from "react";
 import { WeatherTriggersDialog } from "./WeatherTriggersDialog";
 import { WeatherMapDialog } from "./WeatherMapDialog";
 import { Button } from "@/components/ui/button";
+import { useWeatherTriggers, isTriggerActive } from "@/hooks/useWeatherTriggers";
 
 interface WeatherIndicatorProps {
   precip_mm: number;
   wind_kmh: number;
+  gust_kmh?: number;
   temp_c: number;
   lat?: number;
   lon?: number;
@@ -19,6 +21,7 @@ interface WeatherIndicatorProps {
 export const WeatherIndicator = ({
   precip_mm,
   wind_kmh,
+  gust_kmh,
   temp_c,
   lat,
   lon,
@@ -28,6 +31,9 @@ export const WeatherIndicator = ({
 }: WeatherIndicatorProps) => {
   const [triggersDialogOpen, setTriggersDialogOpen] = useState(false);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  
+  // Fetch weather triggers to calculate active count
+  const { data: triggers } = useWeatherTriggers(baseId);
 
   const getRainStatus = (mm: number) => {
     if (mm >= 5) return { label: "Forte", color: "text-destructive" };
@@ -37,20 +43,19 @@ export const WeatherIndicator = ({
   };
 
   const getWindStatus = (kmh: number) => {
-    if (kmh >= 70) return { label: "Muito forte", color: "text-destructive" };
-    if (kmh >= 50) return { label: "Forte", color: "text-warning" };
-    if (kmh >= 30) return { label: "Moderado", color: "text-primary" };
+    if (kmh >= 36) return { label: "Muito forte", color: "text-destructive" };
+    if (kmh >= 22) return { label: "Forte", color: "text-warning" };
+    if (kmh >= 14) return { label: "Moderado", color: "text-primary" };
+    if (kmh >= 7) return { label: "Leve", color: "text-muted-foreground" };
     return { label: "Fraco", color: "text-muted-foreground" };
   };
 
-  // Calculate active triggers
+  // Calculate active triggers using real database triggers
   const getActiveTriggers = () => {
-    let count = 0;
-    if (precip_mm >= 0.2) count++;
-    if (wind_kmh >= 30) count++;
-    if (temp_c >= 35) count++;
-    if (temp_c <= 10) count++;
-    return count;
+    if (!triggers) return 0;
+    return triggers.filter(trigger => 
+      isTriggerActive(trigger, precip_mm, wind_kmh, temp_c, gust_kmh)
+    ).length;
   };
 
   const rainStatus = getRainStatus(precip_mm);
@@ -146,6 +151,7 @@ export const WeatherIndicator = ({
         onOpenChange={setTriggersDialogOpen}
         precip_mm={precip_mm}
         wind_kmh={wind_kmh}
+        gust_kmh={gust_kmh}
         temp_c={temp_c}
         baseId={baseId}
       />

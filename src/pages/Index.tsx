@@ -203,6 +203,7 @@ const Index = () => {
     eq_mt_add: 0,
     precip_mm: 0,
     wind_kmh: 0,
+    gust_kmh: 0,
     temp_c: 25,
   };
 
@@ -315,6 +316,7 @@ const Index = () => {
             <WeatherIndicator
               precip_mm={currentData.precip_mm}
               wind_kmh={currentData.wind_kmh}
+              gust_kmh={currentData.gust_kmh}
               temp_c={currentData.temp_c}
               lat={selectedBase?.lat}
               lon={selectedBase?.lon}
