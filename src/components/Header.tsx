@@ -113,21 +113,19 @@ export const Header = ({
             </div>
           )}
 
-          {/* Simulate Weather Button */}
+          {/* Simulate Weather Button - Icon only */}
           {onWeatherOverrideChange && weatherOverride && (
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               className={cn(
-                "gap-1.5 bg-secondary/50 border-border hover:bg-secondary",
+                "bg-secondary/50 border-border hover:bg-secondary",
                 weatherOverride.enabled && "border-warning text-warning hover:text-warning"
               )}
               onClick={() => setWeatherOverrideOpen(true)}
+              title={weatherOverride.enabled ? "Clima Simulado (ativo)" : "Simular Clima"}
             >
               <CloudLightning className="w-4 h-4" />
-              <span className="text-xs">
-                {weatherOverride.enabled ? "Clima Simulado" : "Simular Clima"}
-              </span>
             </Button>
           )}
 
