@@ -75,6 +75,7 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
             <DataRow label="Temperatura" value={`${row.temp_c.toFixed(0)}°C`} />
             <DataRow label="Precipitação" value={`${row.precip_mm.toFixed(1)} mm`} />
             <DataRow label="Vento" value={`${row.wind_kmh.toFixed(0)} km/h`} />
+            <DataRow label="Rajada" value={`${row.gust_kmh.toFixed(0)} km/h`} color={row.gust_kmh >= 30 ? "text-orange-400" : undefined} />
             <DataRow 
               label="Faixa de Chuva" 
               value={getFaixaChuvaLabel(row.precip_mm)} 
