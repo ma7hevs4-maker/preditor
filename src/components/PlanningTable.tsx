@@ -17,6 +17,7 @@ import * as XLSX from "xlsx";
 
 interface PlanningTableProps {
   data: SimulationRow[];
+  baseName?: string;
 }
 
 const getTurno = (hora: number): "A" | "B" | "C" => {
@@ -25,7 +26,7 @@ const getTurno = (hora: number): "A" | "B" | "C" => {
   return "C";
 };
 
-export const PlanningTable = ({ data }: PlanningTableProps) => {
+export const PlanningTable = ({ data, baseName }: PlanningTableProps) => {
   const [selectedRow, setSelectedRow] = useState<SimulationRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const currentHour = new Date().getHours();
@@ -261,7 +262,10 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
     // Gerar arquivo
     // ========================================
     const now = new Date();
-    const filename = `planejamento_${now.toISOString().slice(0, 10)}_${String(now.getHours()).padStart(2, "0")}h.xlsx`;
+    const baseSlug = baseName 
+      ? baseName.toLowerCase().replace(/\s+/g, "_").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      : "base";
+    const filename = `planejamento_${baseSlug}_${now.toISOString().slice(0, 10)}_${String(now.getHours()).padStart(2, "0")}h.xlsx`;
     XLSX.writeFile(wb, filename);
   };
 

@@ -410,7 +410,7 @@ const Index = () => {
 
         {/* Full Width Planning Table */}
         {!historicalLoading && (
-          <PlanningTable data={simulationData} />
+          <PlanningTable data={simulationData} baseName={selectedBase?.name} />
         )}
       </div>
     </div>
