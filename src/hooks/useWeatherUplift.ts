@@ -14,7 +14,11 @@ export const calculateWeatherUplift = (
   decayInfo?: DecayInfo,
   gust_kmh?: number
 ): { upliftBT: number; upliftMT: number; upliftBTRaw: number; upliftMTRaw: number } => {
+  console.log('[calculateWeatherUplift] triggers:', triggers?.length ?? 'undefined');
+  console.log('[calculateWeatherUplift] conditions:', { precip_mm, wind_kmh, temp_c, gust_kmh });
+  
   if (!triggers || triggers.length === 0) {
+    console.log('[calculateWeatherUplift] No triggers - returning 0');
     return { upliftBT: 0, upliftMT: 0, upliftBTRaw: 0, upliftMTRaw: 0 };
   }
 
@@ -22,12 +26,15 @@ export const calculateWeatherUplift = (
   let totalMT = 0;
 
   for (const trigger of triggers) {
-    if (isTriggerActive(trigger, precip_mm, wind_kmh, temp_c, gust_kmh)) {
-      // Use specific BT/MT values if available, otherwise fall back to legacy impact_percent
+    const isActive = isTriggerActive(trigger, precip_mm, wind_kmh, temp_c, gust_kmh);
+    console.log(`[calculateWeatherUplift] Trigger "${trigger.name}" (${trigger.trigger_type}): min=${trigger.condition_min}, max=${trigger.condition_max}, isActive=${isActive}`);
+    if (isActive) {
       totalBT += (trigger.impact_percent_bt ?? trigger.impact_percent ?? 0);
       totalMT += (trigger.impact_percent_mt ?? trigger.impact_percent ?? 0);
     }
   }
+  
+  console.log('[calculateWeatherUplift] totalBT:', totalBT, 'totalMT:', totalMT);
 
   // Convert percentages to multipliers (e.g., 28% -> 0.28)
   const rawBT = totalBT / 100;
