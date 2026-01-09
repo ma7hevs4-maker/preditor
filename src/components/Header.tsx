@@ -59,7 +59,7 @@ export const Header = ({
   }, []);
 
   return (
-    <header className="glass-card p-4 mb-6 animate-slide-up">
+    <header className="glass-card p-4 mb-6 animate-slide-up relative z-50">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-xl bg-primary/10 glow-primary">
