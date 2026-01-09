@@ -3,8 +3,8 @@ import { HistoricalDataRow } from "./useHistoricalData";
 import { WeatherHour } from "./useWeather";
 import { SystemSetting } from "./useSystemSettings";
 import { WeatherTrigger } from "./useWeatherTriggers";
-import { calculateWeatherUplift } from "./useWeatherUplift";
-import { calculateDecayInfo, DecayInfo } from "./useHalfLife";
+import { calculateWeatherUplift, calculateActiveTriggersUplift } from "./useWeatherUplift";
+import { calculateDecayInfo, DecayInfo, setLastRainUplifts, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
 
 export interface SimulationConfig {
   baseId: string;
@@ -92,8 +92,29 @@ export const useSimulation = (
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Calculate decay info for weather data
-    const decayInfos = weatherData ? calculateDecayInfo(weatherData) : [];
+    // Calculate decay info for weather data (includes episode detection)
+    const { decayInfos, episodes } = weatherData 
+      ? calculateDecayInfo(weatherData) 
+      : { decayInfos: [] as DecayInfo[], episodes: [] };
+    
+    // First pass: Calculate raw uplifts for all hours to capture rain hour uplifts
+    const upliftsByHour: { upliftBT: number; upliftMT: number }[] = [];
+    if (weatherData && weatherImpactEnabled) {
+      for (let i = 0; i < config.horizonHours; i++) {
+        const weather = weatherData[i] || { precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 };
+        const { upliftBT, upliftMT } = calculateActiveTriggersUplift(
+          weatherTriggers,
+          weather.precip_mm,
+          weather.wind_kmh,
+          weather.temp_c,
+          weather.gust_kmh
+        );
+        upliftsByHour.push({ upliftBT, upliftMT });
+      }
+      
+      // Set the last rain uplifts in decayInfos based on actual rain hour uplifts
+      setLastRainUplifts(decayInfos, episodes, upliftsByHour);
+    }
     
     // Backlog inicial (sem redução prévia - agora aplicamos por hora)
     let backlog_bt = config.btInitialBacklog;
@@ -137,6 +158,8 @@ export const useSimulation = (
         tslr: null,
         lastEpisodeSumMm: null,
         decayMultiplier: 1,
+        lastRainUpliftBT: null,
+        lastRainUpliftMT: null,
       };
 
       // Apply weather uplift using database triggers (only if weather impact is enabled)
@@ -146,18 +169,41 @@ export const useSimulation = (
       let uplift_mt_raw = 0;
       
       if (weatherImpactEnabled) {
-        const { upliftBT, upliftMT, upliftBTRaw, upliftMTRaw } = calculateWeatherUplift(
-          weatherTriggers,
-          weather.precip_mm,
-          weather.wind_kmh,
-          weather.temp_c,
-          decayInfo,
-          weather.gust_kmh
-        );
-        uplift_bt = upliftBT;
-        uplift_mt = upliftMT;
-        uplift_bt_raw = upliftBTRaw;
-        uplift_mt_raw = upliftMTRaw;
+        const rawUplift = upliftsByHour[i] || { upliftBT: 0, upliftMT: 0 };
+        uplift_bt_raw = rawUplift.upliftBT;
+        uplift_mt_raw = rawUplift.upliftMT;
+        
+        // If currently raining (has active triggers), use raw uplift
+        // If not raining but has decay info, apply decay to last rain uplift
+        const isNotRaining = weather.precip_mm < 0.2;
+        const hasDecayInfo = decayInfo.tslr !== null && decayInfo.lastRainUpliftBT !== null;
+        
+        if (isNotRaining && hasDecayInfo) {
+          // Apply decay to the ACTUAL uplift from the last rain hour
+          const halfLifeBT = getHalfLifeHours("bt_total", decayInfo.lastEpisodeSumMm!);
+          const halfLifeMT = getHalfLifeHours("mt_total", decayInfo.lastEpisodeSumMm!);
+          
+          const decayMultiplierBT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeBT);
+          const decayMultiplierMT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeMT);
+          
+          // Get non-rain uplifts that are currently active (wind, gust, temp)
+          const { nonRainUpliftBT, nonRainUpliftMT } = calculateActiveTriggersUplift(
+            weatherTriggers,
+            0, // No rain
+            weather.wind_kmh,
+            weather.temp_c,
+            weather.gust_kmh,
+            true // excludeRainTriggers
+          );
+          
+          // Final uplift = active non-rain triggers + decayed rain uplift
+          uplift_bt = nonRainUpliftBT + (decayInfo.lastRainUpliftBT! * decayMultiplierBT);
+          uplift_mt = nonRainUpliftMT + (decayInfo.lastRainUpliftMT! * decayMultiplierMT);
+        } else {
+          // Use raw uplift (raining or no previous rain episode)
+          uplift_bt = uplift_bt_raw;
+          uplift_mt = uplift_mt_raw;
+        }
       }
 
       // Entrada ajustada = entrada histórica * (1 + uplift do clima)
