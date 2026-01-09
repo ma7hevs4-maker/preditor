@@ -274,9 +274,68 @@ export const ConfigurationForm = ({
             <p className="text-xs text-muted-foreground">
               {(localConfig.horizonUnit || "hours") === "hours"
                 ? "Modo detalhado com alocação de equipes por hora"
-                : "Modo simplificado apenas com horizonte em dias"}
+                : "Modo simplificado com estrutura padrão por dia"}
             </p>
           </div>
+
+          {/* Macro Mode - Structure Selection per Day */}
+          {(localConfig.horizonUnit || "hours") === "days" && teamStructures && teamStructures.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Estrutura de Equipes por Dia
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Selecione uma estrutura padrão para cada dia. Você pode editar os valores após a simulação.
+              </p>
+              {(() => {
+                const numDays = Math.ceil(localConfig.horizonHours / 24);
+                return Array.from({ length: Math.min(numDays, 7) }, (_, i) => i + 1).map((day) => (
+                  <div key={day} className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-foreground w-16">Dia {day}</span>
+                    <Select
+                      value={
+                        day === 1 ? (localConfig as any).macroStructureDay1 || "" :
+                        day === 2 ? (localConfig as any).macroStructureDay2 || "" :
+                        day === 3 ? (localConfig as any).macroStructureDay3 || "" :
+                        day === 4 ? (localConfig as any).macroStructureDay4 || "" :
+                        day === 5 ? (localConfig as any).macroStructureDay5 || "" :
+                        day === 6 ? (localConfig as any).macroStructureDay6 || "" :
+                        (localConfig as any).macroStructureDay7 || ""
+                      }
+                      onValueChange={(structureId) => {
+                        const structure = teamStructures.find(s => s.id === structureId);
+                        if (!structure) return;
+                        
+                        const teams = structureToTeamsArray(structure);
+                        const lossTeams = structureToLossTeamsArray(structure);
+                        
+                        const fieldKey = `macroStructureDay${day}` as keyof SimulationConfig;
+                        const teamsField = day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3";
+                        const lossField = day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3";
+                        
+                        setLocalConfig((prev) => ({
+                          ...prev,
+                          [fieldKey]: structureId,
+                          ...(day <= 3 ? { [teamsField]: teams, [lossField]: lossTeams } : {}),
+                        }));
+                      }}
+                    >
+                      <SelectTrigger className="flex-1 bg-secondary border-border">
+                        <SelectValue placeholder="Selecione estrutura..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {teamStructures.map((structure) => (
+                          <SelectItem key={structure.id} value={structure.id}>
+                            {structure.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
 
           {/* Horizon Selection */}
           <div className="space-y-3">
@@ -480,13 +539,13 @@ export const ConfigurationForm = ({
             })}
           </div>
 
-          {/* Day 1 - Equipes de Perdas (só BT) */}
+          {/* Day 1 - Equipes de BT */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-orange-400" />
                 <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Dia 1 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                  Dia 1 - Equipes de BT <span className="text-xs normal-case font-normal">(só BT)</span>
                 </h4>
               </div>
               <Button
@@ -689,13 +748,13 @@ export const ConfigurationForm = ({
                 })}
               </div>
 
-              {/* Day 2 - Equipes de Perdas (só BT) */}
+              {/* Day 2 - Equipes de BT */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-orange-400" />
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Dia 2 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                      Dia 2 - Equipes de BT <span className="text-xs normal-case font-normal">(só BT)</span>
                     </h4>
                   </div>
                   <Button
@@ -900,13 +959,13 @@ export const ConfigurationForm = ({
                 })}
               </div>
 
-              {/* Day 3 - Equipes de Perdas (só BT) */}
+              {/* Day 3 - Equipes de BT */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-orange-400" />
                     <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                      Dia 3 - Equipes de Perdas <span className="text-xs normal-case font-normal">(só BT)</span>
+                      Dia 3 - Equipes de BT <span className="text-xs normal-case font-normal">(só BT)</span>
                     </h4>
                   </div>
                   <Button

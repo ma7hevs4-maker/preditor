@@ -875,7 +875,7 @@ export const AdminConfigDialog = () => {
 
                     {/* Loss Teams */}
                     <div className="space-y-3">
-                      <h5 className="text-sm font-medium text-orange-400">Equipes de Perdas (só BT)</h5>
+                      <h5 className="text-sm font-medium text-orange-400">Equipes de BT (só BT)</h5>
                       {turnos.map((turno) => {
                         const totalTurno = turno.range.reduce((sum, h) => sum + structureLossTeams[h], 0);
                         return (

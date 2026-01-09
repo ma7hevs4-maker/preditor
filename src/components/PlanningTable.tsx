@@ -80,7 +80,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
       "Equipes Disponíveis": row.eq_disp,
       "Equipes BT": row.eq_bt,
       "Equipes MT": row.eq_mt,
-      "Equipes Perdas": row.eq_perdas,
+      "Equipes BT (Extra)": row.eq_perdas,
       // Productivity
       "Produtividade BT": row.bt_productivity,
       "Produtividade MT": row.mt_productivity,
