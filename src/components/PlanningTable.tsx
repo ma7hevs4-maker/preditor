@@ -61,7 +61,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
       // Weather
       "Temperatura (°C)": row.temp_c,
       "Chuva (mm)": row.precip_mm,
-      "Vento (km/h)": row.wind_kmh,
+      "Rajada (km/h)": row.gust_kmh,
       "Clima": row.weather_description,
       "Uplift BT (%)": row.uplift_bt_pct,
       "Uplift MT (%)": row.uplift_mt_pct,
@@ -178,7 +178,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
               <TableHead className="table-header">Turno</TableHead>
               <TableHead className="table-header text-center">Temp</TableHead>
               <TableHead className="table-header text-center">Chuva</TableHead>
-              <TableHead className="table-header text-center">Vento</TableHead>
+              <TableHead className="table-header text-center">Rajada</TableHead>
               <TableHead className="table-header text-right">
                 <span className="text-cyan-400">Entrada BT</span>
               </TableHead>
@@ -247,8 +247,8 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Wind className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs text-emerald-400">{row.wind_kmh.toFixed(0)}</span>
+                      <Wind className={cn("w-4 h-4", row.gust_kmh >= 30 ? "text-orange-400" : "text-emerald-400")} />
+                      <span className={cn("text-xs", row.gust_kmh >= 30 ? "text-orange-400" : "text-emerald-400")}>{row.gust_kmh.toFixed(0)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="data-cell text-right text-cyan-400">
