@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -156,15 +156,58 @@ export const AdminConfigDialog = () => {
     }
   };
 
-  const handleUpdateHistoricalField = async (id: string, field: string, value: number) => {
+  const handleUpdateHistoricalField = useCallback(async (id: string, field: string, value: number) => {
     try {
       await updateHistoricalData.mutateAsync({
         id,
         [field]: value,
       });
+      toast.success("Dado atualizado");
     } catch (error) {
       toast.error("Erro ao atualizar dado");
     }
+  }, [updateHistoricalData]);
+
+  // Debounced input component for historical data
+  const HistoricalInput = ({ 
+    initialValue, 
+    rowId, 
+    field, 
+    step = "0.1" 
+  }: { 
+    initialValue: number; 
+    rowId: string; 
+    field: string; 
+    step?: string;
+  }) => {
+    const [localValue, setLocalValue] = useState(initialValue.toString());
+    
+    useEffect(() => {
+      setLocalValue(initialValue.toString());
+    }, [initialValue]);
+
+    const handleBlur = () => {
+      const numValue = parseFloat(localValue) || 0;
+      if (numValue !== initialValue) {
+        handleUpdateHistoricalField(rowId, field, numValue);
+      }
+    };
+
+    return (
+      <Input
+        type="number"
+        step={step}
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="h-7 text-xs bg-secondary border-border text-center"
+      />
+    );
   };
 
   const handleSaveSettings = async () => {
@@ -921,57 +964,47 @@ export const AdminConfigDialog = () => {
                                 {row.hour.toString().padStart(2, "0")}h
                               </td>
                               <td className="px-1 py-1">
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={row.bt_productivity}
-                                  onChange={(e) => handleUpdateHistoricalField(row.id, "bt_productivity", parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs bg-secondary border-border text-center"
+                                <HistoricalInput
+                                  initialValue={row.bt_productivity}
+                                  rowId={row.id}
+                                  field="bt_productivity"
                                 />
                               </td>
                               <td className="px-1 py-1">
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={row.bt_entry_rate}
-                                  onChange={(e) => handleUpdateHistoricalField(row.id, "bt_entry_rate", parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs bg-secondary border-border text-center"
+                                <HistoricalInput
+                                  initialValue={row.bt_entry_rate}
+                                  rowId={row.id}
+                                  field="bt_entry_rate"
                                 />
                               </td>
                               <td className="px-1 py-1">
-                                <Input
-                                  type="number"
+                                <HistoricalInput
+                                  initialValue={row.bt_operator_removal}
+                                  rowId={row.id}
+                                  field="bt_operator_removal"
                                   step="0.01"
-                                  value={row.bt_operator_removal}
-                                  onChange={(e) => handleUpdateHistoricalField(row.id, "bt_operator_removal", parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs bg-secondary border-border text-center"
                                 />
                               </td>
                               <td className="px-1 py-1">
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={row.mt_productivity}
-                                  onChange={(e) => handleUpdateHistoricalField(row.id, "mt_productivity", parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs bg-secondary border-border text-center"
+                                <HistoricalInput
+                                  initialValue={row.mt_productivity}
+                                  rowId={row.id}
+                                  field="mt_productivity"
                                 />
                               </td>
                               <td className="px-1 py-1">
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={row.mt_entry_rate}
-                                  onChange={(e) => handleUpdateHistoricalField(row.id, "mt_entry_rate", parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs bg-secondary border-border text-center"
+                                <HistoricalInput
+                                  initialValue={row.mt_entry_rate}
+                                  rowId={row.id}
+                                  field="mt_entry_rate"
                                 />
                               </td>
                               <td className="px-1 py-1">
-                                <Input
-                                  type="number"
+                                <HistoricalInput
+                                  initialValue={row.mt_operator_removal}
+                                  rowId={row.id}
+                                  field="mt_operator_removal"
                                   step="0.01"
-                                  value={row.mt_operator_removal}
-                                  onChange={(e) => handleUpdateHistoricalField(row.id, "mt_operator_removal", parseFloat(e.target.value) || 0)}
-                                  className="h-7 text-xs bg-secondary border-border text-center"
                                 />
                               </td>
                             </tr>
