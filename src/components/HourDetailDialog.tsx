@@ -88,12 +88,12 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
               color={hasActiveTrigger ? "text-warning" : "text-success"}
             />
             <DataRow 
-              label="Impacto BT (bruto)" 
+              label="Impacto BT (gatilho)" 
               value={`+${row.uplift_bt_raw_pct.toFixed(1)}%`} 
               color={row.uplift_bt_raw_pct > 0 ? "text-orange-400" : undefined}
             />
             <DataRow 
-              label="Impacto MT (bruto)" 
+              label="Impacto MT (gatilho)" 
               value={`+${row.uplift_mt_raw_pct.toFixed(1)}%`} 
               color={row.uplift_mt_raw_pct > 0 ? "text-orange-400" : undefined}
             />
