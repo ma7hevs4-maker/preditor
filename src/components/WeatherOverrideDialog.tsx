@@ -16,6 +16,7 @@ export interface WeatherOverride {
   enabled: boolean;
   precip_mm: number;
   wind_kmh: number;
+  gust_kmh: number;
   temp_c: number;
 }
 
@@ -44,6 +45,7 @@ export const WeatherOverrideDialog = ({
       enabled: false,
       precip_mm: 0,
       wind_kmh: 10,
+      gust_kmh: 15,
       temp_c: 25,
     };
     setLocalOverride(resetOverride);
@@ -52,12 +54,12 @@ export const WeatherOverrideDialog = ({
 
   // Presets for quick selection
   const presets = [
-    { name: "Tempo Bom", precip_mm: 0, wind_kmh: 10, temp_c: 25 },
-    { name: "Chuva Leve", precip_mm: 2, wind_kmh: 15, temp_c: 22 },
-    { name: "Chuva Forte", precip_mm: 15, wind_kmh: 30, temp_c: 20 },
-    { name: "Tempestade", precip_mm: 30, wind_kmh: 60, temp_c: 18 },
-    { name: "Vento Forte", precip_mm: 0, wind_kmh: 55, temp_c: 25 },
-    { name: "Calor Intenso", precip_mm: 0, wind_kmh: 5, temp_c: 38 },
+    { name: "Tempo Bom", precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 },
+    { name: "Chuva Leve", precip_mm: 2, wind_kmh: 15, gust_kmh: 25, temp_c: 22 },
+    { name: "Chuva Forte", precip_mm: 15, wind_kmh: 30, gust_kmh: 50, temp_c: 20 },
+    { name: "Tempestade", precip_mm: 30, wind_kmh: 60, gust_kmh: 90, temp_c: 18 },
+    { name: "Rajada Forte", precip_mm: 0, wind_kmh: 25, gust_kmh: 70, temp_c: 25 },
+    { name: "Calor Intenso", precip_mm: 0, wind_kmh: 5, gust_kmh: 10, temp_c: 38 },
   ];
 
   return (
@@ -105,6 +107,7 @@ export const WeatherOverrideDialog = ({
                       enabled: true,
                       precip_mm: preset.precip_mm,
                       wind_kmh: preset.wind_kmh,
+                      gust_kmh: preset.gust_kmh,
                       temp_c: preset.temp_c,
                     })
                   }
@@ -162,6 +165,30 @@ export const WeatherOverrideDialog = ({
                     setLocalOverride((prev) => ({
                       ...prev,
                       wind_kmh: Math.max(0, parseInt(e.target.value) || 0),
+                    }))
+                  }
+                  className="bg-secondary border-border font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Gust */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Wind className="w-5 h-5 text-purple-400" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <Label className="text-sm">Rajada (km/h)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={200}
+                  step={1}
+                  value={localOverride.gust_kmh}
+                  onChange={(e) =>
+                    setLocalOverride((prev) => ({
+                      ...prev,
+                      gust_kmh: Math.max(0, parseInt(e.target.value) || 0),
                     }))
                   }
                   className="bg-secondary border-border font-mono"

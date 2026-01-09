@@ -1,7 +1,8 @@
-import { Cloud, MapPin, Zap, Clock, Sun, Moon, CloudOff } from "lucide-react";
+import { Cloud, MapPin, Zap, Clock, Sun, Moon, CloudOff, CloudLightning } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
+import { WeatherOverrideDialog, WeatherOverride } from "@/components/WeatherOverrideDialog";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { WeatherProvider } from "@/hooks/useWeatherProvider";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   config: SimulationConfig;
@@ -24,6 +26,8 @@ interface HeaderProps {
   onLoadSimulation?: (entry: SimulationHistoryEntry) => void;
   onSaveSimulation?: () => void;
   isSaving?: boolean;
+  weatherOverride?: WeatherOverride;
+  onWeatherOverrideChange?: (override: WeatherOverride) => void;
 }
 
 export const Header = ({ 
@@ -38,9 +42,12 @@ export const Header = ({
   onWeatherImpactChange,
   onLoadSimulation,
   onSaveSimulation,
-  isSaving
+  isSaving,
+  weatherOverride,
+  onWeatherOverrideChange
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [weatherOverrideOpen, setWeatherOverrideOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -93,6 +100,24 @@ export const Header = ({
               <Cloud className={`w-4 h-4 transition-colors ${weatherImpactEnabled ? "text-primary" : "text-muted-foreground"}`} />
               <span className="text-xs font-medium text-muted-foreground">Impacto</span>
             </div>
+          )}
+
+          {/* Simulate Weather Button */}
+          {onWeatherOverrideChange && weatherOverride && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "gap-1.5 bg-secondary/50 border-border hover:bg-secondary",
+                weatherOverride.enabled && "border-warning text-warning hover:text-warning"
+              )}
+              onClick={() => setWeatherOverrideOpen(true)}
+            >
+              <CloudLightning className="w-4 h-4" />
+              <span className="text-xs">
+                {weatherOverride.enabled ? "Clima Simulado" : "Simular Clima"}
+              </span>
+            </Button>
           )}
 
           {/* Weather Provider Switch */}
@@ -158,6 +183,16 @@ export const Header = ({
           </Button>
         </div>
       </div>
+
+      {/* Weather Override Dialog */}
+      {onWeatherOverrideChange && weatherOverride && (
+        <WeatherOverrideDialog
+          open={weatherOverrideOpen}
+          onOpenChange={setWeatherOverrideOpen}
+          override={weatherOverride}
+          onOverrideChange={onWeatherOverrideChange}
+        />
+      )}
     </header>
   );
 };
