@@ -47,6 +47,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contingency_levels: {
+        Row: {
+          created_at: string
+          crise_max: number
+          crise_min: number
+          extremo_min: number
+          id: string
+          nivel1_max: number
+          nivel1_min: number
+          nivel2_max: number
+          nivel2_min: number
+          normal_max: number
+          normal_min: number
+          polo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crise_max?: number
+          crise_min?: number
+          extremo_min?: number
+          id?: string
+          nivel1_max?: number
+          nivel1_min?: number
+          nivel2_max?: number
+          nivel2_min?: number
+          normal_max?: number
+          normal_min?: number
+          polo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crise_max?: number
+          crise_min?: number
+          extremo_min?: number
+          id?: string
+          nivel1_max?: number
+          nivel1_min?: number
+          nivel2_max?: number
+          nivel2_min?: number
+          normal_max?: number
+          normal_min?: number
+          polo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       historical_data: {
         Row: {
           base_id: string
