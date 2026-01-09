@@ -11,11 +11,11 @@ export interface SimulationConfig {
   btInitialBacklog: number;
   mtInitialBacklog: number;
   teamsPerHour: number[]; // 24 values for day 1
-  lossTeamsPerHour: number[]; // 24 values - equipes de perdas (só BT) day 1
+  lossTeamsPerHour: number[]; // 24 values - equipes de BT (só BT) day 1
   teamsPerHourDay2: number[]; // 24 values for day 2
-  lossTeamsPerHourDay2: number[]; // 24 values - equipes de perdas day 2
+  lossTeamsPerHourDay2: number[]; // 24 values - equipes de BT day 2
   teamsPerHourDay3: number[]; // 24 values for day 3
-  lossTeamsPerHourDay3: number[]; // 24 values - equipes de perdas day 3
+  lossTeamsPerHourDay3: number[]; // 24 values - equipes de BT day 3
   horizonHours: number;
   horizonUnit?: "hours" | "days"; // UI preference for horizon selection
 }
@@ -48,7 +48,7 @@ export interface SimulationRow {
   uplift_mt_pct: number;
   eq_bt: number; // equipes alocadas a BT
   eq_mt: number; // equipes alocadas a MT
-  eq_perdas: number; // equipes de perdas
+  eq_perdas: number; // equipes de BT (só BT)
   entrada_bt_base: number; // entrada histórica sem uplift
   entrada_mt_base: number;
   bt_productivity: number;
@@ -188,7 +188,7 @@ export const useSimulation = (
       const eq_bt = Math.max(0, eq_disp - eq_mt);
 
       // Capacidade de retirada = (produtividade / 8) * equipes alocadas
-      // Equipes de perdas só contribuem para BT
+      // Equipes de BT (extra) só contribuem para BT
       const cap_bt_h = (historical.bt_productivity / 8) * (eq_bt + eq_perdas);
       const cap_mt_h = (historical.mt_productivity / 8) * eq_mt;
 

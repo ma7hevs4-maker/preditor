@@ -202,10 +202,10 @@ export const SimulationEditDialog = ({
                           </div>
                         </div>
 
-                        {/* Equipes de Perdas */}
+                        {/* Equipes de BT */}
                         <div className="pt-2 border-t border-border/30">
                           <div className="flex items-center justify-between mb-1">
-                            <Label className="text-xs text-amber-400">Eq. Perdas</Label>
+                            <Label className="text-xs text-amber-400">Eq. BT</Label>
                             <div className="flex items-center gap-1">
                               <Button
                                 type="button"

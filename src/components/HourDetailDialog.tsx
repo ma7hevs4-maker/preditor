@@ -156,7 +156,7 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
             <DataRow label="Equipes Totais" value={row.eq_disp} />
             <DataRow label="Equipes para MT" value={row.eq_mt} color="text-purple-400" />
             <DataRow label="Equipes para BT" value={row.eq_bt} color="text-cyan-400" />
-            <DataRow label="Eq. Perdas (só BT)" value={row.eq_perdas} color="text-amber-400" />
+            <DataRow label="Eq. BT (só BT)" value={row.eq_perdas} color="text-amber-400" />
             <DataRow 
               label="Equipes Ideais" 
               value={row.eq_ideal_total} 
