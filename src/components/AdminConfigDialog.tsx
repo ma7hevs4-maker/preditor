@@ -532,9 +532,13 @@ export const AdminConfigDialog = () => {
       else setIsOpen(true);
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 bg-secondary/50 border-border hover:bg-secondary">
+        <Button 
+          variant="outline" 
+          size="icon"
+          className="bg-secondary/50 border-border hover:bg-secondary"
+          title="Configuração"
+        >
           <Settings className="w-4 h-4" />
-          Configuração
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border">

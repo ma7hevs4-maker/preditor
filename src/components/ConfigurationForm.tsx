@@ -200,13 +200,9 @@ export const ConfigurationForm = ({
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="icon"
-          className="bg-secondary/50 border-border hover:bg-secondary"
-          title="Simulação"
-        >
+        <Button variant="outline" className="gap-2 bg-secondary/50 border-border hover:bg-secondary">
           <Play className="w-4 h-4" />
+          Simulação
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto bg-card border-border">
