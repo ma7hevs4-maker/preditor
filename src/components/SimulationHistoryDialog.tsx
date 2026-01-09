@@ -51,7 +51,7 @@ export const SimulationHistoryDialog = ({
     try {
       const { error } = await supabase
         .from("simulation_history")
-        .update({ results_snapshot: updatedResults as unknown })
+        .update({ results_snapshot: updatedResults as never })
         .eq("id", entry.id);
 
       if (error) throw error;
