@@ -131,10 +131,17 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
                   value={`${(row.decayMultiplier * 100).toFixed(0)}%`} 
                   color={row.decayMultiplier < 0.5 ? "text-success" : "text-amber-400"}
                 />
-                <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
-                  <p>Impacto reduzido de <span className="text-orange-400">{row.uplift_bt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span> (BT)</p>
-                  <p className="mt-1">Impacto reduzido de <span className="text-orange-400">{row.uplift_mt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span> (MT)</p>
-                </div>
+                {row.uplift_bt_raw_pct > 0 || row.uplift_mt_raw_pct > 0 ? (
+                  <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
+                    <p>Impacto reduzido de <span className="text-orange-400">{row.uplift_bt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span> (BT)</p>
+                    <p className="mt-1">Impacto reduzido de <span className="text-orange-400">{row.uplift_mt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span> (MT)</p>
+                  </div>
+                ) : (
+                  <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
+                    <p>Impacto residual da chuva anterior já decaiu completamente.</p>
+                    <p className="mt-1 text-success">Nenhum uplift aplicado nesta hora.</p>
+                  </div>
+                )}
               </>
             ) : row.precip_mm >= 0.2 ? (
               <div className="text-xs text-muted-foreground py-4 text-center">
