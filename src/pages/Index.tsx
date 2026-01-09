@@ -110,10 +110,21 @@ const Index = () => {
   const effectiveWeatherForecast = useMemo(() => {
     if (weatherOverride.enabled && weatherData?.forecast) {
       // Calculate which hours fall within the override period
-      const startHourIndex = (weatherOverride.startDay - 1) * 24 + weatherOverride.startHour;
+      // The hour selection (0-23) represents the actual clock hour, not the array index
+      // Array index 0 = currentHour, index 1 = currentHour + 1, etc.
+      
+      // Convert day/hour selection to array index
+      const getHourIndex = (day: number, hour: number) => {
+        const dayOffset = (day - 1) * 24;
+        // Calculate hours from current hour (wrapping if needed)
+        const hourOffset = (hour - currentHour + 24) % 24;
+        return dayOffset + hourOffset;
+      };
+      
+      const startHourIndex = getHourIndex(weatherOverride.startDay, weatherOverride.startHour);
       const endHourIndex = weatherOverride.untilEnd 
         ? config.horizonHours 
-        : (weatherOverride.endDay - 1) * 24 + weatherOverride.endHour;
+        : getHourIndex(weatherOverride.endDay, weatherOverride.endHour);
       
       return weatherData.forecast.map((hour, index) => {
         // Check if this hour falls within the override period
@@ -130,7 +141,7 @@ const Index = () => {
       });
     }
     return weatherData?.forecast;
-  }, [weatherData?.forecast, weatherOverride, config.horizonHours]);
+  }, [weatherData?.forecast, weatherOverride, config.horizonHours, currentHour]);
   
   // Run simulation
   const liveSimulationData = useSimulation(
