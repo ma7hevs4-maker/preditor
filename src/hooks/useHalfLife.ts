@@ -23,6 +23,8 @@ export interface DecayInfo {
   tslr: number | null; // Time since last rain (hours)
   lastEpisodeSumMm: number | null; // Sum of last episode in mm
   decayMultiplier: number; // 0 to 1, how much of uplift remains
+  lastRainUpliftBT: number | null; // Uplift BT at last rain hour (to apply decay on)
+  lastRainUpliftMT: number | null; // Uplift MT at last rain hour (to apply decay on)
 }
 
 /**
@@ -110,15 +112,19 @@ export const detectRainEpisodes = (
 
 /**
  * Calculate decay info for each hour in the weather forecast
+ * Note: This only calculates TSLR and episode info. The actual uplift values
+ * must be set later after calculating weather uplifts for rain hours.
  */
 export const calculateDecayInfo = (
   weatherData: WeatherHour[]
-): DecayInfo[] => {
+): { decayInfos: DecayInfo[]; episodes: RainEpisode[] } => {
   const episodes = detectRainEpisodes(weatherData);
   const decayInfos: DecayInfo[] = new Array(weatherData.length).fill(null).map(() => ({
     tslr: null,
     lastEpisodeSumMm: null,
     decayMultiplier: 1,
+    lastRainUpliftBT: null,
+    lastRainUpliftMT: null,
   }));
 
   // For each episode, calculate TSLR for subsequent hours
@@ -141,11 +147,42 @@ export const calculateDecayInfo = (
         tslr,
         lastEpisodeSumMm: episode.totalMm,
         decayMultiplier,
+        lastRainUpliftBT: null, // Will be set in simulation after calculating rain hour uplifts
+        lastRainUpliftMT: null,
       };
     }
   }
 
-  return decayInfos;
+  return { decayInfos, episodes };
+};
+
+/**
+ * Set the last rain uplift values for decay hours based on the uplift at the last hour of each episode
+ */
+export const setLastRainUplifts = (
+  decayInfos: DecayInfo[],
+  episodes: RainEpisode[],
+  upliftsByHour: { upliftBT: number; upliftMT: number }[]
+): void => {
+  for (let epIndex = 0; epIndex < episodes.length; epIndex++) {
+    const episode = episodes[epIndex];
+    const nextEpisode = episodes[epIndex + 1];
+    
+    // Get the uplift at the last hour of this rain episode
+    const lastRainHourIndex = episode.endIndex;
+    const lastRainUplift = upliftsByHour[lastRainHourIndex] || { upliftBT: 0, upliftMT: 0 };
+    
+    // Find the cutoff (start of next episode or end of data)
+    const cutoff = nextEpisode ? nextEpisode.startIndex : decayInfos.length;
+    
+    // Set the last rain uplift for all decay hours after this episode
+    for (let i = episode.endIndex + 1; i < cutoff; i++) {
+      if (decayInfos[i]) {
+        decayInfos[i].lastRainUpliftBT = lastRainUplift.upliftBT;
+        decayInfos[i].lastRainUpliftMT = lastRainUplift.upliftMT;
+      }
+    }
+  }
 };
 
 /**
