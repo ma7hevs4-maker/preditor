@@ -1,5 +1,5 @@
 import { WeatherTrigger, isTriggerActive } from "./useWeatherTriggers";
-import { DecayInfo, calculateDecayMultiplier } from "./useHalfLife";
+import { DecayInfo, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
 
 /**
  * Calculate the uplift from currently active triggers based on weather conditions
@@ -51,7 +51,11 @@ export const calculateActiveTriggersUplift = (
 
 /**
  * Calculate combined weather uplift for BT and MT based on active triggers
- * Applies simple step-down decay (90%/70%/50%) for first 3 hours after rain stops
+ * Note: wind and gust are expected in km/h
+ * Applies decay based on time since last rain when not actively raining
+ * 
+ * IMPORTANT: The decay is applied to the ACTUAL uplift from the last rain hour,
+ * not recalculated based on episode sum. This ensures accurate residual impact.
  */
 export const calculateWeatherUplift = (
   triggers: WeatherTrigger[] | undefined,
@@ -77,19 +81,24 @@ export const calculateWeatherUplift = (
   let finalBT = rawBT;
   let finalMT = rawMT;
 
-  // If not actively raining AND we have decay info with last rain uplifts, calculate residual
+  // If not actively raining AND we have decay info with last rain uplifts, calculate residual rain impact
   const isNotRaining = precip_mm < 0.2;
   const hasDecayInfo = decayInfo && 
     decayInfo.tslr !== null && 
+    decayInfo.lastEpisodeSumMm !== null &&
     decayInfo.lastRainUpliftBT !== null &&
     decayInfo.lastRainUpliftMT !== null;
 
   if (isNotRaining && hasDecayInfo) {
-    // Simple step-down decay: 90% at 1h, 70% at 2h, 50% at 3h, 0% after
-    const decayMultiplier = calculateDecayMultiplier(decayInfo.tslr!);
+    // Apply exponential decay to the ACTUAL uplift from the last rain hour
+    const halfLifeBT = getHalfLifeHours("bt_total", decayInfo.lastEpisodeSumMm!);
+    const halfLifeMT = getHalfLifeHours("mt_total", decayInfo.lastEpisodeSumMm!);
     
-    const decayedRainBT = decayInfo.lastRainUpliftBT! * decayMultiplier;
-    const decayedRainMT = decayInfo.lastRainUpliftMT! * decayMultiplier;
+    const decayMultiplierBT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeBT);
+    const decayMultiplierMT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeMT);
+    
+    const decayedRainBT = decayInfo.lastRainUpliftBT! * decayMultiplierBT;
+    const decayedRainMT = decayInfo.lastRainUpliftMT! * decayMultiplierMT;
     
     // Final uplift = active non-rain triggers + decayed rain residual
     finalBT = nonRainUpliftBT + decayedRainBT;

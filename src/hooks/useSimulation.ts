@@ -4,7 +4,7 @@ import { WeatherHour } from "./useWeather";
 import { SystemSetting } from "./useSystemSettings";
 import { WeatherTrigger } from "./useWeatherTriggers";
 import { calculateWeatherUplift, calculateActiveTriggersUplift } from "./useWeatherUplift";
-import { calculateDecayInfo, DecayInfo, setLastRainUplifts, calculateDecayMultiplier } from "./useHalfLife";
+import { calculateDecayInfo, DecayInfo, setLastRainUplifts, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
 
 export interface SimulationConfig {
   baseId: string;
@@ -179,8 +179,12 @@ export const useSimulation = (
         const hasDecayInfo = decayInfo.tslr !== null && decayInfo.lastRainUpliftBT !== null;
         
         if (isNotRaining && hasDecayInfo) {
-          // Simple step-down decay: 90% at 1h, 70% at 2h, 50% at 3h, 0% after
-          const decayMultiplier = calculateDecayMultiplier(decayInfo.tslr!);
+          // Apply decay to the ACTUAL uplift from the last rain hour
+          const halfLifeBT = getHalfLifeHours("bt_total", decayInfo.lastEpisodeSumMm!);
+          const halfLifeMT = getHalfLifeHours("mt_total", decayInfo.lastEpisodeSumMm!);
+          
+          const decayMultiplierBT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeBT);
+          const decayMultiplierMT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeMT);
           
           // Get non-rain uplifts that are currently active (wind, gust, temp)
           const { nonRainUpliftBT, nonRainUpliftMT } = calculateActiveTriggersUplift(
@@ -193,8 +197,8 @@ export const useSimulation = (
           );
           
           // Final uplift = active non-rain triggers + decayed rain uplift
-          uplift_bt = nonRainUpliftBT + (decayInfo.lastRainUpliftBT! * decayMultiplier);
-          uplift_mt = nonRainUpliftMT + (decayInfo.lastRainUpliftMT! * decayMultiplier);
+          uplift_bt = nonRainUpliftBT + (decayInfo.lastRainUpliftBT! * decayMultiplierBT);
+          uplift_mt = nonRainUpliftMT + (decayInfo.lastRainUpliftMT! * decayMultiplierMT);
         } else {
           // Use raw uplift (raining or no previous rain episode)
           uplift_bt = uplift_bt_raw;

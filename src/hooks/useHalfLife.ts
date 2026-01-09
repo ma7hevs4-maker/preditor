@@ -1,16 +1,14 @@
 import { WeatherHour } from "./useWeather";
 
 /**
- * Simple step-down decay multipliers for hours after rain stops
- * Hour 1: 90% of original uplift remains
- * Hour 2: 70% of original uplift remains  
- * Hour 3: 50% of original uplift remains
- * Hour 4+: 0% (no residual impact)
+ * Half-life values from Python code
+ * Defines how quickly uplift decays after rain stops based on episode intensity
  */
-export const DECAY_STEPS: Record<number, number> = {
-  1: 0.9,
-  2: 0.7,
-  3: 0.5,
+export const HALF_LIFE = {
+  bt_equipe: { le1: 1, "1-5": 1, "5-10": 2, "10-20": 1, gt20: 2 },
+  mt_equipe: { le1: 3, "1-5": 5, "5-10": 8, "10-20": 10, gt20: 12 },
+  bt_total: { le1: 11, "1-5": 7, "5-10": 22, "10-20": 24, gt20: 25 },
+  mt_total: { le1: 11, "1-5": 7, "5-10": 22, "10-20": 24, gt20: 25 },
 };
 
 const CHUVA_THRESHOLD = 0.2;
@@ -30,13 +28,37 @@ export interface DecayInfo {
 }
 
 /**
- * Calculate decay multiplier using simple step-down approach
- * Returns the multiplier based on hours since last rain (TSLR)
+ * Get half-life bucket based on episode sum
  */
-export const calculateDecayMultiplier = (tslr: number): number => {
+export const getHalfLifeBucket = (episodeSumMm: number): string => {
+  if (episodeSumMm <= 1) return "le1";
+  if (episodeSumMm <= 5) return "1-5";
+  if (episodeSumMm <= 10) return "5-10";
+  if (episodeSumMm <= 20) return "10-20";
+  return "gt20";
+};
+
+/**
+ * Get half-life value in hours for a specific category and episode intensity
+ */
+export const getHalfLifeHours = (
+  category: "bt_total" | "mt_total" | "bt_equipe" | "mt_equipe",
+  episodeSumMm: number
+): number => {
+  const bucket = getHalfLifeBucket(episodeSumMm);
+  return HALF_LIFE[category][bucket as keyof typeof HALF_LIFE.bt_total] || 6;
+};
+
+/**
+ * Calculate decay multiplier using exponential decay formula
+ * multiplier = exp(-tslr / half_life)
+ */
+export const calculateDecayMultiplier = (
+  tslr: number,
+  halfLifeHours: number
+): number => {
   if (tslr <= 0) return 1;
-  if (tslr > 3) return 0; // No residual after 3 hours
-  return DECAY_STEPS[tslr] ?? 0;
+  return Math.exp(-tslr / halfLifeHours);
 };
 
 /**
@@ -113,12 +135,13 @@ export const calculateDecayInfo = (
     // Find the cutoff (start of next episode or end of data)
     const cutoff = nextEpisode ? nextEpisode.startIndex : weatherData.length;
     
-    // Calculate TSLR for hours after this episode ends (max 3 hours of decay)
+    // Calculate TSLR for hours after this episode ends
     for (let i = episode.endIndex + 1; i < cutoff; i++) {
       const tslr = i - episode.endIndex;
       
-      // Simple step-down decay multiplier
-      const decayMultiplier = calculateDecayMultiplier(tslr);
+      // Use bt_total half-life as reference for the multiplier display
+      const halfLife = getHalfLifeHours("bt_total", episode.totalMm);
+      const decayMultiplier = calculateDecayMultiplier(tslr, halfLife);
       
       decayInfos[i] = {
         tslr,
@@ -164,18 +187,22 @@ export const setLastRainUplifts = (
 
 /**
  * Apply decay to uplift based on time since last rain
- * Returns the decayed uplift value using simple step-down model
+ * Returns the decayed uplift value
  */
 export const applyDecay = (
   baseUplift: number,
-  tslr: number | null
+  tslr: number | null,
+  lastEpisodeSumMm: number | null,
+  category: "bt_total" | "mt_total" | "bt_equipe" | "mt_equipe"
 ): number => {
   // No decay during active rain or if no previous episode
-  if (baseUplift <= 0 || tslr === null) {
+  if (baseUplift <= 0 || tslr === null || lastEpisodeSumMm === null) {
     return baseUplift;
   }
 
-  const decayMultiplier = calculateDecayMultiplier(tslr);
+  const halfLife = getHalfLifeHours(category, lastEpisodeSumMm);
+  const decayMultiplier = calculateDecayMultiplier(tslr, halfLife);
+  
   return Math.max(0, baseUplift * decayMultiplier);
 };
 
