@@ -114,12 +114,13 @@ export const useDeleteWeatherTrigger = () => {
 };
 
 // Helper function to check if a trigger is active based on weather conditions
-// Note: wind is expected in km/h
+// Note: wind and gust are expected in km/h
 export const isTriggerActive = (
   trigger: WeatherTrigger,
   precip_mm: number,
   wind_kmh: number,
-  temp_c: number
+  temp_c: number,
+  gust_kmh?: number
 ): boolean => {
   let value: number;
   switch (trigger.trigger_type) {
@@ -128,6 +129,9 @@ export const isTriggerActive = (
       break;
     case "wind":
       value = wind_kmh;
+      break;
+    case "gust":
+      value = gust_kmh ?? wind_kmh * 1.5; // Fallback to estimated gust
       break;
     case "temp":
       value = temp_c;

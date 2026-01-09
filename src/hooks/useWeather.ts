@@ -8,6 +8,7 @@ export interface WeatherHour {
   temp_c: number;
   precip_mm: number;
   wind_kmh: number;
+  gust_kmh: number;
   humidity: number;
   description: string;
   icon: string;
