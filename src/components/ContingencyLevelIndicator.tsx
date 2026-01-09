@@ -64,16 +64,16 @@ export const ContingencyLevelIndicator = ({
         <TooltipTrigger asChild>
           <div 
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium cursor-help",
+              "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium cursor-help",
               contingency.color,
               className
             )}
           >
-            <AlertTriangle className="w-4 h-4" />
+            <AlertTriangle className="w-3 h-3" />
             <span>{contingency.label}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-xs">
+        <TooltipContent side="bottom" className="max-w-xs z-[100]">
           <div className="space-y-2 text-xs">
             <p><strong>Base:</strong> {baseName}</p>
             <p><strong>Total de Incidentes (fim do horizonte):</strong> {totalIncidents}</p>
