@@ -6,6 +6,7 @@ import { TeamsDisplay } from "@/components/TeamsDisplay";
 import { PlanningTable } from "@/components/PlanningTable";
 import { IncidentChart } from "@/components/IncidentChart";
 import { ConfigPanel } from "@/components/ConfigPanel";
+import { WeatherOverride } from "@/components/WeatherOverrideDialog";
 import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
 
 import { toast } from "@/hooks/use-toast";
@@ -76,6 +77,15 @@ const Index = () => {
   // Weather impact toggle
   const { enabled: weatherImpactEnabled, setEnabled: setWeatherImpactEnabled } = useWeatherImpact();
 
+  // Weather override for simulation testing
+  const [weatherOverride, setWeatherOverride] = useState<WeatherOverride>({
+    enabled: false,
+    precip_mm: 0,
+    wind_kmh: 10,
+    gust_kmh: 15,
+    temp_c: 25,
+  });
+
   // Fetch weather forecast
   const { 
     data: weatherData, 
@@ -90,12 +100,27 @@ const Index = () => {
 
   // Ensure stable reference for weatherTriggers
   const stableWeatherTriggers = useMemo(() => weatherTriggers ?? [], [weatherTriggers]);
+
+  // Create effective weather forecast - use override if enabled
+  const effectiveWeatherForecast = useMemo(() => {
+    if (weatherOverride.enabled && weatherData?.forecast) {
+      // Apply override values to all forecast hours
+      return weatherData.forecast.map(hour => ({
+        ...hour,
+        precip_mm: weatherOverride.precip_mm,
+        wind_kmh: weatherOverride.wind_kmh,
+        gust_kmh: weatherOverride.gust_kmh,
+        temp_c: weatherOverride.temp_c,
+      }));
+    }
+    return weatherData?.forecast;
+  }, [weatherData?.forecast, weatherOverride]);
   
   // Run simulation
   const liveSimulationData = useSimulation(
     config,
     historicalData,
-    weatherData?.forecast,
+    effectiveWeatherForecast,
     systemSettings,
     weatherImpactEnabled,
     stableWeatherTriggers
@@ -267,6 +292,8 @@ const Index = () => {
           onLoadSimulation={handleLoadSimulation}
           onSaveSimulation={handleSaveSimulation}
           isSaving={saveSimulation.isPending}
+          weatherOverride={weatherOverride}
+          onWeatherOverrideChange={setWeatherOverride}
         />
 
         {/* KPI Cards */}
