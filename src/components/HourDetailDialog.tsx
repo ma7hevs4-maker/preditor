@@ -5,8 +5,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CloudRain, Thermometer, Wind, Users, TrendingDown, TrendingUp, Target, Zap } from "lucide-react";
+import { CloudRain, Thermometer, Wind, Users, TrendingDown, TrendingUp, Target, Zap, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getHalfLifeBucket } from "@/hooks/useHalfLife";
 
 interface HourDetailDialogProps {
   row: SimulationRow | null;
@@ -67,7 +68,7 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-2">
           {/* Clima e Gatilhos */}
           <div className="space-y-1 p-3 rounded-lg bg-secondary/30 border border-border/30">
             <SectionTitle icon={CloudRain} title="Clima e Gatilhos" color="text-blue-400" />
@@ -85,15 +86,67 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
               color={hasActiveTrigger ? "text-warning" : "text-success"}
             />
             <DataRow 
-              label="Impacto BT" 
+              label="Impacto BT (bruto)" 
+              value={`+${row.uplift_bt_raw_pct.toFixed(1)}%`} 
+              color={row.uplift_bt_raw_pct > 0 ? "text-orange-400" : undefined}
+            />
+            <DataRow 
+              label="Impacto MT (bruto)" 
+              value={`+${row.uplift_mt_raw_pct.toFixed(1)}%`} 
+              color={row.uplift_mt_raw_pct > 0 ? "text-orange-400" : undefined}
+            />
+            <DataRow 
+              label="Impacto BT (final)" 
               value={`+${row.uplift_bt_pct.toFixed(1)}%`} 
               color={row.uplift_bt_pct > 0 ? "text-warning" : undefined}
             />
             <DataRow 
-              label="Impacto MT" 
+              label="Impacto MT (final)" 
               value={`+${row.uplift_mt_pct.toFixed(1)}%`} 
               color={row.uplift_mt_pct > 0 ? "text-warning" : undefined}
             />
+          </div>
+
+          {/* Half-Life / Decay */}
+          <div className="space-y-1 p-3 rounded-lg bg-secondary/30 border border-border/30">
+            <SectionTitle icon={Timer} title="Half-Life (Decay)" color="text-amber-400" />
+            {row.tslr !== null ? (
+              <>
+                <DataRow 
+                  label="Horas após chuva" 
+                  value={`${row.tslr}h`} 
+                  color="text-amber-400"
+                />
+                <DataRow 
+                  label="Episódio anterior" 
+                  value={`${row.lastEpisodeSumMm?.toFixed(1) ?? 0} mm`} 
+                />
+                <DataRow 
+                  label="Categoria" 
+                  value={getHalfLifeBucket(row.lastEpisodeSumMm ?? 0)} 
+                />
+                <DataRow 
+                  label="Fator de decay" 
+                  value={`${(row.decayMultiplier * 100).toFixed(0)}%`} 
+                  color={row.decayMultiplier < 0.5 ? "text-success" : "text-amber-400"}
+                />
+                <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
+                  <p>Impacto reduzido de <span className="text-orange-400">{row.uplift_bt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span> (BT)</p>
+                  <p className="mt-1">Impacto reduzido de <span className="text-orange-400">{row.uplift_mt_raw_pct.toFixed(0)}%</span> para <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span> (MT)</p>
+                </div>
+              </>
+            ) : row.precip_mm >= 0.2 ? (
+              <div className="text-xs text-muted-foreground py-4 text-center">
+                <CloudRain className="w-8 h-8 mx-auto mb-2 text-blue-400" />
+                <p>Chuva ativa</p>
+                <p className="mt-1">Impacto total aplicado</p>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground py-4 text-center">
+                <p>Sem episódio de chuva anterior</p>
+                <p className="mt-1">Decay não aplicável</p>
+              </div>
+            )}
           </div>
 
           {/* Equipes */}

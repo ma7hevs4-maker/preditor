@@ -4,6 +4,7 @@ import { WeatherHour } from "./useWeather";
 import { SystemSetting } from "./useSystemSettings";
 import { WeatherTrigger } from "./useWeatherTriggers";
 import { calculateWeatherUplift } from "./useWeatherUplift";
+import { calculateDecayInfo, DecayInfo } from "./useHalfLife";
 
 export interface SimulationConfig {
   baseId: string;
@@ -55,6 +56,12 @@ export interface SimulationRow {
   saldo_mt_ideal: number;
   eq_ideal_total: number; // total de equipes ideal
   remoto_bt_retirado: number; // quantidade retirada pelo remoto nesta hora
+  // Decay info
+  tslr: number | null; // Time since last rain (hours)
+  lastEpisodeSumMm: number | null; // Sum of last rain episode (mm)
+  decayMultiplier: number; // 0-1, how much uplift remains after decay
+  uplift_bt_raw_pct: number; // Uplift before decay
+  uplift_mt_raw_pct: number; // Uplift before decay
 }
 
 export const useSimulation = (
@@ -83,6 +90,9 @@ export const useSimulation = (
     const result: SimulationRow[] = [];
     const now = new Date();
     const currentHour = now.getHours();
+    
+    // Calculate decay info for weather data
+    const decayInfos = weatherData ? calculateDecayInfo(weatherData) : [];
     
     // Backlog inicial (sem redução prévia - agora aplicamos por hora)
     let backlog_bt = config.btInitialBacklog;
@@ -120,19 +130,31 @@ export const useSimulation = (
         description: "",
       };
 
+      // Get decay info for this hour
+      const decayInfo: DecayInfo = decayInfos[i] || {
+        tslr: null,
+        lastEpisodeSumMm: null,
+        decayMultiplier: 1,
+      };
+
       // Apply weather uplift using database triggers (only if weather impact is enabled)
       let uplift_bt = 0;
       let uplift_mt = 0;
+      let uplift_bt_raw = 0;
+      let uplift_mt_raw = 0;
       
       if (weatherImpactEnabled) {
-        const { upliftBT, upliftMT } = calculateWeatherUplift(
+        const { upliftBT, upliftMT, upliftBTRaw, upliftMTRaw } = calculateWeatherUplift(
           weatherTriggers,
           weather.precip_mm,
           weather.wind_kmh,
-          weather.temp_c
+          weather.temp_c,
+          decayInfo
         );
         uplift_bt = upliftBT;
         uplift_mt = upliftMT;
+        uplift_bt_raw = upliftBTRaw;
+        uplift_mt_raw = upliftMTRaw;
       }
 
       // Entrada ajustada = entrada histórica * (1 + uplift do clima)
@@ -240,6 +262,12 @@ export const useSimulation = (
         saldo_mt_ideal,
         eq_ideal_total,
         remoto_bt_retirado: Math.round(remoto_bt_retirado * 100) / 100,
+        // Decay info
+        tslr: decayInfo.tslr,
+        lastEpisodeSumMm: decayInfo.lastEpisodeSumMm,
+        decayMultiplier: decayInfo.decayMultiplier,
+        uplift_bt_raw_pct: uplift_bt_raw * 100,
+        uplift_mt_raw_pct: uplift_mt_raw * 100,
       });
 
       // Atualiza backlog para próxima iteração
