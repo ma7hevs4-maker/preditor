@@ -180,7 +180,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
               <TableHead className="table-header text-center">Temp</TableHead>
               <TableHead className="table-header text-center">Chuva</TableHead>
               <TableHead className="table-header text-center">Vento</TableHead>
-              <TableHead className="table-header text-center">Rajada</TableHead>
+              <TableHead className="table-header text-center border-r border-border/50">Rajada</TableHead>
               <TableHead className="table-header text-right">
                 <span className="text-cyan-400">Entrada BT</span>
               </TableHead>
@@ -253,7 +253,7 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                       <span className="text-xs text-cyan-400">{row.wind_kmh.toFixed(0)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center border-r border-border/50">
                     <div className="flex items-center justify-center gap-1">
                       <Wind className="w-4 h-4 text-purple-400" />
                       <span className="text-xs text-purple-400">{row.gust_kmh.toFixed(0)}</span>
