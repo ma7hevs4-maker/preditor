@@ -22,7 +22,7 @@ import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, 
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
-import { useAllWeatherTriggers, useAddWeatherTrigger, useDeleteWeatherTrigger } from "@/hooks/useWeatherTriggers";
+import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ export const AdminConfigDialog = () => {
   const updateHistoricalData = useUpdateHistoricalData();
   const updateSystemSetting = useUpdateSystemSetting();
   const addWeatherTrigger = useAddWeatherTrigger();
+  const updateWeatherTrigger = useUpdateWeatherTrigger();
   const deleteWeatherTrigger = useDeleteWeatherTrigger();
   const addTeamStructure = useAddTeamStructure();
   const updateTeamStructure = useUpdateTeamStructure();
@@ -82,6 +83,19 @@ export const AdminConfigDialog = () => {
     description: "",
     base_id: null as string | null,
   });
+
+  // Editing trigger state
+  const [editingTriggerId, setEditingTriggerId] = useState<string | null>(null);
+  const [editingTrigger, setEditingTrigger] = useState<{
+    name: string;
+    trigger_type: string;
+    condition_min: string;
+    condition_max: string;
+    impact_percent_bt: string;
+    impact_percent_mt: string;
+    description: string;
+    base_id: string | null;
+  } | null>(null);
 
   // Structure form
   const [showStructureForm, setShowStructureForm] = useState(false);
@@ -326,12 +340,94 @@ export const AdminConfigDialog = () => {
     switch (type) {
       case "precip": return "Precipitação";
       case "wind": return "Vento";
+      case "gust": return "Rajada";
       case "temp": return "Temperatura";
       default: return type;
     }
   };
 
-  const formatCondition = (trigger: any) => {
+  const handleEditTrigger = (trigger: WeatherTrigger) => {
+    setEditingTriggerId(trigger.id);
+    setEditingTrigger({
+      name: trigger.name,
+      trigger_type: trigger.trigger_type,
+      condition_min: trigger.condition_min?.toString() ?? "",
+      condition_max: trigger.condition_max?.toString() ?? "",
+      impact_percent_bt: trigger.impact_percent_bt?.toString() ?? "",
+      impact_percent_mt: trigger.impact_percent_mt?.toString() ?? "",
+      description: trigger.description ?? "",
+      base_id: trigger.base_id,
+    });
+  };
+
+  const handleCancelEditTrigger = () => {
+    setEditingTriggerId(null);
+    setEditingTrigger(null);
+  };
+
+  const handleSaveTriggerEdit = async () => {
+    if (!editingTriggerId || !editingTrigger) return;
+    
+    const btImpact = editingTrigger.impact_percent_bt ? parseFloat(editingTrigger.impact_percent_bt) : null;
+    const mtImpact = editingTrigger.impact_percent_mt ? parseFloat(editingTrigger.impact_percent_mt) : null;
+    const legacyImpact = btImpact !== null && mtImpact !== null 
+      ? (btImpact + mtImpact) / 2 
+      : btImpact ?? mtImpact ?? 0;
+
+    try {
+      await updateWeatherTrigger.mutateAsync({
+        id: editingTriggerId,
+        name: editingTrigger.name,
+        trigger_type: editingTrigger.trigger_type,
+        condition_min: editingTrigger.condition_min ? parseFloat(editingTrigger.condition_min) : null,
+        condition_max: editingTrigger.condition_max ? parseFloat(editingTrigger.condition_max) : null,
+        impact_percent: legacyImpact,
+        impact_percent_bt: btImpact,
+        impact_percent_mt: mtImpact,
+        description: editingTrigger.description || null,
+        base_id: editingTrigger.base_id,
+      });
+      toast.success("Gatilho atualizado!");
+      handleCancelEditTrigger();
+    } catch (error) {
+      toast.error("Erro ao atualizar gatilho");
+    }
+  };
+
+  const handleCopyDefaultsToBase = async () => {
+    if (!selectedBaseId) {
+      toast.error("Selecione uma base primeiro");
+      return;
+    }
+
+    const defaultTriggers = weatherTriggers?.filter(t => t.base_id === null && t.active) || [];
+    if (defaultTriggers.length === 0) {
+      toast.error("Nenhum gatilho padrão encontrado");
+      return;
+    }
+
+    try {
+      for (const trigger of defaultTriggers) {
+        await addWeatherTrigger.mutateAsync({
+          name: trigger.name,
+          trigger_type: trigger.trigger_type,
+          condition_min: trigger.condition_min,
+          condition_max: trigger.condition_max,
+          impact_percent: trigger.impact_percent,
+          impact_percent_bt: trigger.impact_percent_bt,
+          impact_percent_mt: trigger.impact_percent_mt,
+          description: trigger.description,
+          base_id: selectedBaseId,
+          active: true,
+        });
+      }
+      toast.success(`${defaultTriggers.length} gatilhos copiados para a base!`);
+    } catch (error) {
+      toast.error("Erro ao copiar gatilhos");
+    }
+  };
+
+  const formatCondition = (trigger: WeatherTrigger | { trigger_type: string; condition_min: number | null; condition_max: number | null }) => {
     const type = trigger.trigger_type;
     const min = trigger.condition_min;
     const max = trigger.condition_max;
@@ -339,7 +435,8 @@ export const AdminConfigDialog = () => {
     let unit = "";
     switch (type) {
       case "precip": unit = "mm"; break;
-      case "wind": unit = "m/s"; break;
+      case "wind": unit = "km/h"; break;
+      case "gust": unit = "km/h"; break;
       case "temp": unit = "°C"; break;
     }
 
@@ -902,17 +999,31 @@ export const AdminConfigDialog = () => {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-foreground">Gatilhos Climáticos</h4>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-1"
-                    onClick={() => setShowNewTriggerForm(!showNewTriggerForm)}
-                  >
-                    <Plus className="w-3 h-3" />
-                    Novo Gatilho
-                  </Button>
+                  <div className="flex gap-2">
+                    {selectedBaseId && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-1"
+                        onClick={handleCopyDefaultsToBase}
+                        disabled={addWeatherTrigger.isPending}
+                      >
+                        <Copy className="w-3 h-3" />
+                        Copiar Defaults
+                      </Button>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      onClick={() => setShowNewTriggerForm(!showNewTriggerForm)}
+                    >
+                      <Plus className="w-3 h-3" />
+                      Novo Gatilho
+                    </Button>
+                  </div>
                 </div>
 
                 {showNewTriggerForm && (
@@ -939,7 +1050,8 @@ export const AdminConfigDialog = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="precip">Precipitação (mm)</SelectItem>
-                            <SelectItem value="wind">Vento (m/s)</SelectItem>
+                            <SelectItem value="gust">Rajada (km/h)</SelectItem>
+                            <SelectItem value="wind">Vento (km/h)</SelectItem>
                             <SelectItem value="temp">Temperatura (°C)</SelectItem>
                           </SelectContent>
                         </Select>
@@ -1046,37 +1158,118 @@ export const AdminConfigDialog = () => {
                           </td>
                         </tr>
                       ) : filteredTriggers?.map((trigger, index) => (
-                        <tr key={trigger.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
-                          <td className="px-3 py-2 text-foreground font-medium">{trigger.name}</td>
-                          <td className="px-3 py-2 text-muted-foreground">{getTriggerTypeLabel(trigger.trigger_type)}</td>
-                          <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{formatCondition(trigger)}</td>
-                          <td className="px-3 py-2 text-muted-foreground text-xs">
-                            {trigger.base_id ? bases?.find(b => b.id === trigger.base_id)?.name : "Padrão"}
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <span className="font-semibold text-blue-400">
-                              {trigger.impact_percent_bt !== null ? `+${trigger.impact_percent_bt}%` : '-'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <span className="font-semibold text-orange-400">
-                              {trigger.impact_percent_mt !== null ? `+${trigger.impact_percent_mt}%` : '-'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-7 w-7 p-0 text-destructive"
-                              onClick={() => handleDeleteTrigger(trigger.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </td>
-                        </tr>
+                        editingTriggerId === trigger.id && editingTrigger ? (
+                          <tr key={trigger.id} className="bg-primary/10 border-y border-primary/30">
+                            <td className="px-2 py-1">
+                              <Input
+                                value={editingTrigger.name}
+                                onChange={(e) => setEditingTrigger(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                className="h-7 text-xs bg-secondary border-border"
+                              />
+                            </td>
+                            <td className="px-2 py-1 text-muted-foreground text-xs">
+                              {getTriggerTypeLabel(trigger.trigger_type)}
+                            </td>
+                            <td className="px-2 py-1">
+                              <div className="flex gap-1">
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  placeholder="Min"
+                                  value={editingTrigger.condition_min}
+                                  onChange={(e) => setEditingTrigger(prev => prev ? { ...prev, condition_min: e.target.value } : null)}
+                                  className="h-7 w-16 text-xs bg-secondary border-border"
+                                />
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  placeholder="Max"
+                                  value={editingTrigger.condition_max}
+                                  onChange={(e) => setEditingTrigger(prev => prev ? { ...prev, condition_max: e.target.value } : null)}
+                                  className="h-7 w-16 text-xs bg-secondary border-border"
+                                />
+                              </div>
+                            </td>
+                            <td className="px-2 py-1 text-muted-foreground text-xs">
+                              {trigger.base_id ? bases?.find(b => b.id === trigger.base_id)?.name : "Padrão"}
+                            </td>
+                            <td className="px-2 py-1">
+                              <Input
+                                type="number"
+                                value={editingTrigger.impact_percent_bt}
+                                onChange={(e) => setEditingTrigger(prev => prev ? { ...prev, impact_percent_bt: e.target.value } : null)}
+                                className="h-7 w-16 text-xs bg-secondary border-border text-right"
+                              />
+                            </td>
+                            <td className="px-2 py-1">
+                              <Input
+                                type="number"
+                                value={editingTrigger.impact_percent_mt}
+                                onChange={(e) => setEditingTrigger(prev => prev ? { ...prev, impact_percent_mt: e.target.value } : null)}
+                                className="h-7 w-16 text-xs bg-secondary border-border text-right"
+                              />
+                            </td>
+                            <td className="px-2 py-1 text-right">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 w-7 p-0 text-success"
+                                onClick={handleSaveTriggerEdit}
+                                disabled={updateWeatherTrigger.isPending}
+                              >
+                                <Save className="w-3 h-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 w-7 p-0"
+                                onClick={handleCancelEditTrigger}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={trigger.id} className={cn(
+                            index % 2 === 0 ? "bg-background" : "bg-muted/20",
+                            !trigger.active && "opacity-50"
+                          )}>
+                            <td className="px-3 py-2 text-foreground font-medium">{trigger.name}</td>
+                            <td className="px-3 py-2 text-muted-foreground">{getTriggerTypeLabel(trigger.trigger_type)}</td>
+                            <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{formatCondition(trigger)}</td>
+                            <td className="px-3 py-2 text-muted-foreground text-xs">
+                              {trigger.base_id ? bases?.find(b => b.id === trigger.base_id)?.name : "Padrão"}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="font-semibold text-blue-400">
+                                {trigger.impact_percent_bt !== null ? `+${trigger.impact_percent_bt}%` : '-'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <span className="font-semibold text-orange-400">
+                                {trigger.impact_percent_mt !== null ? `+${trigger.impact_percent_mt}%` : '-'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 w-7 p-0"
+                                onClick={() => handleEditTrigger(trigger as WeatherTrigger)}
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 w-7 p-0 text-destructive"
+                                onClick={() => handleDeleteTrigger(trigger.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        )
                       ))}
                     </tbody>
                   </table>
