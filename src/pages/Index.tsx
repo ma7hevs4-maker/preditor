@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { KPICard } from "@/components/KPICard";
 import { WeatherIndicator } from "@/components/WeatherIndicator";
@@ -88,14 +88,17 @@ const Index = () => {
     weatherProvider
   );
 
-  // Run simulation - ensure weatherTriggers is always an array for proper useMemo comparison
+  // Ensure stable reference for weatherTriggers
+  const stableWeatherTriggers = useMemo(() => weatherTriggers ?? [], [weatherTriggers]);
+  
+  // Run simulation
   const liveSimulationData = useSimulation(
     config,
     historicalData,
     weatherData?.forecast,
     systemSettings,
     weatherImpactEnabled,
-    weatherTriggers ?? []
+    stableWeatherTriggers
   );
 
   // Use loaded simulation or live data
