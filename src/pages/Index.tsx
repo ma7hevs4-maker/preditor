@@ -88,14 +88,14 @@ const Index = () => {
     weatherProvider
   );
 
-  // Run simulation
+  // Run simulation - ensure weatherTriggers is always an array for proper useMemo comparison
   const liveSimulationData = useSimulation(
     config,
     historicalData,
     weatherData?.forecast,
     systemSettings,
     weatherImpactEnabled,
-    weatherTriggers
+    weatherTriggers ?? []
   );
 
   // Use loaded simulation or live data
