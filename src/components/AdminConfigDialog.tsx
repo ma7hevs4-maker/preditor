@@ -205,7 +205,7 @@ export const AdminConfigDialog = () => {
             (e.target as HTMLInputElement).blur();
           }
         }}
-        className="h-7 text-xs bg-secondary border-border text-center"
+        className="h-7 text-xs bg-muted/50 border border-border hover:border-primary focus:border-primary text-center font-mono cursor-text"
       />
     );
   };
