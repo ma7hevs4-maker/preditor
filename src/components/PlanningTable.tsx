@@ -249,14 +249,14 @@ export const PlanningTable = ({ data }: PlanningTableProps) => {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Wind className={cn("w-4 h-4", row.wind_kmh >= 14 ? "text-cyan-400" : "text-muted-foreground")} />
-                      <span className={cn("text-xs", row.wind_kmh >= 14 ? "text-cyan-400" : "text-muted-foreground")}>{row.wind_kmh.toFixed(0)}</span>
+                      <Wind className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs text-cyan-400">{row.wind_kmh.toFixed(0)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <Wind className={cn("w-4 h-4", row.gust_kmh >= 30 ? "text-purple-400" : "text-muted-foreground")} />
-                      <span className={cn("text-xs", row.gust_kmh >= 30 ? "text-purple-400" : "text-muted-foreground")}>{row.gust_kmh.toFixed(0)}</span>
+                      <Wind className="w-4 h-4 text-purple-400" />
+                      <span className="text-xs text-purple-400">{row.gust_kmh.toFixed(0)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="data-cell text-right text-cyan-400">
