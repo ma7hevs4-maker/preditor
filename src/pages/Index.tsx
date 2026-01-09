@@ -321,6 +321,7 @@ const Index = () => {
           isSaving={saveSimulation.isPending}
           weatherOverride={weatherOverride}
           onWeatherOverrideChange={setWeatherOverride}
+          totalIncidents={totalBacklog}
         />
 
         {/* KPI Cards */}

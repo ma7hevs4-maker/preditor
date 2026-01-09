@@ -3,6 +3,7 @@ import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
 import { WeatherOverrideDialog, WeatherOverride } from "@/components/WeatherOverrideDialog";
+import { ContingencyLevelIndicator } from "@/components/ContingencyLevelIndicator";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
@@ -28,6 +29,7 @@ interface HeaderProps {
   isSaving?: boolean;
   weatherOverride?: WeatherOverride;
   onWeatherOverrideChange?: (override: WeatherOverride) => void;
+  totalIncidents?: number;
 }
 
 export const Header = ({ 
@@ -44,7 +46,8 @@ export const Header = ({
   onSaveSimulation,
   isSaving,
   weatherOverride,
-  onWeatherOverrideChange
+  onWeatherOverrideChange,
+  totalIncidents = 0
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherOverrideOpen, setWeatherOverrideOpen] = useState(false);
@@ -76,6 +79,14 @@ export const Header = ({
               )}
             </p>
           </div>
+          
+          {/* Contingency Level Indicator */}
+          {selectedBase && totalIncidents > 0 && (
+            <ContingencyLevelIndicator
+              baseName={selectedBase.name}
+              totalIncidents={totalIncidents}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">

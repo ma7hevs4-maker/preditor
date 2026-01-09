@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge } from "lucide-react";
+import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
@@ -588,7 +589,7 @@ export const AdminConfigDialog = () => {
             </DialogHeader>
             
             <Tabs defaultValue="bases" className="mt-4">
-              <TabsList className="grid w-full grid-cols-5 bg-secondary">
+              <TabsList className="grid w-full grid-cols-6 bg-secondary">
                 <TabsTrigger value="bases" className="gap-1 text-xs">
                   <MapPin className="w-3 h-3" />
                   Bases
@@ -604,6 +605,10 @@ export const AdminConfigDialog = () => {
                 <TabsTrigger value="triggers" className="gap-1 text-xs">
                   <AlertTriangle className="w-3 h-3" />
                   Gatilhos
+                </TabsTrigger>
+                <TabsTrigger value="contingency" className="gap-1 text-xs">
+                  <Gauge className="w-3 h-3" />
+                  Contingência
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="gap-1 text-xs">
                   <Percent className="w-3 h-3" />
@@ -1391,6 +1396,11 @@ export const AdminConfigDialog = () => {
                     </tbody>
                   </table>
                 </div>
+              </TabsContent>
+
+              {/* CONTINGENCY LEVELS TAB */}
+              <TabsContent value="contingency" className="space-y-4 mt-4">
+                <ContingencyLevelsConfig />
               </TabsContent>
 
               {/* GENERAL SETTINGS TAB */}
