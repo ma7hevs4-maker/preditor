@@ -50,6 +50,14 @@ export const WeatherIndicator = ({
     return { label: "Fraco", color: "text-muted-foreground" };
   };
 
+  const getGustStatus = (kmh: number | undefined) => {
+    if (!kmh) return { label: "N/A", color: "text-muted-foreground" };
+    if (kmh >= 70) return { label: "Muito forte", color: "text-destructive" };
+    if (kmh >= 50) return { label: "Forte", color: "text-warning" };
+    if (kmh >= 30) return { label: "Moderada", color: "text-orange-400" };
+    return { label: "Fraca", color: "text-muted-foreground" };
+  };
+
   // Calculate active triggers using real database triggers
   const getActiveTriggers = () => {
     if (!triggers) return 0;
@@ -60,6 +68,7 @@ export const WeatherIndicator = ({
 
   const rainStatus = getRainStatus(precip_mm);
   const windStatus = getWindStatus(wind_kmh);
+  const gustStatus = getGustStatus(gust_kmh);
   const activeTriggers = getActiveTriggers();
 
   return (
@@ -97,7 +106,7 @@ export const WeatherIndicator = ({
 
         {/* Weather data */}
         <div 
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1 cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
+          className="grid grid-cols-2 lg:grid-cols-5 gap-4 flex-1 cursor-pointer hover:bg-muted/20 rounded-lg p-2 -m-2 transition-colors"
           onClick={() => setTriggersDialogOpen(true)}
         >
           <div className="flex items-center gap-3">
@@ -119,6 +128,17 @@ export const WeatherIndicator = ({
               <p className="text-xs text-muted-foreground">Vento</p>
               <p className="font-mono text-sm font-semibold">{wind_kmh.toFixed(0)} km/h</p>
               <p className={cn("text-xs", windStatus.color)}>{windStatus.label}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-500/10">
+              <Wind className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Rajada</p>
+              <p className="font-mono text-sm font-semibold">{gust_kmh?.toFixed(0) ?? "N/A"} km/h</p>
+              <p className={cn("text-xs", gustStatus.color)}>{gustStatus.label}</p>
             </div>
           </div>
 
