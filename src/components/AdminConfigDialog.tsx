@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +70,9 @@ export const AdminConfigDialog = () => {
   const [btTarget, setBtTarget] = useState("70");
   const [mtTarget, setMtTarget] = useState("10");
 
-  // New trigger form
+  // Historical data editing state
+  const [isEditingHistorical, setIsEditingHistorical] = useState(false);
+  const [editedHistoricalData, setEditedHistoricalData] = useState<Record<string, Record<string, number>>>({});
   const [showNewTriggerForm, setShowNewTriggerForm] = useState(false);
   const [newTrigger, setNewTrigger] = useState({
     name: "",
@@ -156,58 +158,72 @@ export const AdminConfigDialog = () => {
     }
   };
 
-  const handleUpdateHistoricalField = useCallback(async (id: string, field: string, value: number) => {
-    try {
-      await updateHistoricalData.mutateAsync({
-        id,
+  // Start editing historical data
+  const handleStartEditingHistorical = () => {
+    if (!historicalData) return;
+    const initialData: Record<string, Record<string, number>> = {};
+    historicalData.forEach(row => {
+      initialData[row.id] = {
+        bt_productivity: row.bt_productivity,
+        bt_entry_rate: row.bt_entry_rate,
+        bt_operator_removal: row.bt_operator_removal,
+        mt_productivity: row.mt_productivity,
+        mt_entry_rate: row.mt_entry_rate,
+        mt_operator_removal: row.mt_operator_removal,
+      };
+    });
+    setEditedHistoricalData(initialData);
+    setIsEditingHistorical(true);
+  };
+
+  // Cancel editing historical data
+  const handleCancelEditingHistorical = () => {
+    setIsEditingHistorical(false);
+    setEditedHistoricalData({});
+  };
+
+  // Update a single field in editing state
+  const handleEditHistoricalField = (rowId: string, field: string, value: number) => {
+    setEditedHistoricalData(prev => ({
+      ...prev,
+      [rowId]: {
+        ...prev[rowId],
         [field]: value,
-      });
-      toast.success("Dado atualizado");
-    } catch (error) {
-      toast.error("Erro ao atualizar dado");
-    }
-  }, [updateHistoricalData]);
+      },
+    }));
+  };
 
-  // Debounced input component for historical data
-  const HistoricalInput = ({ 
-    initialValue, 
-    rowId, 
-    field, 
-    step = "0.1" 
-  }: { 
-    initialValue: number; 
-    rowId: string; 
-    field: string; 
-    step?: string;
-  }) => {
-    const [localValue, setLocalValue] = useState(initialValue.toString());
+  // Save all historical data changes
+  const handleSaveHistoricalData = async () => {
+    if (!historicalData) return;
     
-    useEffect(() => {
-      setLocalValue(initialValue.toString());
-    }, [initialValue]);
-
-    const handleBlur = () => {
-      const numValue = parseFloat(localValue) || 0;
-      if (numValue !== initialValue) {
-        handleUpdateHistoricalField(rowId, field, numValue);
+    try {
+      for (const row of historicalData) {
+        const editedRow = editedHistoricalData[row.id];
+        if (!editedRow) continue;
+        
+        // Check if any field changed
+        const hasChanges = 
+          editedRow.bt_productivity !== row.bt_productivity ||
+          editedRow.bt_entry_rate !== row.bt_entry_rate ||
+          editedRow.bt_operator_removal !== row.bt_operator_removal ||
+          editedRow.mt_productivity !== row.mt_productivity ||
+          editedRow.mt_entry_rate !== row.mt_entry_rate ||
+          editedRow.mt_operator_removal !== row.mt_operator_removal;
+        
+        if (hasChanges) {
+          await updateHistoricalData.mutateAsync({
+            id: row.id,
+            ...editedRow,
+          });
+        }
       }
-    };
-
-    return (
-      <Input
-        type="number"
-        step={step}
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-        className="h-7 text-xs bg-muted/50 border border-border hover:border-primary focus:border-primary text-center font-mono cursor-text"
-      />
-    );
+      toast.success("Dados históricos salvos com sucesso!");
+      setIsEditingHistorical(false);
+      setEditedHistoricalData({});
+    } catch (error) {
+      toast.error("Erro ao salvar dados históricos");
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -928,91 +944,159 @@ export const AdminConfigDialog = () => {
 
               {/* HISTORICAL DATA TAB */}
               <TabsContent value="historical" className="space-y-4 mt-4">
-                <div className="space-y-2">
-                  <Label>Selecione a Base</Label>
-                  <select
-                    value={selectedBaseId || ""}
-                    onChange={(e) => setSelectedBaseId(e.target.value || null)}
-                    className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-foreground"
-                  >
-                    <option value="">Selecione uma base</option>
-                    {bases?.map((base) => (
-                      <option key={base.id} value={base.id}>{base.name}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2 flex-1">
+                    <Label>Selecione a Base</Label>
+                    <select
+                      value={selectedBaseId || ""}
+                      onChange={(e) => {
+                        setSelectedBaseId(e.target.value || null);
+                        setIsEditingHistorical(false);
+                        setEditedHistoricalData({});
+                      }}
+                      className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-foreground"
+                      disabled={isEditingHistorical}
+                    >
+                      <option value="">Selecione uma base</option>
+                      {bases?.map((base) => (
+                        <option key={base.id} value={base.id}>{base.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {selectedBaseId && historicalData && (
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">Hora</th>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">BT Prod.</th>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">BT Entrada</th>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">BT Ret.Op.</th>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">MT Prod.</th>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">MT Entrada</th>
-                            <th className="px-2 py-2 text-muted-foreground font-medium">MT Ret.Op.</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {historicalData.map((row, index) => (
-                            <tr key={row.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
-                              <td className="px-2 py-1 text-center font-mono text-foreground">
-                                {row.hour.toString().padStart(2, "0")}h
-                              </td>
-                              <td className="px-1 py-1">
-                                <HistoricalInput
-                                  initialValue={row.bt_productivity}
-                                  rowId={row.id}
-                                  field="bt_productivity"
-                                />
-                              </td>
-                              <td className="px-1 py-1">
-                                <HistoricalInput
-                                  initialValue={row.bt_entry_rate}
-                                  rowId={row.id}
-                                  field="bt_entry_rate"
-                                />
-                              </td>
-                              <td className="px-1 py-1">
-                                <HistoricalInput
-                                  initialValue={row.bt_operator_removal}
-                                  rowId={row.id}
-                                  field="bt_operator_removal"
-                                  step="0.01"
-                                />
-                              </td>
-                              <td className="px-1 py-1">
-                                <HistoricalInput
-                                  initialValue={row.mt_productivity}
-                                  rowId={row.id}
-                                  field="mt_productivity"
-                                />
-                              </td>
-                              <td className="px-1 py-1">
-                                <HistoricalInput
-                                  initialValue={row.mt_entry_rate}
-                                  rowId={row.id}
-                                  field="mt_entry_rate"
-                                />
-                              </td>
-                              <td className="px-1 py-1">
-                                <HistoricalInput
-                                  initialValue={row.mt_operator_removal}
-                                  rowId={row.id}
-                                  field="mt_operator_removal"
-                                  step="0.01"
-                                />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-foreground">Dados Históricos por Hora</h4>
+                      {!isEditingHistorical ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1"
+                          onClick={handleStartEditingHistorical}
+                        >
+                          <Pencil className="w-3 h-3" />
+                          Editar
+                        </Button>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            className="gap-1"
+                            onClick={handleSaveHistoricalData}
+                            disabled={updateHistoricalData.isPending}
+                          >
+                            <Save className="w-3 h-3" />
+                            Salvar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-1"
+                            onClick={handleCancelEditingHistorical}
+                          >
+                            <X className="w-3 h-3" />
+                            Cancelar
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+
+                    <div className="border border-border rounded-lg overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-muted/50">
+                            <tr>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">Hora</th>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">BT Prod.</th>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">BT Entrada</th>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">BT Ret.Op.</th>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">MT Prod.</th>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">MT Entrada</th>
+                              <th className="px-2 py-2 text-muted-foreground font-medium">MT Ret.Op.</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {historicalData.map((row, index) => (
+                              <tr key={row.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                                <td className="px-2 py-1 text-center font-mono text-foreground">
+                                  {row.hour.toString().padStart(2, "0")}h
+                                </td>
+                                {isEditingHistorical ? (
+                                  <>
+                                    <td className="px-1 py-1">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={editedHistoricalData[row.id]?.bt_productivity ?? row.bt_productivity}
+                                        onChange={(e) => handleEditHistoricalField(row.id, "bt_productivity", parseFloat(e.target.value) || 0)}
+                                        className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
+                                      />
+                                    </td>
+                                    <td className="px-1 py-1">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={editedHistoricalData[row.id]?.bt_entry_rate ?? row.bt_entry_rate}
+                                        onChange={(e) => handleEditHistoricalField(row.id, "bt_entry_rate", parseFloat(e.target.value) || 0)}
+                                        className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
+                                      />
+                                    </td>
+                                    <td className="px-1 py-1">
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={editedHistoricalData[row.id]?.bt_operator_removal ?? row.bt_operator_removal}
+                                        onChange={(e) => handleEditHistoricalField(row.id, "bt_operator_removal", parseFloat(e.target.value) || 0)}
+                                        className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
+                                      />
+                                    </td>
+                                    <td className="px-1 py-1">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={editedHistoricalData[row.id]?.mt_productivity ?? row.mt_productivity}
+                                        onChange={(e) => handleEditHistoricalField(row.id, "mt_productivity", parseFloat(e.target.value) || 0)}
+                                        className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
+                                      />
+                                    </td>
+                                    <td className="px-1 py-1">
+                                      <Input
+                                        type="number"
+                                        step="0.1"
+                                        value={editedHistoricalData[row.id]?.mt_entry_rate ?? row.mt_entry_rate}
+                                        onChange={(e) => handleEditHistoricalField(row.id, "mt_entry_rate", parseFloat(e.target.value) || 0)}
+                                        className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
+                                      />
+                                    </td>
+                                    <td className="px-1 py-1">
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        value={editedHistoricalData[row.id]?.mt_operator_removal ?? row.mt_operator_removal}
+                                        onChange={(e) => handleEditHistoricalField(row.id, "mt_operator_removal", parseFloat(e.target.value) || 0)}
+                                        className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
+                                      />
+                                    </td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="px-2 py-1 text-center font-mono text-foreground">{row.bt_productivity.toFixed(2)}</td>
+                                    <td className="px-2 py-1 text-center font-mono text-foreground">{row.bt_entry_rate.toFixed(0)}</td>
+                                    <td className="px-2 py-1 text-center font-mono text-foreground">{row.bt_operator_removal.toFixed(2)}</td>
+                                    <td className="px-2 py-1 text-center font-mono text-foreground">{row.mt_productivity.toFixed(2)}</td>
+                                    <td className="px-2 py-1 text-center font-mono text-foreground">{row.mt_entry_rate.toFixed(0)}</td>
+                                    <td className="px-2 py-1 text-center font-mono text-foreground">{row.mt_operator_removal.toFixed(2)}</td>
+                                  </>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
                 )}
               </TabsContent>
 
