@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
-import { useContingencyLevels, getPoloFromBase, getContingencyLevel } from "@/hooks/useContingencyLevels";
+import { useContingencyLevels, getContingencyLevel } from "@/hooks/useContingencyLevels";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -25,22 +25,19 @@ export const ContingencyLevelIndicator = ({
   const result = useMemo(() => {
     if (!baseName || !allLevels) return null;
     
-    const polo = getPoloFromBase(baseName);
-    if (!polo) return null;
-    
-    const poloLevels = allLevels.find(l => l.polo === polo);
-    if (!poloLevels) return null;
+    // Find levels directly by base name
+    const baseLevels = allLevels.find(l => l.base_name === baseName);
+    if (!baseLevels) return null;
     
     return {
-      polo,
-      levels: poloLevels,
-      contingency: getContingencyLevel(totalIncidents, poloLevels),
+      levels: baseLevels,
+      contingency: getContingencyLevel(totalIncidents, baseLevels),
     };
   }, [baseName, allLevels, totalIncidents]);
   
   if (!result || !result.contingency) return null;
   
-  const { polo, levels, contingency } = result;
+  const { levels, contingency } = result;
   
   // Calculate next level threshold
   const getNextLevelInfo = () => {
@@ -78,10 +75,10 @@ export const ContingencyLevelIndicator = ({
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">
           <div className="space-y-2 text-xs">
-            <p><strong>Polo:</strong> {polo}</p>
-            <p><strong>Total de Incidentes:</strong> {totalIncidents}</p>
+            <p><strong>Base:</strong> {baseName}</p>
+            <p><strong>Total de Incidentes (fim do horizonte):</strong> {totalIncidents}</p>
             <div className="border-t border-border pt-2 mt-2">
-              <p className="font-semibold mb-1">Faixas do polo:</p>
+              <p className="font-semibold mb-1">Faixas da base:</p>
               <ul className="space-y-0.5">
                 <li className={cn(contingency.level === "normal" && "font-bold text-green-400")}>
                   Normal: {levels.normal_min} - {levels.normal_max}
