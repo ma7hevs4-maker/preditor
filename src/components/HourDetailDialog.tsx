@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { CloudRain, Thermometer, Wind, Users, TrendingDown, TrendingUp, Target, Zap, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getHalfLifeBucket } from "@/hooks/useHalfLife";
+import { DECAY_STEPS } from "@/hooks/useHalfLife";
 
 interface HourDetailDialogProps {
   row: SimulationRow | null;
@@ -124,10 +124,6 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
                   value={`${row.lastEpisodeSumMm?.toFixed(1) ?? 0} mm`} 
                 />
                 <DataRow 
-                  label="Categoria" 
-                  value={getHalfLifeBucket(row.lastEpisodeSumMm ?? 0)} 
-                />
-                <DataRow 
                   label="Fator de decay" 
                   value={`${(row.decayMultiplier * 100).toFixed(0)}%`} 
                   color={row.decayMultiplier < 0.5 ? "text-success" : "text-amber-400"}
@@ -136,7 +132,9 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
                     <p>Impacto residual BT: <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span></p>
                     <p className="mt-1">Impacto residual MT: <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span></p>
-                    <p className="mt-1 text-amber-400">Decaindo com half-life baseado no episódio anterior</p>
+                    <p className="mt-1 text-amber-400">
+                      Decaindo: 1ª hora 90%, 2ª hora 70%, 3ª hora 50%
+                    </p>
                   </div>
                 ) : (
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
