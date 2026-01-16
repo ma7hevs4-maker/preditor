@@ -19,7 +19,7 @@ export const useWeatherTriggers = (baseId: string | null = null) => {
   return useQuery({
     queryKey: ["weather_triggers", baseId],
     queryFn: async () => {
-      // Get default triggers (base_id is null) and base-specific triggers
+      // Build query - get active triggers where base_id is null (defaults) OR matches the specific base
       let query = supabase
         .from("weather_triggers")
         .select("*")
@@ -36,6 +36,10 @@ export const useWeatherTriggers = (baseId: string | null = null) => {
       const { data, error } = await query.order("trigger_type").order("condition_min");
       
       if (error) throw error;
+      
+      // Debug: log triggers found
+      console.log(`[WeatherTriggers] baseId=${baseId}, found ${data?.length ?? 0} triggers:`, data?.map(t => `${t.name} (${t.trigger_type})`));
+      
       return data as WeatherTrigger[];
     },
   });
@@ -148,5 +152,12 @@ export const isTriggerActive = (
     return value <= trigger.condition_max;
   }
   
-  return minOk && maxOk;
+  const result = minOk && maxOk;
+  
+  // Debug log for precip triggers
+  if (trigger.trigger_type === "precip" && precip_mm >= 0.2) {
+    console.log(`[isTriggerActive] ${trigger.name}: value=${value}, min=${trigger.condition_min}, max=${trigger.condition_max}, minOk=${minOk}, maxOk=${maxOk}, result=${result}`);
+  }
+  
+  return result;
 };
