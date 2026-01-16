@@ -102,6 +102,10 @@ export const useSimulation = (
     if (weatherData && weatherImpactEnabled) {
       console.log(`[Simulation] weatherTriggers count: ${weatherTriggers?.length ?? 0}`);
       
+      // Debug: Log first few hours of weather data to see if override is applied
+      const debugWeather = weatherData.slice(0, 5).map((w, i) => `h${i}:${w.precip_mm}mm`);
+      console.log(`[Simulation] Weather first 5 hours: ${debugWeather.join(', ')}`);
+      
       for (let i = 0; i < config.horizonHours; i++) {
         const weather = weatherData[i] || { precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 };
         const { upliftBT, upliftMT } = calculateActiveTriggersUplift(
@@ -115,9 +119,13 @@ export const useSimulation = (
         
         // Debug log for rain hours
         if (weather.precip_mm >= 0.2) {
-          console.log(`[Simulation] Hour ${i}: precip=${weather.precip_mm}mm, upliftBT=${(upliftBT * 100).toFixed(1)}%, upliftMT=${(upliftMT * 100).toFixed(1)}%`);
+          console.log(`[Simulation] Rain at hour ${i}: precip=${weather.precip_mm}mm, upliftBT=${(upliftBT * 100).toFixed(1)}%, upliftMT=${(upliftMT * 100).toFixed(1)}%`);
         }
       }
+      
+      // Debug: Check if any uplifts were calculated
+      const rainHoursWithUplift = upliftsByHour.filter(u => u.upliftBT > 0 || u.upliftMT > 0);
+      console.log(`[Simulation] Hours with uplift: ${rainHoursWithUplift.length}`);
       
       // Set the last rain uplifts in decayInfos based on actual rain hour uplifts
       setLastRainUplifts(decayInfos, episodes, upliftsByHour);
