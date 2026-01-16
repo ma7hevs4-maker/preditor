@@ -69,7 +69,7 @@ const Index = () => {
   const { data: historicalData, isLoading: historicalLoading } = useHistoricalData(config.baseId);
 
   // Fetch weather triggers for selected base
-  const { data: weatherTriggers } = useWeatherTriggers(config.baseId || null);
+  const { data: weatherTriggers, isLoading: triggersLoading } = useWeatherTriggers(config.baseId || null);
 
   // Weather provider state
   const { provider: weatherProvider, setProvider: setWeatherProvider } = useWeatherProvider();
@@ -103,8 +103,11 @@ const Index = () => {
     weatherProvider
   );
 
-  // Ensure stable reference for weatherTriggers
-  const stableWeatherTriggers = useMemo(() => weatherTriggers ?? [], [weatherTriggers]);
+  // Ensure stable reference for weatherTriggers - only use when fully loaded
+  const stableWeatherTriggers = useMemo(() => {
+    if (triggersLoading || !weatherTriggers) return undefined;
+    return weatherTriggers;
+  }, [weatherTriggers, triggersLoading]);
 
   // Create effective weather forecast - use override if enabled
   const effectiveWeatherForecast = useMemo(() => {

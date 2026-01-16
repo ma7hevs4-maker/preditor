@@ -21,11 +21,12 @@ const getTurno = (hora: number): "A" | "B" | "C" => {
   return "C";
 };
 
+// Rain thresholds matching database triggers: Fraca 0.2-3mm, Moderada 3-6mm, Forte 6-10mm, Muito Forte >10mm
 const getFaixaChuvaLabel = (mm: number): string => {
   if (mm < 0.2) return "Seco";
-  if (mm < 1.0) return "Leve (0.2-1mm)";
-  if (mm < 5.0) return "Moderada (1-5mm)";
-  if (mm < 10.0) return "Forte (5-10mm)";
+  if (mm < 3.0) return "Fraca (0.2-3mm)";
+  if (mm < 6.0) return "Moderada (3-6mm)";
+  if (mm < 10.0) return "Forte (6-10mm)";
   return "Muito Forte (>10mm)";
 };
 
