@@ -99,7 +99,11 @@ export const useSimulation = (
     
     // First pass: Calculate raw uplifts for all hours to capture rain hour uplifts
     const upliftsByHour: { upliftBT: number; upliftMT: number }[] = [];
-    if (weatherData && weatherImpactEnabled) {
+    
+    // Only calculate weather uplifts if triggers are available
+    const hasValidTriggers = weatherTriggers && weatherTriggers.length > 0;
+    
+    if (weatherData && weatherImpactEnabled && hasValidTriggers) {
       for (let i = 0; i < config.horizonHours; i++) {
         const weather = weatherData[i] || { precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 };
         const { upliftBT, upliftMT } = calculateActiveTriggersUplift(
@@ -114,6 +118,11 @@ export const useSimulation = (
       
       // Set the last rain uplifts in decayInfos based on actual rain hour uplifts
       setLastRainUplifts(decayInfos, episodes, upliftsByHour);
+    } else if (weatherData) {
+      // If no triggers, fill with zeros to maintain array size
+      for (let i = 0; i < config.horizonHours; i++) {
+        upliftsByHour.push({ upliftBT: 0, upliftMT: 0 });
+      }
     }
     
     // Backlog inicial (sem redução prévia - agora aplicamos por hora)
