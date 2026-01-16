@@ -12,6 +12,7 @@ export const HALF_LIFE = {
 };
 
 const CHUVA_THRESHOLD = 0.2;
+const MAX_DECAY_HOURS = 12; // Maximum hours after rain for decay to apply
 
 export interface RainEpisode {
   startIndex: number;
@@ -135,9 +136,14 @@ export const calculateDecayInfo = (
     // Find the cutoff (start of next episode or end of data)
     const cutoff = nextEpisode ? nextEpisode.startIndex : weatherData.length;
     
-    // Calculate TSLR for hours after this episode ends
+    // Calculate TSLR for hours after this episode ends (limited to MAX_DECAY_HOURS)
     for (let i = episode.endIndex + 1; i < cutoff; i++) {
       const tslr = i - episode.endIndex;
+      
+      // Skip if beyond max decay window - no residual impact after 12 hours
+      if (tslr > MAX_DECAY_HOURS) {
+        continue;
+      }
       
       // Use bt_total half-life as reference for the multiplier display
       const halfLife = getHalfLifeHours("bt_total", episode.totalMm);
