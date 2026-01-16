@@ -82,9 +82,11 @@ export const calculateWeatherUplift = (
   let finalMT = rawMT;
 
   // If not actively raining AND we have decay info with last rain uplifts, calculate residual rain impact
+  // Decay is limited to 12 hours after rain stops
   const isNotRaining = precip_mm < 0.2;
   const hasDecayInfo = decayInfo && 
     decayInfo.tslr !== null && 
+    decayInfo.tslr <= 12 && // Limit decay to 12 hours
     decayInfo.lastEpisodeSumMm !== null &&
     decayInfo.lastRainUpliftBT !== null &&
     decayInfo.lastRainUpliftMT !== null;
