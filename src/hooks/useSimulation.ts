@@ -100,6 +100,8 @@ export const useSimulation = (
     // First pass: Calculate raw uplifts for all hours to capture rain hour uplifts
     const upliftsByHour: { upliftBT: number; upliftMT: number }[] = [];
     if (weatherData && weatherImpactEnabled) {
+      console.log(`[Simulation] weatherTriggers count: ${weatherTriggers?.length ?? 0}`);
+      
       for (let i = 0; i < config.horizonHours; i++) {
         const weather = weatherData[i] || { precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 };
         const { upliftBT, upliftMT } = calculateActiveTriggersUplift(
@@ -110,6 +112,11 @@ export const useSimulation = (
           weather.gust_kmh
         );
         upliftsByHour.push({ upliftBT, upliftMT });
+        
+        // Debug log for rain hours
+        if (weather.precip_mm >= 0.2) {
+          console.log(`[Simulation] Hour ${i}: precip=${weather.precip_mm}mm, upliftBT=${(upliftBT * 100).toFixed(1)}%, upliftMT=${(upliftMT * 100).toFixed(1)}%`);
+        }
       }
       
       // Set the last rain uplifts in decayInfos based on actual rain hour uplifts
