@@ -277,12 +277,14 @@ const Index = () => {
   const TARGET_MT = getSettingValue("mt_target", 10);
   const finalData = simulationData[simulationData.length - 1];
   
-  // Se já atingiu a meta no final do horizonte, não precisa de equipes adicionais
+  // Se já atingiu a meta no final do horizonte, calcula excesso (negativo) ou necessidade (positivo)
   const finalBtSaldo = finalData?.incidentes_bt_saldo ?? 0;
   const finalMtSaldo = finalData?.incidentes_mt_saldo ?? 0;
   const finalTotalBacklog = finalBtSaldo + finalMtSaldo; // Total no final do horizonte para contingência
-  const gapBt = hasSimulationInput ? Math.max(0, finalBtSaldo - TARGET_BT) : 0;
-  const gapMt = hasSimulationInput ? Math.max(0, finalMtSaldo - TARGET_MT) : 0;
+  
+  // Gap pode ser negativo (excesso de equipes) ou positivo (falta equipes)
+  const gapBt = hasSimulationInput ? finalBtSaldo - TARGET_BT : 0;
+  const gapMt = hasSimulationInput ? finalMtSaldo - TARGET_MT : 0;
   const totalGap = gapBt + gapMt;
   
   // Calcula capacidade média real usando dados históricos
@@ -291,14 +293,16 @@ const Index = () => {
   const avgBtProd = historicalData?.reduce((sum, h) => sum + h.bt_productivity, 0) / (historicalData?.length || 1) || 2.81;
   const avgMtProd = historicalData?.reduce((sum, h) => sum + h.mt_productivity, 0) / (historicalData?.length || 1) || 1.47;
   
-  // Capacidade combinada (ponderada pelo gap)
-  const totalProdGap = gapBt + gapMt;
-  const weightedCap = totalProdGap > 0 
-    ? ((gapBt / totalProdGap) * (avgBtProd / 8) + (gapMt / totalProdGap) * (avgMtProd / 8))
+  // Capacidade combinada (usa média simples quando gap é negativo ou zero)
+  const absGapBt = Math.abs(gapBt);
+  const absGapMt = Math.abs(gapMt);
+  const totalAbsGap = absGapBt + absGapMt;
+  const weightedCap = totalAbsGap > 0 
+    ? ((absGapBt / totalAbsGap) * (avgBtProd / 8) + (absGapMt / totalAbsGap) * (avgMtProd / 8))
     : (avgBtProd / 8);
   
-  // Equipes adicionais por hora = gap total / (horas * capacidade ponderada)
-  const avgEquipesAddPerHour = (totalGap > 0 && config.horizonHours > 0 && hasSimulationInput)
+  // Equipes adicionais por hora (positivo = precisa adicionar, negativo = pode remover)
+  const avgEquipesAddPerHour = (config.horizonHours > 0 && hasSimulationInput && totalGap !== 0)
     ? Math.ceil(totalGap / (config.horizonHours * weightedCap)) 
     : 0;
 
@@ -362,10 +366,10 @@ const Index = () => {
           />
           <KPICard
             title="Equipes Adicionais"
-            value={`+${avgEquipesAddPerHour}`}
-            subtitle="Média por hora no período"
+            value={avgEquipesAddPerHour >= 0 ? `+${avgEquipesAddPerHour}` : `${avgEquipesAddPerHour}`}
+            subtitle={avgEquipesAddPerHour < 0 ? "Excesso por hora (pode reduzir)" : "Média por hora no período"}
             icon={Users}
-            variant={avgEquipesAddPerHour > 10 ? "warning" : "default"}
+            variant={avgEquipesAddPerHour <= 0 ? "success" : avgEquipesAddPerHour > 10 ? "warning" : "default"}
           />
         </div>
 
