@@ -13,11 +13,6 @@ export const calculateActiveTriggersUplift = (
   gust_kmh?: number,
   excludeRainTriggers: boolean = false
 ): { upliftBT: number; upliftMT: number; nonRainUpliftBT: number; nonRainUpliftMT: number } => {
-  // Debug: log triggers count when there's precipitation
-  if (precip_mm >= 0.2) {
-    console.log(`[calculateActiveTriggersUplift] triggers=${triggers?.length ?? 0}, precip=${precip_mm}mm`);
-  }
-  
   if (!triggers || triggers.length === 0) {
     return { upliftBT: 0, upliftMT: 0, nonRainUpliftBT: 0, nonRainUpliftMT: 0 };
   }
@@ -28,14 +23,7 @@ export const calculateActiveTriggersUplift = (
   let nonRainMT = 0;
 
   for (const trigger of triggers) {
-    const isActive = isTriggerActive(trigger, precip_mm, wind_kmh, temp_c, gust_kmh);
-    
-    // Debug log for rain triggers
-    if (trigger.trigger_type === "precip" && precip_mm >= 0.2) {
-      console.log(`[DEBUG] Trigger "${trigger.name}" (${trigger.trigger_type}): min=${trigger.condition_min}, max=${trigger.condition_max}, precip=${precip_mm}, active=${isActive}`);
-    }
-    
-    if (isActive) {
+    if (isTriggerActive(trigger, precip_mm, wind_kmh, temp_c, gust_kmh)) {
       const impactBT = (trigger.impact_percent_bt ?? trigger.impact_percent ?? 0);
       const impactMT = (trigger.impact_percent_mt ?? trigger.impact_percent ?? 0);
       

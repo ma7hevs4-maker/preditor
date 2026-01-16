@@ -36,10 +36,6 @@ export const useWeatherTriggers = (baseId: string | null = null) => {
       const { data, error } = await query.order("trigger_type").order("condition_min");
       
       if (error) throw error;
-      
-      // Debug: log triggers found
-      console.log(`[WeatherTriggers] baseId=${baseId}, found ${data?.length ?? 0} triggers:`, data?.map(t => `${t.name} (${t.trigger_type})`));
-      
       return data as WeatherTrigger[];
     },
   });
@@ -152,12 +148,5 @@ export const isTriggerActive = (
     return value <= trigger.condition_max;
   }
   
-  const result = minOk && maxOk;
-  
-  // Debug log for precip triggers
-  if (trigger.trigger_type === "precip" && precip_mm >= 0.2) {
-    console.log(`[isTriggerActive] ${trigger.name}: value=${value}, min=${trigger.condition_min}, max=${trigger.condition_max}, minOk=${minOk}, maxOk=${maxOk}, result=${result}`);
-  }
-  
-  return result;
+  return minOk && maxOk;
 };
