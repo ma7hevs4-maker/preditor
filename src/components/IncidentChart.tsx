@@ -1,8 +1,7 @@
 import { SimulationRow } from "@/hooks/useSimulation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Area,
-  AreaChart,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -13,6 +12,7 @@ import {
   ComposedChart,
 } from "recharts";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 interface IncidentChartProps {
   data: SimulationRow[];
@@ -23,6 +23,7 @@ type ViewMode = "BT" | "MT" | "BOTH";
 export const IncidentChart = ({ data }: IncidentChartProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>("BOTH");
   const [showSaldo, setShowSaldo] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState(1); // 1 = 100%, 0.5 = 50%, 2 = 200%
 
   const chartData = data.map((row) => {
     const entradaBT = row.entrada_bt_adj;
@@ -69,11 +70,67 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
   const showMT = viewMode === "MT";
   const showCombined = viewMode === "BOTH";
 
+  // Calcula o domínio Y baseado nos dados e zoom
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 100];
+    
+    let maxValue = 0;
+    chartData.forEach((row) => {
+      if (showCombined) {
+        if (showSaldo) maxValue = Math.max(maxValue, row["Saldo Total"] || 0);
+        maxValue = Math.max(maxValue, row["Entrada Total"] || 0, row["Retirada Total"] || 0);
+      } else if (showBT) {
+        if (showSaldo) maxValue = Math.max(maxValue, row["Saldo BT"] || 0);
+        maxValue = Math.max(maxValue, row["Entrada BT"] || 0, row["Retirada BT"] || 0);
+      } else if (showMT) {
+        if (showSaldo) maxValue = Math.max(maxValue, row["Saldo MT"] || 0);
+        maxValue = Math.max(maxValue, row["Entrada MT"] || 0, row["Retirada MT"] || 0);
+      }
+    });
+    
+    // Aplica zoom (zoom > 1 = menos espaço vertical, zoom < 1 = mais espaço)
+    const adjustedMax = Math.ceil((maxValue * 1.1) / zoomLevel);
+    return [0, Math.max(adjustedMax, 10)];
+  }, [chartData, viewMode, showSaldo, zoomLevel, showBT, showMT, showCombined]);
+
+  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev * 1.5, 4));
+  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev / 1.5, 0.25));
+  const handleResetZoom = () => setZoomLevel(1);
+
   return (
     <div className="glass-card p-5 animate-slide-up h-full">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Evolução de Incidentes</h3>
         <div className="flex items-center gap-2">
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg">
+            <button
+              onClick={handleZoomOut}
+              className="p-1.5 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              title="Diminuir zoom (ver mais)"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleResetZoom}
+              className={`p-1.5 rounded transition-colors ${
+                zoomLevel === 1 
+                  ? "text-muted-foreground/50 cursor-default" 
+                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              }`}
+              title="Resetar zoom"
+              disabled={zoomLevel === 1}
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleZoomIn}
+              className="p-1.5 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              title="Aumentar zoom (ver menos)"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+          </div>
           <button
             onClick={() => setShowSaldo(!showSaldo)}
             className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${
@@ -143,6 +200,7 @@ export const IncidentChart = ({ data }: IncidentChartProps) => {
               fontSize={12}
               tickLine={false}
               axisLine={false}
+              domain={yDomain}
             />
             <Tooltip
               contentStyle={{
