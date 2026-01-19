@@ -33,6 +33,8 @@ interface DaySummary {
   retPerHourBt: number;
   retPerHourMt: number;
   hoursInDay: number;
+  finalBacklogBt: number;
+  finalBacklogMt: number;
 }
 
 export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) => {
@@ -56,6 +58,10 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
       const hoursWithTrigger = rows.filter((r) => r.uplift_bt_pct > 0 || r.uplift_mt_pct > 0);
       const totalRetEqBt = rows.reduce((sum, r) => sum + r.cap_bt_h, 0);
       const totalRetEqMt = rows.reduce((sum, r) => sum + r.cap_mt_h, 0);
+      
+      // Get the last row of the day to get final backlog
+      const sortedRows = [...rows].sort((a, b) => a.hora - b.hora);
+      const lastRow = sortedRows[sortedRows.length - 1];
       
       const summary: DaySummary = {
         day,
@@ -82,6 +88,8 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
         retPerHourBt: rows.length > 0 ? totalRetEqBt / rows.length : 0,
         retPerHourMt: rows.length > 0 ? totalRetEqMt / rows.length : 0,
         hoursInDay: rows.length,
+        finalBacklogBt: Math.round(lastRow?.incidentes_bt_saldo ?? 0),
+        finalBacklogMt: Math.round(lastRow?.incidentes_mt_saldo ?? 0),
       };
       
       dailySummaries.push(summary);
@@ -279,7 +287,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                 </div>
 
                 {/* Summary footer */}
-                <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-2 gap-4 text-sm">
+                <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Balanço BT (entrada - saídas)</p>
                     <p className={cn(
@@ -302,6 +310,32 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                     )}>
                       {summary.totalEntradaMt - summary.totalRetOpMt - summary.totalRetEqMt > 0 ? "+" : ""}
                       {summary.totalEntradaMt - summary.totalRetOpMt - summary.totalRetEqMt}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Saldo Final BT</p>
+                    <p className={cn(
+                      "font-mono font-semibold",
+                      summary.finalBacklogBt > 150 
+                        ? "text-red-400" 
+                        : summary.finalBacklogBt > 70 
+                          ? "text-amber-400" 
+                          : "text-green-400"
+                    )}>
+                      {summary.finalBacklogBt}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Saldo Final MT</p>
+                    <p className={cn(
+                      "font-mono font-semibold",
+                      summary.finalBacklogMt > 15 
+                        ? "text-red-400" 
+                        : summary.finalBacklogMt > 10 
+                          ? "text-amber-400" 
+                          : "text-green-400"
+                    )}>
+                      {summary.finalBacklogMt}
                     </p>
                   </div>
                 </div>
