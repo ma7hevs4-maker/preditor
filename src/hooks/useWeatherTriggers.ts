@@ -140,12 +140,16 @@ export const isTriggerActive = (
       return false;
   }
 
-  const minOk = trigger.condition_min === null || value >= trigger.condition_min;
-  const maxOk = trigger.condition_max === null || value < trigger.condition_max;
+  // Ensure numeric comparison (database values may come as strings or numbers)
+  const condMin = trigger.condition_min !== null ? Number(trigger.condition_min) : null;
+  const condMax = trigger.condition_max !== null ? Number(trigger.condition_max) : null;
+  
+  const minOk = condMin === null || value >= condMin;
+  const maxOk = condMax === null || value < condMax;
   
   // Special case for "Frio Intenso" - temp <= 10
-  if (trigger.trigger_type === "temp" && trigger.condition_min === null && trigger.condition_max !== null) {
-    return value <= trigger.condition_max;
+  if (trigger.trigger_type === "temp" && condMin === null && condMax !== null) {
+    return value <= condMax;
   }
   
   return minOk && maxOk;
