@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
 import { SimulationRow } from "@/hooks/useSimulation";
+import { recalculateSimulation } from "@/utils/recalculateSimulation";
 
 interface SimulationEditDialogProps {
   open: boolean;
@@ -100,7 +101,13 @@ export const SimulationEditDialog = ({
   };
 
   const handleSave = () => {
-    onSave(entry, editedResults);
+    // Recalculate backlogs based on edited team allocations
+    const recalculated = recalculateSimulation(
+      editedResults,
+      entry.bt_initial_backlog,
+      entry.mt_initial_backlog
+    );
+    onSave(entry, recalculated);
     onOpenChange(false);
   };
 
