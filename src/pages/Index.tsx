@@ -109,21 +109,29 @@ const Index = () => {
   // Create effective weather forecast - use override if enabled
   const effectiveWeatherForecast = useMemo(() => {
     if (weatherOverride.enabled && weatherData?.forecast) {
-      // Calculate which hours fall within the override period
-      // The hour selection (0-23) represents the actual clock hour, not the array index
-      // Array index 0 = currentHour, index 1 = currentHour + 1, etc.
-      
       // Convert day/hour selection to array index
+      // Array index i represents: hour = (currentHour + i) % 24, day = floor((currentHour + i) / 24)
+      // So to find index for (targetDay, targetHour):
+      // We need index where: floor((currentHour + index) / 24) == targetDay AND (currentHour + index) % 24 == targetHour
+      // Solving: index = targetDay * 24 + targetHour - currentHour
+      
       const getHourIndex = (day: number, hour: number) => {
+        // day is 1-based (Dia 1 = today, Dia 2 = tomorrow)
+        // Convert to 0-based for calculation
         const dayOffset = (day - 1) * 24;
-        // Calculate hours from current hour (wrapping if needed)
-        const hourOffset = (hour - currentHour + 24) % 24;
+        // Calculate total offset from start of simulation
+        // If hour >= currentHour, it's in the same calendar day offset
+        // If hour < currentHour, we need to add 24 to get to that hour in that day
+        let hourOffset = hour - currentHour;
+        if (hourOffset < 0) {
+          hourOffset += 24;
+        }
         return dayOffset + hourOffset;
       };
       
       const startHourIndex = getHourIndex(weatherOverride.startDay, weatherOverride.startHour);
       const endHourIndex = weatherOverride.untilEnd 
-        ? config.horizonHours 
+        ? config.horizonHours - 1
         : getHourIndex(weatherOverride.endDay, weatherOverride.endHour);
       
       return weatherData.forecast.map((hour, index) => {
