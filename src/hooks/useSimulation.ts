@@ -210,9 +210,10 @@ export const useSimulation = (
       const entrada_bt_adj = historical.bt_entry_rate * (1 + uplift_bt);
       const entrada_mt_adj = historical.mt_entry_rate * (1 + uplift_mt);
 
-      // Retirada de operador = entrada histórica * percentual de retirada
-      const ret_op_bt = historical.bt_entry_rate * historical.bt_operator_removal;
-      const ret_op_mt = historical.mt_entry_rate * historical.mt_operator_removal;
+      // Retirada de operador = entrada AJUSTADA * percentual de retirada
+      // (a retirada deve ser proporcional à entrada real, não à base histórica)
+      const ret_op_bt = entrada_bt_adj * historical.bt_operator_removal;
+      const ret_op_mt = entrada_mt_adj * historical.mt_operator_removal;
 
       // Total de equipes disponíveis nesta hora (usa dia correto)
       let eq_disp = 0;
