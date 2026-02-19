@@ -50,7 +50,6 @@ export const Header = ({
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherOverrideOpen, setWeatherOverrideOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
