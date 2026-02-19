@@ -226,9 +226,49 @@ const Estrutura = () => {
     if (!existingPlan) return;
     try {
       await deletePlan.mutateAsync(existingPlan.id);
+      setEditUnlocked(false);
+      setEditDialogOpen(false);
       toast({ title: "Plano removido" });
     } catch {
       toast({ title: "Erro ao remover", variant: "destructive" });
+    }
+  };
+
+  const handleEditPasswordSubmit = () => {
+    if (editPassword === ADMIN_PASSWORD) {
+      setEditUnlocked(true);
+      setEditDialogOpen(false);
+      setEditPassword("");
+      setEditPasswordError(false);
+      toast({ title: "Modo edição ativado", description: "Agora você pode apagar o plano." });
+    } else {
+      setEditPasswordError(true);
+    }
+  };
+
+  const handleSaveAsStructure = async () => {
+    if (!structureName.trim() || !selectedBaseId) return;
+    setSavingStructure(true);
+    try {
+      // Build structure from current teams/lossTeams
+      const structureFields: Record<string, number> = {};
+      for (let h = 0; h < 24; h++) {
+        structureFields[`teams_hour_${h}`] = teams[h] || 0;
+        structureFields[`loss_teams_hour_${h}`] = lossTeams[h] || 0;
+      }
+      await addTeamStructure.mutateAsync({
+        base_id: selectedBaseId,
+        name: structureName.trim(),
+        is_default: false,
+        ...structureFields,
+      } as any);
+      toast({ title: "Estrutura salva", description: `"${structureName.trim()}" adicionada às estruturas padrão.` });
+      setSaveStructureOpen(false);
+      setStructureName("");
+    } catch {
+      toast({ title: "Erro ao salvar estrutura", variant: "destructive" });
+    } finally {
+      setSavingStructure(false);
     }
   };
 
