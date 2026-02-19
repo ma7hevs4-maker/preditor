@@ -345,9 +345,9 @@ const Estrutura = () => {
           <div className="space-y-4">
             {TURNOS.map((turno, turnoIdx) => {
               const turnoColors = [
-                { badge: "text-blue-400 bg-blue-500/10 border border-blue-500/30", text: "text-blue-400", icon: "text-blue-400" },
-                { badge: "text-amber-400 bg-amber-500/10 border border-amber-500/30", text: "text-amber-400", icon: "text-amber-400" },
-                { badge: "text-purple-400 bg-purple-500/10 border border-purple-500/30", text: "text-purple-400", icon: "text-purple-400" },
+                { badge: "text-blue-400 bg-blue-500/10 border border-blue-500/30", text: "text-blue-400", icon: "text-blue-400", cardBorder: "border border-blue-500/30" },
+                { badge: "text-amber-400 bg-amber-500/10 border border-amber-500/30", text: "text-amber-400", icon: "text-amber-400", cardBorder: "border border-amber-500/30" },
+                { badge: "text-purple-400 bg-purple-500/10 border border-purple-500/30", text: "text-purple-400", icon: "text-purple-400", cardBorder: "border border-purple-500/30" },
               ][turnoIdx];
 
               const turnoAllIncidents = TEAM_TYPES
