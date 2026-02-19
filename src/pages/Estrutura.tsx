@@ -195,8 +195,15 @@ const Estrutura = () => {
     return new Set(monthPlans.map(p => p.plan_date));
   }, [monthPlans]);
 
-  const totalTeams = teams.reduce((s, v) => s + v, 0);
-  const avgTeams = totalTeams / 24;
+  // BT only: Perdas, Corte e Religa
+  const BT_ONLY_TYPES = ["Perdas", "Corte e Religa"] as const;
+  // Excluded from calculations: LV and MK
+  const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
+
+  const totalAllIncidents = TEAM_TYPES
+    .filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
+    .reduce((s, t) => s + (typeData[t]?.reduce((a, b) => a + b, 0) ?? 0), 0);
+  const totalBT = BT_ONLY_TYPES.reduce((s, t) => s + (typeData[t]?.reduce((a, b) => a + b, 0) ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
@@ -321,10 +328,10 @@ const Estrutura = () => {
 
           {/* Summary */}
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
-            <span>Total equipes×hora: <strong className="text-foreground">{totalTeams}</strong></span>
-            <span>Média: <strong className="text-foreground">{avgTeams.toFixed(1)} eq/h</strong></span>
+            <span>Total todos incidentes×hora: <strong className="text-foreground">{totalAllIncidents}</strong></span>
+            <span>Total BT×hora: <strong className="text-foreground">{totalBT}</strong></span>
             {existingPlan && <span className="text-primary font-medium">● Plano salvo</span>}
-            {isDirty && <span className="text-yellow-500 font-medium">● Não salvo</span>}
+            {isDirty && <span className="text-warning font-medium">● Não salvo</span>}
           </div>
         </div>
 
@@ -365,52 +372,43 @@ const Estrutura = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {/* Total equipes row */}
-                      <tr className="border-t border-border">
-                        <td className="py-1 pr-2 font-medium text-foreground sticky left-0 bg-card z-10">Equipes</td>
-                        {turno.hours.map(h => (
-                          <td key={h} className="py-1 px-0.5">
-                            <Input type="number" min={0} value={teams[h]} onChange={(e) => handleTeamChange(h, parseInt(e.target.value) || 0)} className="h-7 text-center text-xs font-mono w-full" />
-                          </td>
-                        ))}
-                      </tr>
-                      {/* Loss teams row */}
-                      <tr>
-                        <td className="py-1 pr-2 font-medium text-destructive sticky left-0 bg-card z-10">Perdas</td>
-                        {turno.hours.map(h => (
-                          <td key={h} className="py-1 px-0.5">
-                            <Input type="number" min={0} value={lossTeams[h]} onChange={(e) => handleLossTeamChange(h, parseInt(e.target.value) || 0)} className="h-7 text-center text-xs font-mono w-full text-destructive border-destructive/30" />
-                          </td>
-                        ))}
-                      </tr>
-                      {/* Separator */}
-                      <tr><td colSpan={turno.hours.length + 1} className="py-1"><div className="border-t border-border/50" /></td></tr>
-                      {/* Team type rows */}
-                      {TEAM_TYPES.map(type => (
-                        <tr key={type} className="hover:bg-muted/30">
-                          <td className="py-1 pr-2 text-muted-foreground sticky left-0 bg-card z-10 truncate" title={type}>
-                            {type}
-                          </td>
-                          {turno.hours.map(h => (
-                            <td key={h} className="py-1 px-0.5">
-                              <Input
-                                type="number"
-                                min={0}
-                                value={typeData[type]?.[h] ?? 0}
-                                onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
-                                className="h-7 text-center text-xs font-mono w-full"
-                              />
+                      {/* Team type rows only */}
+                      {TEAM_TYPES.map((type, typeIdx) => {
+                        const isBTOnly = BT_ONLY_TYPES.includes(type as any);
+                        const isExcluded = EXCLUDED_TYPES.includes(type as any);
+                        return (
+                          <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
+                            <td className={`py-1 pr-2 sticky left-0 bg-card z-10 truncate text-xs ${isExcluded ? "text-muted-foreground/50 italic" : isBTOnly ? "text-accent-foreground" : "text-foreground"}`} title={type}>
+                              {type}
+                              {isBTOnly && <span className="ml-1 text-[10px] text-muted-foreground">BT</span>}
+                              {isExcluded && <span className="ml-1 text-[10px] text-muted-foreground/50">—</span>}
                             </td>
-                          ))}
-                        </tr>
-                      ))}
+                            {turno.hours.map(h => (
+                              <td key={h} className="py-1 px-0.5">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={typeData[type]?.[h] ?? 0}
+                                  onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
+                                  className={`h-7 text-center text-xs font-mono w-full ${isExcluded ? "opacity-50" : isBTOnly ? "border-blue-500/30" : ""}`}
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                  <span>Equipes: <strong>{turno.hours.reduce((s, h) => s + teams[h], 0)}</strong></span>
-                  <span className="text-destructive">Perdas: <strong>{turno.hours.reduce((s, h) => s + lossTeams[h], 0)}</strong></span>
+                  <span>Todos incidentes: <strong className="text-foreground">{
+                    TEAM_TYPES.filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
+                      .reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0)
+                  }</strong></span>
+                  <span className="text-muted-foreground">Apenas BT: <strong className="text-foreground">{
+                    BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0)
+                  }</strong></span>
                 </div>
               </div>
             ))}
