@@ -283,7 +283,7 @@ export const ConfigurationForm = ({
 
       const sucursalLabel = hasSucursais && selectedSucursal !== "todas"
         ? selectedSucursal
-        : hasSucursais ? "todas as sucursais" : selectedBase?.name;
+        : hasSucursais ? `todas as sucursais de ${selectedRegional?.label}` : selectedBase?.name;
 
       toast({
         title: "Estrutura declarada carregada",
