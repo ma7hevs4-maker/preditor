@@ -71,12 +71,41 @@ export const ConfigurationForm = ({
 }: ConfigurationFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localConfig, setLocalConfig] = useState<SimulationConfig>(config);
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
+  const [declaredDateOpen, setDeclaredDateOpen] = useState(false);
+  const [declaredDate, setDeclaredDate] = useState<Date>(new Date());
+  const [loadingDeclared, setLoadingDeclared] = useState(false);
   const { data: bases, isLoading: basesLoading } = useBases();
   const { data: teamStructures } = useTeamStructures(localConfig.baseId || null);
+
+  // Find the current base and its config
+  const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
+  const baseConfig = selectedBase ? findBaseConfig(selectedBase.name) : undefined;
+  const hasSucursais = (baseConfig?.sucursais.length ?? 0) > 0;
+
+  // Get the base IDs to fetch declared plans for (considering sucursal selection)
+  const declaredBaseIds = useMemo(() => {
+    if (!selectedBase || !bases) return [];
+    return getRelatedBaseIds(selectedBase, bases, hasSucursais ? selectedSucursal : null);
+  }, [selectedBase, bases, selectedSucursal, hasSucursais]);
+
+  // Fetch daily plans for the declared date and relevant base IDs
+  const declaredDateStr = format(declaredDate, "yyyy-MM-dd");
+
+  // We'll fetch plans for each base ID when user clicks the button
+  // Using a single base for simplicity — handle multi in the handler
+  const { data: teamStructures2 } = useTeamStructures(
+    declaredBaseIds.length === 1 ? declaredBaseIds[0] : null
+  );
 
   useEffect(() => {
     setLocalConfig(config);
   }, [config]);
+
+  // Reset sucursal when base changes
+  useEffect(() => {
+    setSelectedSucursal("todas");
+  }, [localConfig.baseId]);
 
   const handleChange = (field: keyof SimulationConfig, value: number | string | number[]) => {
     setLocalConfig((prev) => ({ ...prev, [field]: value }));
