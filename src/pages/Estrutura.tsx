@@ -328,8 +328,8 @@ const Estrutura = () => {
 
           {/* Summary */}
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
-            <span>Total todos incidentes×hora: <strong className="text-foreground">{totalAllIncidents}</strong></span>
-            <span>Total BT×hora: <strong className="text-foreground">{totalBT}</strong></span>
+            <span>Equipes Totais (Dia): <strong className="text-foreground">{(totalAllIncidents / 24).toFixed(1)} eq/h</strong></span>
+            <span>Equipes BT (Dia): <strong className="text-orange-400">{(totalBT / 24).toFixed(1)} eq/h</strong></span>
             {existingPlan && <span className="text-primary font-medium">● Plano salvo</span>}
             {isDirty && <span className="text-warning font-medium">● Não salvo</span>}
           </div>
@@ -343,74 +343,91 @@ const Estrutura = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {TURNOS.map((turno, turnoIdx) => (
-              <div key={turno.letter} className="glass-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-foreground">{turno.label}</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => replicarParaTurno(turnoIdx, turno.hours[0])}
-                    title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
-                  >
-                    <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
-                  </Button>
-                </div>
+            {TURNOS.map((turno, turnoIdx) => {
+              const turnoColors = [
+                { badge: "text-blue-400 bg-blue-500/10 border border-blue-500/30", text: "text-blue-400", icon: "text-blue-400" },
+                { badge: "text-amber-400 bg-amber-500/10 border border-amber-500/30", text: "text-amber-400", icon: "text-amber-400" },
+                { badge: "text-purple-400 bg-purple-500/10 border border-purple-500/30", text: "text-purple-400", icon: "text-purple-400" },
+              ][turnoIdx];
 
-                {/* Scrollable horizontal grid */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr>
-                        <th className="text-left py-1 pr-2 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[120px]">Tipo</th>
-                        {turno.hours.map(h => (
-                          <th key={h} className="text-center py-1 px-1 text-muted-foreground font-mono min-w-[56px]">
-                            {String(h).padStart(2, "0")}:00
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Team type rows only */}
-                      {TEAM_TYPES.map((type, typeIdx) => {
-                        const isBTOnly = BT_ONLY_TYPES.includes(type as any);
-                        const isExcluded = EXCLUDED_TYPES.includes(type as any);
-                        return (
-                          <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                            <td className={`py-1 pr-2 sticky left-0 bg-card z-10 truncate text-xs ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
-                              {type}
-                              {isBTOnly && <span className="ml-1 text-[10px] text-orange-400/60">BT</span>}
-                            </td>
-                            {turno.hours.map(h => (
-                              <td key={h} className="py-1 px-0.5">
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  value={typeData[type]?.[h] ?? 0}
-                                  onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
-                                  className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
-                                />
+              const turnoAllIncidents = TEAM_TYPES
+                .filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
+                .reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0);
+              const turnoBT = BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0);
+              const hoursCount = turno.hours.length;
+
+              return (
+                <div key={turno.letter} className="glass-card p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${turnoColors.badge}`}>
+                        TURNO {turno.letter}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {String(turno.hours[0]).padStart(2, "0")}h – {String(turno.hours[turno.hours.length - 1]).padStart(2, "0")}h
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`text-xs h-7 ${turnoColors.icon}`}
+                        onClick={() => replicarParaTurno(turnoIdx, turno.hours[0])}
+                        title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
+                      >
+                        <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Scrollable horizontal grid */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr>
+                          <th className="text-left py-1 pr-2 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[120px]">Tipo</th>
+                          {turno.hours.map(h => (
+                            <th key={h} className={`text-center py-1 px-1 font-mono min-w-[56px] ${turnoColors.text}`}>
+                              {String(h).padStart(2, "0")}h
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {TEAM_TYPES.map((type, typeIdx) => {
+                          const isBTOnly = BT_ONLY_TYPES.includes(type as any);
+                          const isExcluded = EXCLUDED_TYPES.includes(type as any);
+                          return (
+                            <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
+                              <td className={`py-1 pr-2 sticky left-0 bg-card z-10 truncate text-xs ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
+                                {type}
+                                {isBTOnly && <span className="ml-1 text-[10px] text-orange-400/60">BT</span>}
                               </td>
-                            ))}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              {turno.hours.map(h => (
+                                <td key={h} className="py-1 px-0.5">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={typeData[type]?.[h] ?? 0}
+                                    onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
+                                    className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
 
-                <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                  <span>Todos incidentes: <strong className="text-foreground">{
-                    TEAM_TYPES.filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
-                      .reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0)
-                  }</strong></span>
-                  <span className="text-muted-foreground">Apenas BT: <strong className="text-foreground">{
-                    BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0)
-                  }</strong></span>
+                  <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                    <span>Equipes Totais: <strong className="text-foreground">{(turnoAllIncidents / hoursCount).toFixed(1)} eq/h</strong></span>
+                    <span>Equipes BT: <strong className="text-orange-400">{(turnoBT / hoursCount).toFixed(1)} eq/h</strong></span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
