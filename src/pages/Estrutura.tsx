@@ -510,6 +510,8 @@ const Estrutura = () => {
               const turnoBT = BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0);
               const hoursCount = turno.hours.length;
 
+              const isLocked = !!existingPlan && !editUnlocked;
+
               return (
                 <div key={turno.letter} className={`glass-card p-4 ${turnoColors.cardBorder}`}>
                   <div className="flex items-center justify-between mb-3">
@@ -528,6 +530,7 @@ const Estrutura = () => {
                         className={`text-xs h-7 ${turnoColors.icon}`}
                         onClick={() => replicarParaTurno(turnoIdx, turno.hours[0])}
                         title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
+                        disabled={isLocked}
                       >
                         <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
                       </Button>
@@ -537,6 +540,7 @@ const Estrutura = () => {
                         className={`text-xs h-7 ${turnoColors.icon} hover:bg-muted/40`}
                         onClick={() => apagarTurno(turnoIdx)}
                         title="Apagar todos os valores do turno"
+                        disabled={isLocked}
                       >
                         <Trash2 className="w-3 h-3 mr-1" />Apagar Turno
                       </Button>
@@ -575,6 +579,8 @@ const Estrutura = () => {
                                      value={typeData[type]?.[h] ?? 0}
                                      onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
                                      className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
+                                     disabled={isLocked}
+                                     readOnly={isLocked}
                                    />
                                  </td>
                                ))}
@@ -586,6 +592,7 @@ const Estrutura = () => {
                                      className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
                                      title={`Copiar 1ª hora de ${type} para todo o turno`}
                                      onClick={() => copiarTipoParaTurno(type, turnoIdx)}
+                                     disabled={isLocked}
                                    >
                                      <Copy className="w-3 h-3" />
                                    </Button>
@@ -595,6 +602,7 @@ const Estrutura = () => {
                                       className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
                                       title={`Apagar ${type} neste turno`}
                                       onClick={() => apagarTipoNoTurno(type, turnoIdx)}
+                                      disabled={isLocked}
                                     >
                                       <Trash2 className="w-3 h-3" />
                                     </Button>
@@ -616,6 +624,7 @@ const Estrutura = () => {
             })}
           </div>
         )}
+
       </div>
     </div>
   );
