@@ -38,7 +38,7 @@ const turnos = [
   { id: "C", name: "Turno C", hours: "16h - 23h", range: [16, 17, 18, 19, 20, 21, 22, 23], colorClass: "text-purple-400 border-purple-500/30" },
 ];
 
-export const AdminConfigDialog = () => {
+export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
