@@ -1,4 +1,4 @@
-import { Zap, Users, Settings } from "lucide-react";
+import { Zap, Users, Settings, Eye } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -16,6 +16,7 @@ import {
 const items = [
   { title: "Simulação", url: "/", icon: Zap },
   { title: "Estrutura", url: "/estrutura", icon: Users },
+  { title: "Visão", url: "/visao", icon: Eye },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 

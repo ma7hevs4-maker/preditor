@@ -6,59 +6,62 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useBases } from "@/hooks/useBases";
-import { useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
+import { DailyTeamPlan, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntriesByPlans, entriesToMap } from "@/hooks/useTeamTypeEntries";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
+
+// Fetch all plans for a specific date (all bases)
+const useAllPlansForDate = (date: string) => {
+  return useQuery({
+    queryKey: ["all_daily_plans_date", date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_team_plans")
+        .select("*")
+        .eq("plan_date", date);
+      if (error) throw error;
+      return data as DailyTeamPlan[];
+    },
+    enabled: !!date,
+  });
+};
 
 const Visao = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data: bases } = useBases();
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const { data: plans } = useAllPlansForDate(dateStr);
 
-  // Fetch plans for ALL bases on this date
-  const baseIds = bases?.map(b => b.id) || [];
-  const plansQueries = baseIds.map(id => useDailyTeamPlans(id, dateStr, dateStr));
-
-  // Aggregate all plans
-  const allPlans = useMemo(() => {
-    const plans: { baseId: string; baseName: string; plan: any }[] = [];
-    plansQueries.forEach((q, idx) => {
-      if (q.data && q.data.length > 0 && bases) {
-        plans.push({
-          baseId: bases[idx].id,
-          baseName: bases[idx].name,
-          plan: q.data[0],
-        });
-      }
-    });
-    return plans;
-  }, [plansQueries.map(q => q.data), bases]);
-
-  const planIds = allPlans.map(p => p.plan.id);
+  const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
   const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
 
-  // Group type entries by plan
   const entriesByPlan = useMemo(() => {
     const map: Record<string, ReturnType<typeof entriesToMap>> = {};
-    if (allTypeEntries) {
-      allPlans.forEach(p => {
-        const planEntries = allTypeEntries.filter(e => e.daily_plan_id === p.plan.id);
-        map[p.plan.id] = entriesToMap(planEntries);
+    if (allTypeEntries && plans) {
+      plans.forEach(p => {
+        const planEntries = allTypeEntries.filter(e => e.daily_plan_id === p.id);
+        map[p.id] = entriesToMap(planEntries);
       });
     }
     return map;
-  }, [allTypeEntries, allPlans]);
+  }, [allTypeEntries, plans]);
+
+  const basesMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    bases?.forEach(b => { m[b.id] = b.name; });
+    return m;
+  }, [bases]);
 
   const navigateDate = (dir: "prev" | "next") => {
     setSelectedDate(prev => addDays(prev, dir === "prev" ? -1 : 1));
   };
 
-  // Compute turno totals for a plan's type data
   const getTurnoTotal = (typeMap: Record<string, Record<number, number>>, type: string, turnoHours: readonly number[]) => {
     return turnoHours.reduce((sum, h) => sum + (typeMap[type]?.[h] || 0), 0);
   };
@@ -91,7 +94,7 @@ const Visao = () => {
         </div>
 
         {/* Base cards */}
-        {allPlans.length === 0 ? (
+        {!plans || plans.length === 0 ? (
           <div className="glass-card p-12 flex flex-col items-center justify-center text-center">
             <Eye className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum plano encontrado</h3>
@@ -99,15 +102,16 @@ const Visao = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {allPlans.map(({ baseId, baseName, plan }) => {
+            {plans.map(plan => {
               const teams = planToTeamsArray(plan);
               const losses = planToLossTeamsArray(plan);
               const typeMap = entriesByPlan[plan.id] || {};
               const totalTeams = teams.reduce((s, v) => s + v, 0);
               const totalLoss = losses.reduce((s, v) => s + v, 0);
+              const baseName = basesMap[plan.base_id] || "Base";
 
               return (
-                <Dialog key={baseId}>
+                <Dialog key={plan.id}>
                   <DialogTrigger asChild>
                     <div className="glass-card p-4 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all">
                       <div className="flex items-center justify-between mb-3">
@@ -129,9 +133,9 @@ const Visao = () => {
 
                       {/* Type totals (non-zero only) */}
                       <div className="space-y-1">
-                        {TEAM_TYPES.filter(type => {
-                          return TURNOS.some(t => getTurnoTotal(typeMap, type, t.hours) > 0);
-                        }).map(type => (
+                        {TEAM_TYPES.filter(type =>
+                          TURNOS.some(t => getTurnoTotal(typeMap, type, t.hours) > 0)
+                        ).map(type => (
                           <div key={type} className="flex items-center justify-between text-xs">
                             <span className="text-muted-foreground truncate">{type}</span>
                             <div className="flex gap-2">
@@ -154,7 +158,6 @@ const Visao = () => {
                     <DialogHeader>
                       <DialogTitle>Detalhe - {baseName} - {format(selectedDate, "dd/MM/yyyy")}</DialogTitle>
                     </DialogHeader>
-                    {/* Hourly detail table */}
                     {TURNOS.map(turno => (
                       <div key={turno.letter} className="mb-4">
                         <h4 className="text-sm font-semibold mb-2">{turno.label}</h4>
