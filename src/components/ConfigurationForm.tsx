@@ -78,16 +78,24 @@ export const ConfigurationForm = ({
   const { data: bases, isLoading: basesLoading } = useBases();
   const { data: teamStructures } = useTeamStructures(localConfig.baseId || null);
 
-  // Find the current base and its config
+  // Find the current base and its regional config
   const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
-  const baseConfig = selectedBase ? findBaseConfig(selectedBase.name) : undefined;
-  const hasSucursais = (baseConfig?.sucursais.length ?? 0) > 0;
+  // A "regional" is a grouping label (e.g. "Lagos") — the selected base name could be a sucursal
+  // We need to find which regional this base belongs to
+  const selectedRegional = selectedBase
+    ? REGIONAIS.find(
+        (r) =>
+          r.label.toLowerCase() === selectedBase.name.toLowerCase() ||
+          r.sucursais.some((s) => s.name.toLowerCase() === selectedBase.name.toLowerCase())
+      )
+    : undefined;
+  const hasSucursais = (selectedRegional?.sucursais.length ?? 0) > 0;
 
   // Get the base IDs to fetch declared plans for (considering sucursal selection)
   const declaredBaseIds = useMemo(() => {
-    if (!selectedBase || !bases) return [];
-    return getRelatedBaseIds(selectedBase, bases, hasSucursais ? selectedSucursal : null);
-  }, [selectedBase, bases, selectedSucursal, hasSucursais]);
+    if (!selectedRegional || !bases) return [];
+    return getBaseIdsForRegional(selectedRegional.label, bases, hasSucursais ? selectedSucursal : null);
+  }, [selectedRegional, bases, selectedSucursal, hasSucursais]);
 
   // Fetch daily plans for the declared date and relevant base IDs
   const declaredDateStr = format(declaredDate, "yyyy-MM-dd");
