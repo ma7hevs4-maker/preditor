@@ -193,91 +193,101 @@ const RegionalDetailDialog = ({
           </div>
         ) : (
           <>
-            {/* Turnos side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-2">
-              {TURNOS.map(turno => {
-                const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
-                const avgTeams = avg(teamsPerHour, turno.hours);
-                const avgLosses = avg(lossesPerHour, turno.hours);
-                return (
-                  <div key={turno.letter} className={cn("rounded-lg border p-3", colors.bg, colors.border)}>
-                    <div className={cn("text-xs font-semibold px-2 py-1 rounded mb-3 inline-block", colors.header)}>
-                      {turno.label}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr>
-                            <th className="text-left py-1 pr-2 text-muted-foreground font-medium min-w-[100px]">Tipo</th>
+            {/* Unified table: types as rows, turnos as column groups */}
+            <div className="overflow-x-auto mt-2">
+              <table className="w-full text-xs border-collapse min-w-[700px]">
+                <thead>
+                  <tr>
+                    {/* Type column header */}
+                    <th className="text-left py-2 pr-3 text-muted-foreground font-medium min-w-[120px] sticky left-0 bg-background z-10">
+                      Tipo
+                    </th>
+                    {/* Each turno group */}
+                    {TURNOS.map(turno => {
+                      const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                      return (
+                        <>
+                          {/* Turno header spanning its hours + avg */}
+                          <th
+                            key={`th-${turno.letter}`}
+                            colSpan={turno.hours.length + 1}
+                            className={cn("text-center py-1 px-1 font-semibold text-xs rounded-t border-b", colors.header)}
+                          >
+                            {turno.label}
+                          </th>
+                          {/* Spacer between turnos */}
+                          {turno.letter !== "C" && <th className="w-2" />}
+                        </>
+                      );
+                    })}
+                  </tr>
+                  <tr>
+                    <th className="sticky left-0 bg-background z-10" />
+                    {TURNOS.map(turno => {
+                      const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                      return (
+                        <>
+                          {turno.hours.map(h => (
+                            <th key={h} className={cn("text-center py-1 px-0.5 font-mono font-medium min-w-[24px]", colors.cell)}>
+                              {String(h).padStart(2, "0")}
+                            </th>
+                          ))}
+                          <th className="text-center py-1 px-1 text-muted-foreground font-medium min-w-[28px]">x̄</th>
+                          {turno.letter !== "C" && <th className="w-2" />}
+                        </>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* GERAIS types */}
+                  {GERAIS_TYPES.map((type, idx) => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
+                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => (
+                          <>
                             {turno.hours.map(h => (
-                              <th key={h} className={cn("text-center py-1 px-0.5 font-mono font-medium min-w-[26px]", colors.cell)}>
-                                {String(h).padStart(2, "0")}
-                              </th>
+                              <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
                             ))}
-                            <th className="text-center py-1 px-1 text-muted-foreground font-medium min-w-[32px]">x̄</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Equipes Totais */}
-                          <tr className="border-t border-border/40 font-semibold">
-                            <td className="py-1 text-foreground text-xs">Equipes</td>
+                            <td className="text-center py-0.5 font-mono text-foreground font-semibold">
+                              {avg(row, turno.hours)}
+                            </td>
+                            {turno.letter !== "C" && <td className="w-2" />}
+                          </>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                  {/* Separator before BT types */}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {/* BT ONLY types */}
+                  {BT_ONLY_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => (
+                          <>
                             {turno.hours.map(h => (
-                              <td key={h} className="text-center py-1 text-foreground font-mono text-xs">{teamsPerHour[h]}</td>
+                              <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
                             ))}
-                            <td className="text-center py-1 text-foreground font-mono font-bold text-xs">{avgTeams}</td>
-                          </tr>
-                          {/* Perdas/BT */}
-                          <tr className="text-destructive/80">
-                            <td className="py-0.5 text-xs">Perdas</td>
-                            {turno.hours.map(h => (
-                              <td key={h} className="text-center py-0.5 font-mono text-xs">{lossesPerHour[h]}</td>
-                            ))}
-                            <td className="text-center py-0.5 font-mono text-xs">{avgLosses}</td>
-                          </tr>
-                          {/* Separator */}
-                          <tr><td colSpan={turno.hours.length + 2}><div className="border-t border-border/30 my-1" /></td></tr>
-                          {/* GERAIS types */}
-                          {GERAIS_TYPES.map(type => {
-                            const row = typePerHour[type] || [];
-                            const typeAvg = avg(row, turno.hours);
-                            const hasAny = turno.hours.some(h => (row[h] || 0) > 0);
-                            if (!hasAny) return null;
-                            return (
-                              <tr key={type} className="hover:bg-muted/20">
-                                <td className="py-0.5 text-muted-foreground truncate pr-1 text-xs">{type}</td>
-                                {turno.hours.map(h => (
-                                  <td key={h} className="text-center py-0.5 font-mono text-foreground text-xs">{row[h] || 0}</td>
-                                ))}
-                                <td className="text-center py-0.5 font-mono text-foreground text-xs font-semibold">{typeAvg}</td>
-                              </tr>
-                            );
-                          })}
-                          {/* BT separator */}
-                          {BT_ONLY_TYPES.some(type => turno.hours.some(h => (typePerHour[type]?.[h] || 0) > 0)) && (
-                            <tr><td colSpan={turno.hours.length + 2}><div className="border-t border-border/20 my-0.5" /></td></tr>
-                          )}
-                          {/* BT ONLY types */}
-                          {BT_ONLY_TYPES.map(type => {
-                            const row = typePerHour[type] || [];
-                            const typeAvg = avg(row, turno.hours);
-                            const hasAny = turno.hours.some(h => (row[h] || 0) > 0);
-                            if (!hasAny) return null;
-                            return (
-                              <tr key={type} className="hover:bg-muted/20">
-                                <td className="py-0.5 text-warning truncate pr-1 text-xs">{type}</td>
-                                {turno.hours.map(h => (
-                                  <td key={h} className="text-center py-0.5 font-mono text-warning/80 text-xs">{row[h] || 0}</td>
-                                ))}
-                                <td className="text-center py-0.5 font-mono text-warning/80 text-xs font-semibold">{typeAvg}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
+                            <td className="text-center py-0.5 font-mono text-warning/80 font-semibold">
+                              {avg(row, turno.hours)}
+                            </td>
+                            {turno.letter !== "C" && <td className="w-2" />}
+                          </>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
             {/* 24h summary footer */}
