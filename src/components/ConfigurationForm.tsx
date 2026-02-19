@@ -31,7 +31,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
-import { } from "@/hooks/useDailyTeamPlans";
+
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { findBaseConfig, getRelatedBaseIds } from "@/data/basesConfig";
 import { toast } from "@/hooks/use-toast";
