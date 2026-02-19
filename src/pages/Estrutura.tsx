@@ -378,9 +378,9 @@ const Estrutura = () => {
                         const isExcluded = EXCLUDED_TYPES.includes(type as any);
                         return (
                           <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                            <td className={`py-1 pr-2 sticky left-0 bg-card z-10 truncate text-xs ${isExcluded ? "text-muted-foreground/50 italic" : isBTOnly ? "text-blue-400" : "text-foreground"}`} title={type}>
+                            <td className={`py-1 pr-2 sticky left-0 bg-card z-10 truncate text-xs ${isExcluded ? "text-muted-foreground/50 italic" : isBTOnly ? "text-accent-foreground" : "text-foreground"}`} title={type}>
                               {type}
-                              {isBTOnly && <span className="ml-1 text-[10px] text-blue-400/70">BT</span>}
+                              {isBTOnly && <span className="ml-1 text-[10px] text-muted-foreground">BT</span>}
                               {isExcluded && <span className="ml-1 text-[10px] text-muted-foreground/50">—</span>}
                             </td>
                             {turno.hours.map(h => (
