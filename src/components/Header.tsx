@@ -1,18 +1,17 @@
-import { Cloud, MapPin, Zap, Clock, Sun, Moon, CloudOff, CloudLightning } from "lucide-react";
+import { Cloud, MapPin, Zap, Clock, CloudOff, CloudLightning } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
-import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
 import { WeatherOverrideDialog, WeatherOverride } from "@/components/WeatherOverrideDialog";
 import { ContingencyLevelIndicator } from "@/components/ContingencyLevelIndicator";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
-import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { WeatherProvider } from "@/hooks/useWeatherProvider";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
 import { cn } from "@/lib/utils";
+
 
 interface HeaderProps {
   config: SimulationConfig;
