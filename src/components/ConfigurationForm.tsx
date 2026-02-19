@@ -328,7 +328,7 @@ export const ConfigurationForm = ({
 
       toast({
         title: "Estrutura declarada carregada",
-        description: `${allPlans.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
+        description: `${planIds.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
       });
       setDeclaredDateOpen(false);
     } catch {
