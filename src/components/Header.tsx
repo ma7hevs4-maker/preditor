@@ -1,18 +1,17 @@
-import { Cloud, MapPin, Zap, Clock, Sun, Moon, CloudOff, CloudLightning } from "lucide-react";
+import { Cloud, MapPin, Zap, Clock, CloudOff, CloudLightning } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
-import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
 import { WeatherOverrideDialog, WeatherOverride } from "@/components/WeatherOverrideDialog";
 import { ContingencyLevelIndicator } from "@/components/ContingencyLevelIndicator";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { Base } from "@/hooks/useBases";
-import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { WeatherProvider } from "@/hooks/useWeatherProvider";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
 import { cn } from "@/lib/utils";
+
 
 interface HeaderProps {
   config: SimulationConfig;
@@ -51,7 +50,6 @@ export const Header = ({
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherOverrideOpen, setWeatherOverrideOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -170,27 +168,11 @@ export const Header = ({
             isSaving={isSaving}
           />
 
-          <AdminConfigDialog />
-
           <SimulationHistoryDialog
             baseId={config.regionalLabel ? undefined : selectedBase?.id}
             regionalLabel={config.regionalLabel}
             onLoadSimulation={onLoadSimulation}
           />
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleTheme}
-            className="bg-secondary/50 border-border hover:bg-secondary"
-            title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-          </Button>
         </div>
       </div>
 
