@@ -352,7 +352,7 @@ export const ConfigurationForm = ({
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     <SelectItem value="todas">Todas as sucursais</SelectItem>
-                    {baseConfig?.sucursais.map((s) => (
+                    {selectedRegional?.sucursais.map((s) => (
                       <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
