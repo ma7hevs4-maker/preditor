@@ -13,8 +13,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBases } from "@/hooks/useBases";
 import { DailyTeamPlan, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
-import { useTeamTypeEntriesByPlans, entriesToMap, TeamTypeEntry } from "@/hooks/useTeamTypeEntries";
-import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
+import { useTeamTypeEntriesByPlans, TeamTypeEntry } from "@/hooks/useTeamTypeEntries";
+import { TURNOS } from "@/data/teamTypes";
 import { REGIONAIS, Regional } from "@/data/basesConfig";
 
 // ---------- Constants ----------
@@ -22,6 +22,10 @@ const UTS_LABELS = ["Magé", "Niterói", "São Gonçalo", "Serrana", "Sul"];
 const UTN_LABELS = ["Campos", "Macaé", "Lagos", "Noroeste"];
 
 type UT = "UTS" | "UTN";
+
+const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
+const BT_ONLY_TYPES = ["Corte e Religa", "Perdas", "Reguladas"] as const;
+const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...BT_ONLY_TYPES] as const;
 
 // ---------- Data hooks ----------
 const useAllPlansForDate = (date: string) =>
@@ -45,27 +49,28 @@ const TURNO_COLORS = {
     border: "border-blue-500/30",
     header: "bg-blue-500/20 text-blue-400",
     cell: "text-blue-300",
+    badge: "bg-blue-500/20 border border-blue-500/30 text-blue-300",
   },
   B: {
     bg: "bg-amber-500/10",
     border: "border-amber-500/30",
     header: "bg-amber-500/20 text-amber-400",
     cell: "text-amber-300",
+    badge: "bg-amber-500/20 border border-amber-500/30 text-amber-300",
   },
   C: {
     bg: "bg-purple-500/10",
     border: "border-purple-500/30",
     header: "bg-purple-500/20 text-purple-400",
     cell: "text-purple-300",
+    badge: "bg-purple-500/20 border border-purple-500/30 text-purple-300",
   },
 } as const;
 
-function sumEntriesByHour(entries: TeamTypeEntry[], types: readonly string[]): number[] {
-  const result = Array(24).fill(0);
-  entries.forEach(e => {
-    if (types.includes(e.team_type)) result[e.hour] += e.quantity;
-  });
-  return result;
+function avg(arr: number[], hours: readonly number[]): number {
+  if (hours.length === 0) return 0;
+  const sum = hours.reduce((s, h) => s + arr[h], 0);
+  return Math.round(sum / hours.length);
 }
 
 // ---------- Detail Dialog ----------
@@ -73,16 +78,12 @@ interface RegionalDetailDialogProps {
   open: boolean;
   onClose: () => void;
   regional: Regional;
-  basesMap: Record<string, string>; // id -> name
+  basesMap: Record<string, string>;
   allBases: { id: string; name: string }[];
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
   selectedDate: Date;
 }
-
-const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
-const BT_ONLY_TYPES = ["Corte e Religa", "Perdas", "Reguladas"] as const;
-const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...BT_ONLY_TYPES] as const;
 
 const RegionalDetailDialog = ({
   open, onClose, regional, basesMap, allBases, plans, allTypeEntries, selectedDate,
@@ -91,7 +92,6 @@ const RegionalDetailDialog = ({
 
   const hasSucursais = regional.sucursais.length > 0;
 
-  // Get base IDs belonging to this regional
   const regionalBaseIds = useMemo(() => {
     if (!hasSucursais) {
       const base = allBases.find(b => b.name.toLowerCase() === regional.label.toLowerCase());
@@ -103,13 +103,11 @@ const RegionalDetailDialog = ({
       .map(b => b!.id);
   }, [regional, allBases, hasSucursais]);
 
-  // Filter plans for this regional
   const regionalPlans = useMemo(
     () => plans.filter(p => regionalBaseIds.includes(p.base_id)),
     [plans, regionalBaseIds]
   );
 
-  // Plans filtered by selected sucursal
   const filteredPlans = useMemo(() => {
     if (selectedSucursal === "todas" || !hasSucursais) return regionalPlans;
     const sucursalBase = allBases.find(
@@ -121,13 +119,11 @@ const RegionalDetailDialog = ({
 
   const filteredPlanIds = filteredPlans.map(p => p.id);
 
-  // Entries for filtered plans
   const filteredEntries = useMemo(
     () => allTypeEntries.filter(e => filteredPlanIds.includes(e.daily_plan_id)),
     [allTypeEntries, filteredPlanIds]
   );
 
-  // Aggregate teams and losses per hour
   const teamsPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
     filteredPlans.forEach(p => {
@@ -146,7 +142,6 @@ const RegionalDetailDialog = ({
     return arr;
   }, [filteredPlans]);
 
-  // Type-specific per hour (sum across filtered plans)
   const typePerHour = useMemo((): Record<string, number[]> => {
     const map: Record<string, number[]> = {};
     ALL_DISPLAY_TYPES.forEach(type => {
@@ -160,9 +155,17 @@ const RegionalDetailDialog = ({
 
   const sucursalOptions = hasSucursais ? regional.sucursais.map(s => s.name) : [];
 
+  // 24h averages
+  const allHours = Array.from({ length: 24 }, (_, i) => i);
+  const avgTotalTeams24h = avg(teamsPerHour, allHours);
+  const totalBT24h = allHours.reduce((s, h) => {
+    return s + BT_ONLY_TYPES.reduce((bs, type) => bs + (typePerHour[type]?.[h] || 0), 0);
+  }, 0);
+  const avgBT24h = Math.round(totalBT24h / 24);
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-[98vw] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <DialogTitle>
@@ -170,7 +173,7 @@ const RegionalDetailDialog = ({
             </DialogTitle>
             {hasSucursais && (
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
-                <SelectTrigger className="w-[180px] h-8 text-sm">
+                <SelectTrigger className="w-[200px] h-8 text-sm">
                   <SelectValue placeholder="Sucursal" />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,91 +192,107 @@ const RegionalDetailDialog = ({
             Nenhum plano encontrado para esta seleção.
           </div>
         ) : (
-          <div className="space-y-6 mt-2">
-            {TURNOS.map(turno => {
-              const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
-              return (
-                <div key={turno.letter} className={cn("rounded-lg border p-3", colors.bg, colors.border)}>
-                  <div className={cn("text-xs font-semibold px-2 py-1 rounded mb-3 inline-block", colors.header)}>
-                    {turno.label}
+          <>
+            {/* Turnos side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-2">
+              {TURNOS.map(turno => {
+                const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                const avgTeams = avg(teamsPerHour, turno.hours);
+                const avgLosses = avg(lossesPerHour, turno.hours);
+                return (
+                  <div key={turno.letter} className={cn("rounded-lg border p-3", colors.bg, colors.border)}>
+                    <div className={cn("text-xs font-semibold px-2 py-1 rounded mb-3 inline-block", colors.header)}>
+                      {turno.label}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr>
+                            <th className="text-left py-1 pr-2 text-muted-foreground font-medium min-w-[100px]">Tipo</th>
+                            {turno.hours.map(h => (
+                              <th key={h} className={cn("text-center py-1 px-0.5 font-mono font-medium min-w-[26px]", colors.cell)}>
+                                {String(h).padStart(2, "0")}
+                              </th>
+                            ))}
+                            <th className="text-center py-1 px-1 text-muted-foreground font-medium min-w-[32px]">x̄</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Equipes Totais */}
+                          <tr className="border-t border-border/40 font-semibold">
+                            <td className="py-1 text-foreground text-xs">Equipes</td>
+                            {turno.hours.map(h => (
+                              <td key={h} className="text-center py-1 text-foreground font-mono text-xs">{teamsPerHour[h]}</td>
+                            ))}
+                            <td className="text-center py-1 text-foreground font-mono font-bold text-xs">{avgTeams}</td>
+                          </tr>
+                          {/* Perdas/BT */}
+                          <tr className="text-destructive/80">
+                            <td className="py-0.5 text-xs">Perdas</td>
+                            {turno.hours.map(h => (
+                              <td key={h} className="text-center py-0.5 font-mono text-xs">{lossesPerHour[h]}</td>
+                            ))}
+                            <td className="text-center py-0.5 font-mono text-xs">{avgLosses}</td>
+                          </tr>
+                          {/* Separator */}
+                          <tr><td colSpan={turno.hours.length + 2}><div className="border-t border-border/30 my-1" /></td></tr>
+                          {/* GERAIS types */}
+                          {GERAIS_TYPES.map(type => {
+                            const row = typePerHour[type] || [];
+                            const typeAvg = avg(row, turno.hours);
+                            const hasAny = turno.hours.some(h => (row[h] || 0) > 0);
+                            if (!hasAny) return null;
+                            return (
+                              <tr key={type} className="hover:bg-muted/20">
+                                <td className="py-0.5 text-muted-foreground truncate pr-1 text-xs">{type}</td>
+                                {turno.hours.map(h => (
+                                  <td key={h} className="text-center py-0.5 font-mono text-foreground text-xs">{row[h] || 0}</td>
+                                ))}
+                                <td className="text-center py-0.5 font-mono text-foreground text-xs font-semibold">{typeAvg}</td>
+                              </tr>
+                            );
+                          })}
+                          {/* BT separator */}
+                          {BT_ONLY_TYPES.some(type => turno.hours.some(h => (typePerHour[type]?.[h] || 0) > 0)) && (
+                            <tr><td colSpan={turno.hours.length + 2}><div className="border-t border-border/20 my-0.5" /></td></tr>
+                          )}
+                          {/* BT ONLY types */}
+                          {BT_ONLY_TYPES.map(type => {
+                            const row = typePerHour[type] || [];
+                            const typeAvg = avg(row, turno.hours);
+                            const hasAny = turno.hours.some(h => (row[h] || 0) > 0);
+                            if (!hasAny) return null;
+                            return (
+                              <tr key={type} className="hover:bg-muted/20">
+                                <td className="py-0.5 text-warning truncate pr-1 text-xs">{type}</td>
+                                {turno.hours.map(h => (
+                                  <td key={h} className="text-center py-0.5 font-mono text-warning/80 text-xs">{row[h] || 0}</td>
+                                ))}
+                                <td className="text-center py-0.5 font-mono text-warning/80 text-xs font-semibold">{typeAvg}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs min-w-[600px]">
-                      <thead>
-                        <tr>
-                          <th className="text-left py-1 pr-3 text-muted-foreground font-medium min-w-[130px]">Tipo</th>
-                          {turno.hours.map(h => (
-                            <th key={h} className={cn("text-center py-1 px-1 font-mono font-medium min-w-[36px]", colors.cell)}>
-                              {String(h).padStart(2, "0")}h
-                            </th>
-                          ))}
-                          <th className="text-center py-1 px-2 text-muted-foreground font-medium min-w-[40px]">Σ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Equipes Totais */}
-                        <tr className="border-t border-border/40 font-semibold">
-                          <td className="py-1.5 text-foreground">Equipes</td>
-                          {turno.hours.map(h => (
-                            <td key={h} className="text-center py-1.5 text-foreground font-mono">{teamsPerHour[h]}</td>
-                          ))}
-                          <td className="text-center py-1.5 text-foreground font-mono font-bold">
-                            {turno.hours.reduce((s, h) => s + teamsPerHour[h], 0)}
-                          </td>
-                        </tr>
-                        {/* Perdas */}
-                        <tr className="text-destructive/80">
-                          <td className="py-1">Perdas</td>
-                          {turno.hours.map(h => (
-                            <td key={h} className="text-center py-1 font-mono">{lossesPerHour[h]}</td>
-                          ))}
-                          <td className="text-center py-1 font-mono">
-                            {turno.hours.reduce((s, h) => s + lossesPerHour[h], 0)}
-                          </td>
-                        </tr>
-                        {/* Separator */}
-                        <tr><td colSpan={turno.hours.length + 2}><div className="border-t border-border/30 my-1" /></td></tr>
-                        {/* GERAIS types */}
-                        {GERAIS_TYPES.map(type => {
-                          const row = typePerHour[type] || [];
-                          const total = turno.hours.reduce((s, h) => s + (row[h] || 0), 0);
-                          if (total === 0) return null;
-                          return (
-                            <tr key={type} className="hover:bg-muted/20">
-                              <td className="py-0.5 text-muted-foreground truncate pr-2">{type}</td>
-                              {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
-                              ))}
-                              <td className="text-center py-0.5 font-mono text-foreground">{total}</td>
-                            </tr>
-                          );
-                        })}
-                        {/* BT separator */}
-                        {BT_ONLY_TYPES.some(type => turno.hours.some(h => (typePerHour[type]?.[h] || 0) > 0)) && (
-                          <tr><td colSpan={turno.hours.length + 2}><div className="border-t border-border/20 my-0.5" /></td></tr>
-                        )}
-                        {/* BT ONLY types */}
-                        {BT_ONLY_TYPES.map(type => {
-                          const row = typePerHour[type] || [];
-                          const total = turno.hours.reduce((s, h) => s + (row[h] || 0), 0);
-                          if (total === 0) return null;
-                          return (
-                            <tr key={type} className="hover:bg-muted/20">
-                              <td className="py-0.5 text-warning truncate pr-2">{type}</td>
-                              {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
-                              ))}
-                              <td className="text-center py-0.5 font-mono text-warning/80">{total}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* 24h summary footer */}
+            <div className="flex gap-4 mt-3 pt-3 border-t border-border/30 flex-wrap">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Média equipes totais (24h):</span>
+                <span className="font-bold text-foreground">{avgTotalTeams24h}</span>
+              </div>
+              <div className="w-px h-4 bg-border self-center" />
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Média equipes BT (24h):</span>
+                <span className="font-bold text-warning">{avgBT24h}</span>
+              </div>
+            </div>
+          </>
         )}
       </DialogContent>
     </Dialog>
@@ -317,7 +336,24 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     return arr;
   }, [regionalPlans]);
 
-  const totalTeams = teamsPerHour.reduce((s, v) => s + v, 0);
+  // BT per hour from entries
+  const regionalPlanIds = regionalPlans.map(p => p.id);
+  const regionalEntries = useMemo(
+    () => allTypeEntries.filter(e => regionalPlanIds.includes(e.daily_plan_id)),
+    [allTypeEntries, regionalPlanIds]
+  );
+
+  const btPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    regionalEntries.forEach(e => {
+      if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [regionalEntries]);
+
+  const allHours = Array.from({ length: 24 }, (_, i) => i);
+  const avgTotalTeams24h = avg(teamsPerHour, allHours);
+  const avgBT24h = avg(btPerHour, allHours);
   const hasData = regionalPlans.length > 0;
 
   return (
@@ -328,10 +364,10 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         hasData ? "cursor-pointer hover:ring-2 hover:ring-primary/30" : "opacity-50"
       )}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-xs">{totalTeams} eq×h</Badge>
+          <Badge variant="secondary" className="text-xs">{avgTotalTeams24h} eq/h</Badge>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
@@ -343,19 +379,34 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         </p>
       )}
 
-      {/* Turno summary */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Turno averages */}
+      <div className="grid grid-cols-3 gap-2 mb-2">
         {TURNOS.map(turno => {
           const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
-          const total = turno.hours.reduce((s, h) => s + teamsPerHour[h], 0);
+          const avgVal = avg(teamsPerHour, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-[10px] font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className="text-sm font-bold text-foreground">{total}</div>
+              <div className="text-sm font-bold text-foreground">{avgVal}</div>
             </div>
           );
         })}
       </div>
+
+      {/* 24h summary */}
+      {hasData && (
+        <div className="border-t border-border/30 pt-2 flex justify-between text-[10px]">
+          <div className="flex flex-col items-center">
+            <span className="text-muted-foreground">Eq. Totais (24h)</span>
+            <span className="font-bold text-foreground">{avgTotalTeams24h}</span>
+          </div>
+          <div className="w-px bg-border/50" />
+          <div className="flex flex-col items-center">
+            <span className="text-muted-foreground">Eq. BT (24h)</span>
+            <span className="font-bold text-warning">{avgBT24h}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -448,7 +499,6 @@ const Visao = () => {
               <ChevronRight className="h-4 w-4" />
             </Button>
 
-            {/* UT description */}
             <span className="text-xs text-muted-foreground ml-1">
               {selectedUT === "UTS"
                 ? "Magé · Niterói · São Gonçalo · Serrana · Sul"
