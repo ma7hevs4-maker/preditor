@@ -238,7 +238,7 @@ const RegionalDetailDialog = ({
                               {String(h).padStart(2, "0")}
                             </th>
                           ))}
-                          <th className="text-center py-1 px-1 text-muted-foreground font-medium min-w-[28px]">x̄</th>
+                          <th className={cn("text-center py-1 px-1 font-medium min-w-[32px] rounded-sm", colors.avgHeader)}>x̄</th>
                           {turno.letter !== "C" && <th className="w-2" />}
                         </>
                       );
