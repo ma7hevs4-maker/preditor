@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
