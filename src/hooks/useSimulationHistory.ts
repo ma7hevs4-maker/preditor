@@ -79,6 +79,7 @@ export const useSimulationHistory = (baseId?: string, regionalLabel?: string | n
     mutationFn: async (params: SaveSimulationParams) => {
       const insertData = {
         base_id: params.baseId,
+        regional_label: params.regionalLabel ?? null,
         name: params.name,
         bt_initial_backlog: params.btInitialBacklog,
         mt_initial_backlog: params.mtInitialBacklog,
