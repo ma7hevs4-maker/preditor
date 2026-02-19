@@ -350,21 +350,22 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     [plans, regionalBaseIds]
   );
 
-  const teamsPerHour = useMemo(() => {
-    const arr = Array(24).fill(0);
-    regionalPlans.forEach(p => {
-      const t = planToTeamsArray(p);
-      t.forEach((v, h) => { arr[h] += v; });
-    });
-    return arr;
-  }, [regionalPlans]);
-
-  // BT per hour from entries
   const regionalPlanIds = regionalPlans.map(p => p.id);
   const regionalEntries = useMemo(
     () => allTypeEntries.filter(e => regionalPlanIds.includes(e.daily_plan_id)),
     [allTypeEntries, regionalPlanIds]
   );
+
+  const allHours = Array.from({ length: 24 }, (_, i) => i);
+
+  // teamsPerHour = sum of GERAIS_TYPES per hour (from entries, same logic as modal)
+  const teamsPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    regionalEntries.forEach(e => {
+      if ((GERAIS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [regionalEntries]);
 
   const btPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
@@ -374,15 +375,15 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     return arr;
   }, [regionalEntries]);
 
-  const allHours = Array.from({ length: 24 }, (_, i) => i);
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
   const hasData = regionalPlans.length > 0;
 
-  // Per-type 24h averages
+  // Per-type 24h averages (all types including LV/MK)
   const typeAvg24h = useMemo(() => {
+    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES];
     const result: Record<string, number> = {};
-    ALL_DISPLAY_TYPES.forEach(type => {
+    allTypes.forEach(type => {
       const arr = Array(24).fill(0);
       regionalEntries.forEach(e => {
         if (e.team_type === type) arr[e.hour] += e.quantity;
