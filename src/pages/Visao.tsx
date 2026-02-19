@@ -257,16 +257,17 @@ const RegionalDetailDialog = ({
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
-                          <>
-                            {turno.hours.map(h => (
-                              <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
-                            ))}
-                            <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
-                              {avg(row, turno.hours)}
-                            </td>
-                            {turno.letter !== "C" && <td className="w-2" />}
-                          </>
-                        ))}
+                            <>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
+                                {avg(row, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </>
+                          );
+                        })}
                       </tr>
                     );
                   })}
