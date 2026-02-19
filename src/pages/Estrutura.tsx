@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -127,6 +127,43 @@ const Estrutura = () => {
     });
     setIsDirty(true);
     toast({ title: "Turno replicado", description: `Hora ${String(sourceHour).padStart(2, "0")}:00 replicada para ${turno.label}.` });
+  };
+
+  const apagarTurno = (turnoIdx: number) => {
+    const turno = TURNOS[turnoIdx];
+    setTeams(prev => { const n = [...prev]; turno.hours.forEach(h => { n[h] = 0; }); return n; });
+    setLossTeams(prev => { const n = [...prev]; turno.hours.forEach(h => { n[h] = 0; }); return n; });
+    setTypeData(prev => {
+      const n: Record<string, number[]> = {};
+      Object.entries(prev).forEach(([type, arr]) => {
+        n[type] = [...arr];
+        turno.hours.forEach(h => { n[type][h] = 0; });
+      });
+      return n;
+    });
+    setIsDirty(true);
+    toast({ title: "Turno apagado", description: `Todos os valores do ${turno.label} foram zerados.` });
+  };
+
+  const copiarTipoParaTurno = (type: string, turnoIdx: number) => {
+    const turno = TURNOS[turnoIdx];
+    const sourceHour = turno.hours[0];
+    setTypeData(prev => {
+      const n = { ...prev, [type]: [...prev[type]] };
+      turno.hours.forEach(h => { n[type][h] = prev[type][sourceHour]; });
+      return n;
+    });
+    setIsDirty(true);
+  };
+
+  const apagarTipoNoTurno = (type: string, turnoIdx: number) => {
+    const turno = TURNOS[turnoIdx];
+    setTypeData(prev => {
+      const n = { ...prev, [type]: [...prev[type]] };
+      turno.hours.forEach(h => { n[type][h] = 0; });
+      return n;
+    });
+    setIsDirty(true);
   };
 
   const saveSingleDay = async (date: Date) => {
@@ -367,7 +404,7 @@ const Estrutura = () => {
                         {String(turno.hours[0]).padStart(2, "0")}h – {String(turno.hours[turno.hours.length - 1]).padStart(2, "0")}h
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -376,6 +413,15 @@ const Estrutura = () => {
                         title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
                       >
                         <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => apagarTurno(turnoIdx)}
+                        title="Apagar todos os valores do turno"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />Apagar Turno
                       </Button>
                     </div>
                   </div>
@@ -391,7 +437,8 @@ const Estrutura = () => {
                               {String(h).padStart(2, "0")}h
                             </th>
                           ))}
-                        </tr>
+                          <th className="py-1 pl-1 w-[52px]"></th>
+                         </tr>
                       </thead>
                       <tbody>
                         {TEAM_TYPES.map((type, typeIdx) => {
@@ -403,20 +450,42 @@ const Estrutura = () => {
                                 {type}
                                 {isBTOnly && <span className="ml-1 text-[10px] text-orange-400/60">BT</span>}
                               </td>
-                              {turno.hours.map(h => (
-                                <td key={h} className="py-1 px-0.5">
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    value={typeData[type]?.[h] ?? 0}
-                                    onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
-                                    className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          );
-                        })}
+                               {turno.hours.map(h => (
+                                 <td key={h} className="py-1 px-0.5">
+                                   <Input
+                                     type="number"
+                                     min={0}
+                                     value={typeData[type]?.[h] ?? 0}
+                                     onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
+                                     className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
+                                   />
+                                 </td>
+                               ))}
+                               <td className="py-1 pl-1">
+                                 <div className="flex gap-0.5">
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
+                                     title={`Copiar 1ª hora de ${type} para todo o turno`}
+                                     onClick={() => copiarTipoParaTurno(type, turnoIdx)}
+                                   >
+                                     <Copy className="w-3 h-3" />
+                                   </Button>
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     className="h-7 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                     title={`Apagar ${type} neste turno`}
+                                     onClick={() => apagarTipoNoTurno(type, turnoIdx)}
+                                   >
+                                     <Trash2 className="w-3 h-3" />
+                                   </Button>
+                                 </div>
+                               </td>
+                             </tr>
+                           );
+                         })}
                       </tbody>
                     </table>
                   </div>
