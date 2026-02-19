@@ -357,7 +357,7 @@ const Estrutura = () => {
               const hoursCount = turno.hours.length;
 
               return (
-                <div key={turno.letter} className="glass-card p-4">
+                <div key={turno.letter} className={`glass-card p-4 ${turnoColors.cardBorder}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded ${turnoColors.badge}`}>
