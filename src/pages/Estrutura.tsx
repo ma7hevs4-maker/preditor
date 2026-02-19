@@ -417,7 +417,7 @@ const Estrutura = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className={`text-xs h-7 ${turnoColors.icon} hover:bg-muted/40`}
                         onClick={() => apagarTurno(turnoIdx)}
                         title="Apagar todos os valores do turno"
                       >
@@ -473,14 +473,14 @@ const Estrutura = () => {
                                      <Copy className="w-3 h-3" />
                                    </Button>
                                    <Button
-                                     variant="ghost"
-                                     size="icon"
-                                     className="h-7 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                     title={`Apagar ${type} neste turno`}
-                                     onClick={() => apagarTipoNoTurno(type, turnoIdx)}
-                                   >
-                                     <Trash2 className="w-3 h-3" />
-                                   </Button>
+                                      variant="ghost"
+                                      size="icon"
+                                      className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
+                                      title={`Apagar ${type} neste turno`}
+                                      onClick={() => apagarTipoNoTurno(type, turnoIdx)}
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
                                  </div>
                                </td>
                              </tr>
