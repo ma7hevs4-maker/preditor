@@ -406,7 +406,7 @@ const Estrutura = () => {
                     TEAM_TYPES.filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
                       .reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0)
                   }</strong></span>
-                  <span className="text-blue-400">Apenas BT: <strong>{
+                  <span className="text-muted-foreground">Apenas BT: <strong className="text-foreground">{
                     BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0)
                   }</strong></span>
                 </div>
