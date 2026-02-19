@@ -331,7 +331,7 @@ const Estrutura = () => {
             <span>Total todos incidentes×hora: <strong className="text-foreground">{totalAllIncidents}</strong></span>
             <span>Total BT×hora: <strong className="text-foreground">{totalBT}</strong></span>
             {existingPlan && <span className="text-primary font-medium">● Plano salvo</span>}
-            {isDirty && <span className="text-yellow-500 font-medium">● Não salvo</span>}
+            {isDirty && <span className="text-warning font-medium">● Não salvo</span>}
           </div>
         </div>
 
