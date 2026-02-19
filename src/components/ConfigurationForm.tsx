@@ -371,11 +371,8 @@ export const ConfigurationForm = ({
               </div>
             )}
 
-            {selectedBase && (
-              <p className="text-xs text-muted-foreground">
-                Lat: {selectedBase.lat}, Lon: {selectedBase.lon}
-              </p>
-            )}
+
+
           </div>
 
           {/* Simulation Mode Selection */}
@@ -632,7 +629,7 @@ export const ConfigurationForm = ({
                         ? selectedSucursal === "todas"
                           ? `Somará todas as sucursais de ${selectedRegional?.label}`
                           : `Carregará plano de ${selectedSucursal}`
-                        : `Carregará plano de ${selectedBase?.name ?? "base selecionada"}`}
+                        : `Carregará plano de ${selectedRegionalLabel || "base selecionada"}`}
                     </p>
                     <Button
                       size="sm"
