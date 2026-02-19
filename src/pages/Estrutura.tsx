@@ -195,8 +195,15 @@ const Estrutura = () => {
     return new Set(monthPlans.map(p => p.plan_date));
   }, [monthPlans]);
 
-  const totalTeams = teams.reduce((s, v) => s + v, 0);
-  const avgTeams = totalTeams / 24;
+  // BT only: Perdas, Corte e Religa
+  const BT_ONLY_TYPES = ["Perdas", "Corte e Religa"] as const;
+  // Excluded from calculations: LV and MK
+  const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
+
+  const totalAllIncidents = TEAM_TYPES
+    .filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
+    .reduce((s, t) => s + (typeData[t]?.reduce((a, b) => a + b, 0) ?? 0), 0);
+  const totalBT = BT_ONLY_TYPES.reduce((s, t) => s + (typeData[t]?.reduce((a, b) => a + b, 0) ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
