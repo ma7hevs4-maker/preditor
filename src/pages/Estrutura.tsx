@@ -405,17 +405,74 @@ const Estrutura = () => {
 
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
-              {existingPlan && (
+              {existingPlan && !editUnlocked && (
+                <Button variant="outline" size="sm" className="h-8" onClick={() => { setEditDialogOpen(true); setEditPassword(""); setEditPasswordError(false); }}>
+                  <Pencil className="w-3.5 h-3.5 mr-1" />Editar
+                </Button>
+              )}
+              {existingPlan && editUnlocked && (
                 <Button variant="destructive" size="sm" className="h-8" onClick={handleDelete} disabled={deletePlan.isPending}>
                   <Trash2 className="w-3.5 h-3.5 mr-1" />Remover
                 </Button>
               )}
+              <Button variant="outline" size="sm" className="h-8" onClick={() => { setStructureName(""); setSaveStructureOpen(true); }}>
+                <BookmarkPlus className="w-3.5 h-3.5 mr-1" />Salvar Padrão
+              </Button>
               <Button onClick={handleSave} disabled={!isDirty || upsertPlan.isPending} size="sm" className="h-8">
                 {upsertPlan.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
                 Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
           </div>
+
+          {/* Edit password dialog */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Autenticação necessária</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">Digite a senha para habilitar o modo de edição.</p>
+              <Input
+                type="password"
+                placeholder="Senha"
+                value={editPassword}
+                onChange={e => { setEditPassword(e.target.value); setEditPasswordError(false); }}
+                onKeyDown={e => e.key === "Enter" && handleEditPasswordSubmit()}
+                className={editPasswordError ? "border-destructive" : ""}
+                autoFocus
+              />
+              {editPasswordError && <p className="text-xs text-destructive">Senha incorreta.</p>}
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleEditPasswordSubmit}>Confirmar</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Save as structure dialog */}
+          <Dialog open={saveStructureOpen} onOpenChange={setSaveStructureOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Salvar como Estrutura Padrão</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">Esta estrutura será adicionada à lista de estruturas padrão da base selecionada.</p>
+              <Input
+                placeholder="Nome da estrutura..."
+                value={structureName}
+                onChange={e => setStructureName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSaveAsStructure()}
+                autoFocus
+              />
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={() => setSaveStructureOpen(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleSaveAsStructure} disabled={!structureName.trim() || savingStructure}>
+                  {savingStructure ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <BookmarkPlus className="w-3.5 h-3.5 mr-1" />}
+                  Salvar
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
 
           {/* Summary */}
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
