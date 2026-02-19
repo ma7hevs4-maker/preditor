@@ -450,20 +450,42 @@ const Estrutura = () => {
                                 {type}
                                 {isBTOnly && <span className="ml-1 text-[10px] text-orange-400/60">BT</span>}
                               </td>
-                              {turno.hours.map(h => (
-                                <td key={h} className="py-1 px-0.5">
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    value={typeData[type]?.[h] ?? 0}
-                                    onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
-                                    className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
-                                  />
-                                </td>
-                              ))}
-                            </tr>
-                          );
-                        })}
+                               {turno.hours.map(h => (
+                                 <td key={h} className="py-1 px-0.5">
+                                   <Input
+                                     type="number"
+                                     min={0}
+                                     value={typeData[type]?.[h] ?? 0}
+                                     onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
+                                     className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
+                                   />
+                                 </td>
+                               ))}
+                               <td className="py-1 pl-1">
+                                 <div className="flex gap-0.5">
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
+                                     title={`Copiar 1ª hora de ${type} para todo o turno`}
+                                     onClick={() => copiarTipoParaTurno(type, turnoIdx)}
+                                   >
+                                     <Copy className="w-3 h-3" />
+                                   </Button>
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     className="h-7 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                     title={`Apagar ${type} neste turno`}
+                                     onClick={() => apagarTipoNoTurno(type, turnoIdx)}
+                                   >
+                                     <Trash2 className="w-3 h-3" />
+                                   </Button>
+                                 </div>
+                               </td>
+                             </tr>
+                           );
+                         })}
                       </tbody>
                     </table>
                   </div>
