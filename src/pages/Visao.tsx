@@ -378,6 +378,19 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
   const avgBT24h = avg(btPerHour, allHours);
   const hasData = regionalPlans.length > 0;
 
+  // Per-type 24h averages
+  const typeAvg24h = useMemo(() => {
+    const result: Record<string, number> = {};
+    ALL_DISPLAY_TYPES.forEach(type => {
+      const arr = Array(24).fill(0);
+      regionalEntries.forEach(e => {
+        if (e.team_type === type) arr[e.hour] += e.quantity;
+      });
+      result[type] = avg(arr, allHours);
+    });
+    return result;
+  }, [regionalEntries]);
+
   return (
     <div
       onClick={hasData ? onOpen : undefined}
@@ -414,6 +427,32 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
           );
         })}
       </div>
+
+      {/* Type averages list */}
+      {hasData && (
+        <div className="border-t border-border/30 pt-2 mb-2 space-y-0.5">
+          {GERAIS_TYPES.map(type => {
+            const val = typeAvg24h[type] || 0;
+            if (val === 0) return null;
+            return (
+              <div key={type} className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">{type}</span>
+                <span className="font-semibold text-foreground">{val}</span>
+              </div>
+            );
+          })}
+          {BT_ONLY_TYPES.map(type => {
+            const val = typeAvg24h[type] || 0;
+            if (val === 0) return null;
+            return (
+              <div key={type} className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">{type}</span>
+                <span className="font-semibold text-warning">{val}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 24h summary */}
       {hasData && (
