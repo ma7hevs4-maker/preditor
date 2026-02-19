@@ -437,7 +437,8 @@ const Estrutura = () => {
                               {String(h).padStart(2, "0")}h
                             </th>
                           ))}
-                        </tr>
+                          <th className="py-1 pl-1 w-[52px]"></th>
+                         </tr>
                       </thead>
                       <tbody>
                         {TEAM_TYPES.map((type, typeIdx) => {
