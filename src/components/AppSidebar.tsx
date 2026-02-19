@@ -3,6 +3,7 @@ import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
+import { AdminConfigDialog } from "@/components/AdminConfigDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -19,7 +20,6 @@ const navItems = [
   { title: "Simulação", url: "/", icon: Zap },
   { title: "Estrutura", url: "/estrutura", icon: Users },
   { title: "Visão", url: "/visao", icon: Eye },
-  { title: "Configurações", url: "/config", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -68,6 +68,18 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Configurações — opens AdminConfigDialog */}
+              <SidebarMenuItem>
+                <AdminConfigDialog
+                  trigger={
+                    <SidebarMenuButton tooltip="Configurações">
+                      <Settings className="w-4 h-4 shrink-0" />
+                      {!collapsed && <span className="truncate">Configurações</span>}
+                    </SidebarMenuButton>
+                  }
+                />
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

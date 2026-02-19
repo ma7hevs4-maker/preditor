@@ -38,7 +38,7 @@ const turnos = [
   { id: "C", name: "Turno C", hours: "16h - 23h", range: [16, 17, 18, 19, 20, 21, 22, 23], colorClass: "text-purple-400 border-purple-500/30" },
 ];
 
-export const AdminConfigDialog = () => {
+export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
@@ -532,14 +532,16 @@ export const AdminConfigDialog = () => {
       else setIsOpen(true);
     }}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="icon"
-          className="bg-secondary/50 border-border hover:bg-secondary"
-          title="Configuração"
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
+        {trigger ?? (
+          <Button 
+            variant="outline" 
+            size="icon"
+            className="bg-secondary/50 border-border hover:bg-secondary"
+            title="Configuração"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border">
         {!isAuthenticated ? (
