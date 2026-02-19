@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBases } from "@/hooks/useBases";
-import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
+import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray, useAddTeamStructure } from "@/hooks/useTeamStructures";
 import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
+
+const ADMIN_PASSWORD = "dys";
 
 const Estrutura = () => {
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
