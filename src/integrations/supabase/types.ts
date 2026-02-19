@@ -271,6 +271,41 @@ export type Database = {
           },
         ]
       }
+      daily_team_type_entries: {
+        Row: {
+          created_at: string
+          daily_plan_id: string
+          hour: number
+          id: string
+          quantity: number
+          team_type: string
+        }
+        Insert: {
+          created_at?: string
+          daily_plan_id: string
+          hour: number
+          id?: string
+          quantity?: number
+          team_type: string
+        }
+        Update: {
+          created_at?: string
+          daily_plan_id?: string
+          hour?: number
+          id?: string
+          quantity?: number
+          team_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_team_type_entries_daily_plan_id_fkey"
+            columns: ["daily_plan_id"]
+            isOneToOne: false
+            referencedRelation: "daily_team_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historical_data: {
         Row: {
           base_id: string
