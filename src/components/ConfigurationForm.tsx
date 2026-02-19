@@ -322,7 +322,7 @@ export const ConfigurationForm = ({
         <div className="space-y-6 mt-6">
           {/* Base Selection */}
           <div className="space-y-2">
-            <Label className="text-foreground">Base / Região</Label>
+            <Label className="text-foreground">Base / Regional</Label>
             <Select
               value={localConfig.baseId}
               onValueChange={(value) => handleChange("baseId", value)}
@@ -339,6 +339,30 @@ export const ConfigurationForm = ({
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Sucursal dropdown — only shown if base has sucursais */}
+            {hasSucursais && (
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="todas">Todas as sucursais</SelectItem>
+                    {baseConfig?.sucursais.map((s) => (
+                      <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {selectedSucursal === "todas"
+                    ? "Estruturas declaradas serão somadas de todas as sucursais"
+                    : `Focando na sucursal: ${selectedSucursal}`}
+                </p>
+              </div>
+            )}
+
             {selectedBase && (
               <p className="text-xs text-muted-foreground">
                 Lat: {selectedBase.lat}, Lon: {selectedBase.lon}
