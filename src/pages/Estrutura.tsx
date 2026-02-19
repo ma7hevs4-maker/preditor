@@ -411,18 +411,24 @@ const Estrutura = () => {
                 </Button>
               )}
               {existingPlan && editUnlocked && (
-                <Button variant="destructive" size="sm" className="h-8" onClick={handleDelete} disabled={deletePlan.isPending}>
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />Remover
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" className="h-8" onClick={() => setEditUnlocked(false)}>
+                    <X className="w-3.5 h-3.5 mr-1" />Cancelar
+                  </Button>
+                  <Button variant="destructive" size="sm" className="h-8" onClick={handleDelete} disabled={deletePlan.isPending}>
+                    <Trash2 className="w-3.5 h-3.5 mr-1" />Remover
+                  </Button>
+                </>
               )}
               <Button variant="outline" size="sm" className="h-8" onClick={() => { setStructureName(""); setSaveStructureOpen(true); }}>
                 <BookmarkPlus className="w-3.5 h-3.5 mr-1" />Salvar Padrão
               </Button>
-              <Button onClick={handleSave} disabled={!isDirty || upsertPlan.isPending} size="sm" className="h-8">
+              <Button onClick={handleSave} disabled={(!isDirty || upsertPlan.isPending) || (!!existingPlan && !editUnlocked)} size="sm" className="h-8">
                 {upsertPlan.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
                 Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
+
           </div>
 
           {/* Edit password dialog */}
