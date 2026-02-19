@@ -21,17 +21,19 @@ import { useQueryClient } from "@tanstack/react-query";
 
 interface SimulationHistoryDialogProps {
   baseId?: string;
+  regionalLabel?: string | null;
   onLoadSimulation?: (entry: SimulationHistoryEntry) => void;
 }
 
 export const SimulationHistoryDialog = ({
   baseId,
+  regionalLabel,
   onLoadSimulation,
 }: SimulationHistoryDialogProps) => {
   const [open, setOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<SimulationHistoryEntry | null>(null);
-  const { history, isLoading, deleteSimulation } = useSimulationHistory(baseId);
+  const { history, isLoading, deleteSimulation } = useSimulationHistory(baseId, regionalLabel);
   const queryClient = useQueryClient();
 
   const handleLoad = (entry: SimulationHistoryEntry) => {
