@@ -9,6 +9,7 @@ export type SimulationResult = SimulationRow;
 export interface SimulationHistoryEntry {
   id: string;
   base_id: string;
+  regional_label: string | null;
   name: string;
   created_at: string;
   bt_initial_backlog: number;
@@ -25,6 +26,7 @@ export interface SimulationHistoryEntry {
 
 export interface SaveSimulationParams {
   baseId: string;
+  regionalLabel?: string | null;
   name: string;
   btInitialBacklog: number;
   mtInitialBacklog: number;
@@ -38,18 +40,22 @@ export interface SaveSimulationParams {
   notes?: string;
 }
 
-export const useSimulationHistory = (baseId?: string) => {
+export const useSimulationHistory = (baseId?: string, regionalLabel?: string | null) => {
   const queryClient = useQueryClient();
 
   const { data: history, isLoading, error } = useQuery({
-    queryKey: ["simulation-history", baseId],
+    queryKey: ["simulation-history", baseId, regionalLabel],
     queryFn: async () => {
       let query = supabase
         .from("simulation_history")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (baseId) {
+      // Filter by regional_label if provided (when user selected a regional with sucursais)
+      if (regionalLabel) {
+        query = query.eq("regional_label", regionalLabel);
+      } else if (baseId) {
+        // Fallback: filter by base_id for single-base regionals
         query = query.eq("base_id", baseId);
       }
 
@@ -59,6 +65,7 @@ export const useSimulationHistory = (baseId?: string) => {
       
       return (data || []).map((item) => ({
         ...item,
+        regional_label: (item as any).regional_label ?? null,
         results_snapshot: item.results_snapshot as unknown as SimulationResult[],
         weather_snapshot: item.weather_snapshot as unknown as WeatherHour[] | null,
         team_structure_snapshot: item.team_structure_snapshot as Record<string, unknown> | null,
@@ -72,6 +79,7 @@ export const useSimulationHistory = (baseId?: string) => {
     mutationFn: async (params: SaveSimulationParams) => {
       const insertData = {
         base_id: params.baseId,
+        regional_label: params.regionalLabel ?? null,
         name: params.name,
         bt_initial_backlog: params.btInitialBacklog,
         mt_initial_backlog: params.mtInitialBacklog,

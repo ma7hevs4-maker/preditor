@@ -102,7 +102,7 @@ export const ConfigurationForm = ({
     if (!bases || !selectedRegionalLabel) return;
     const primaryId = getPrimaryBaseId(selectedRegionalLabel, bases, null);
     if (primaryId) {
-      setLocalConfig((prev) => ({ ...prev, baseId: primaryId }));
+      setLocalConfig((prev) => ({ ...prev, baseId: primaryId, regionalLabel: selectedRegionalLabel }));
     }
     setSelectedSucursal("todas");
     setLocationSucursal("");
@@ -111,15 +111,13 @@ export const ConfigurationForm = ({
   // When sucursal or locationSucursal changes, update baseId for weather/historical lookups
   useEffect(() => {
     if (!bases || !selectedRegional) return;
-    // If a specific sucursal is selected, use it directly
-    // If "todas" is selected, use locationSucursal (if set) or first sucursal as reference
     const refSucursal =
       selectedSucursal !== "todas"
         ? selectedSucursal
         : locationSucursal || null;
     const primaryId = getPrimaryBaseId(selectedRegional.label, bases, refSucursal);
     if (primaryId) {
-      setLocalConfig((prev) => ({ ...prev, baseId: primaryId }));
+      setLocalConfig((prev) => ({ ...prev, baseId: primaryId, regionalLabel: selectedRegional.label }));
     }
   }, [selectedSucursal, locationSucursal, bases, selectedRegional]);
 

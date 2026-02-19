@@ -482,6 +482,7 @@ export type Database = {
           mt_initial_backlog: number
           name: string
           notes: string | null
+          regional_label: string | null
           results_snapshot: Json
           team_structure_id: string | null
           team_structure_snapshot: Json | null
@@ -498,6 +499,7 @@ export type Database = {
           mt_initial_backlog?: number
           name?: string
           notes?: string | null
+          regional_label?: string | null
           results_snapshot: Json
           team_structure_id?: string | null
           team_structure_snapshot?: Json | null
@@ -514,6 +516,7 @@ export type Database = {
           mt_initial_backlog?: number
           name?: string
           notes?: string | null
+          regional_label?: string | null
           results_snapshot?: Json
           team_structure_id?: string | null
           team_structure_snapshot?: Json | null

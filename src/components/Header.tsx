@@ -173,7 +173,8 @@ export const Header = ({
           <AdminConfigDialog />
 
           <SimulationHistoryDialog
-            baseId={selectedBase?.id}
+            baseId={config.regionalLabel ? undefined : selectedBase?.id}
+            regionalLabel={config.regionalLabel}
             onLoadSimulation={onLoadSimulation}
           />
 

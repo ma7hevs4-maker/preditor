@@ -8,6 +8,7 @@ import { calculateDecayInfo, DecayInfo, setLastRainUplifts, getHalfLifeHours, ca
 
 export interface SimulationConfig {
   baseId: string;
+  regionalLabel?: string | null; // Label da regional (ex: "Lagos") para histórico e filtros
   btInitialBacklog: number;
   mtInitialBacklog: number;
   teamsPerHour: number[]; // 24 values for day 1

@@ -196,8 +196,8 @@ const Index = () => {
     setLoadedSimulation(entry.results_snapshot);
   }, [setWeatherProvider, setWeatherImpactEnabled]);
 
-  // Save simulation hook
-  const { saveSimulation } = useSimulationHistory(config.baseId);
+  // Save simulation hook — filter history by regional or base
+  const { saveSimulation } = useSimulationHistory(config.baseId, config.regionalLabel);
 
   const handleSaveSimulation = useCallback(async () => {
     if (!config.baseId || liveSimulationData.length === 0) {
@@ -211,6 +211,7 @@ const Index = () => {
 
     const params: SaveSimulationParams = {
       baseId: config.baseId,
+      regionalLabel: config.regionalLabel ?? null,
       name: `Simulação ${format(new Date(), "dd/MM HH:mm")}`,
       btInitialBacklog: config.btInitialBacklog,
       mtInitialBacklog: config.mtInitialBacklog,
