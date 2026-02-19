@@ -129,6 +129,43 @@ const Estrutura = () => {
     toast({ title: "Turno replicado", description: `Hora ${String(sourceHour).padStart(2, "0")}:00 replicada para ${turno.label}.` });
   };
 
+  const apagarTurno = (turnoIdx: number) => {
+    const turno = TURNOS[turnoIdx];
+    setTeams(prev => { const n = [...prev]; turno.hours.forEach(h => { n[h] = 0; }); return n; });
+    setLossTeams(prev => { const n = [...prev]; turno.hours.forEach(h => { n[h] = 0; }); return n; });
+    setTypeData(prev => {
+      const n: Record<string, number[]> = {};
+      Object.entries(prev).forEach(([type, arr]) => {
+        n[type] = [...arr];
+        turno.hours.forEach(h => { n[type][h] = 0; });
+      });
+      return n;
+    });
+    setIsDirty(true);
+    toast({ title: "Turno apagado", description: `Todos os valores do ${turno.label} foram zerados.` });
+  };
+
+  const copiarTipoParaTurno = (type: string, turnoIdx: number) => {
+    const turno = TURNOS[turnoIdx];
+    const sourceHour = turno.hours[0];
+    setTypeData(prev => {
+      const n = { ...prev, [type]: [...prev[type]] };
+      turno.hours.forEach(h => { n[type][h] = prev[type][sourceHour]; });
+      return n;
+    });
+    setIsDirty(true);
+  };
+
+  const apagarTipoNoTurno = (type: string, turnoIdx: number) => {
+    const turno = TURNOS[turnoIdx];
+    setTypeData(prev => {
+      const n = { ...prev, [type]: [...prev[type]] };
+      turno.hours.forEach(h => { n[type][h] = 0; });
+      return n;
+    });
+    setIsDirty(true);
+  };
+
   const saveSingleDay = async (date: Date) => {
     const ds = format(date, "yyyy-MM-dd");
     const planResult = await upsertPlan.mutateAsync({
