@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,12 +22,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Play, RotateCcw, Users, Copy, Trash2, Download, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
+
 import { SimulationConfig } from "@/hooks/useSimulation";
+import { findBaseConfig, getRelatedBaseIds } from "@/data/basesConfig";
+import { toast } from "@/hooks/use-toast";
 
 interface ConfigurationFormProps {
   config: SimulationConfig;
@@ -64,12 +71,35 @@ export const ConfigurationForm = ({
 }: ConfigurationFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localConfig, setLocalConfig] = useState<SimulationConfig>(config);
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
+  const [declaredDateOpen, setDeclaredDateOpen] = useState(false);
+  const [declaredDate, setDeclaredDate] = useState<Date>(new Date());
+  const [loadingDeclared, setLoadingDeclared] = useState(false);
   const { data: bases, isLoading: basesLoading } = useBases();
   const { data: teamStructures } = useTeamStructures(localConfig.baseId || null);
+
+  // Find the current base and its config
+  const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
+  const baseConfig = selectedBase ? findBaseConfig(selectedBase.name) : undefined;
+  const hasSucursais = (baseConfig?.sucursais.length ?? 0) > 0;
+
+  // Get the base IDs to fetch declared plans for (considering sucursal selection)
+  const declaredBaseIds = useMemo(() => {
+    if (!selectedBase || !bases) return [];
+    return getRelatedBaseIds(selectedBase, bases, hasSucursais ? selectedSucursal : null);
+  }, [selectedBase, bases, selectedSucursal, hasSucursais]);
+
+  // Fetch daily plans for the declared date and relevant base IDs
+  const declaredDateStr = format(declaredDate, "yyyy-MM-dd");
 
   useEffect(() => {
     setLocalConfig(config);
   }, [config]);
+
+  // Reset sucursal when base changes
+  useEffect(() => {
+    setSelectedSucursal("todas");
+  }, [localConfig.baseId]);
 
   const handleChange = (field: keyof SimulationConfig, value: number | string | number[]) => {
     setLocalConfig((prev) => ({ ...prev, [field]: value }));
@@ -190,7 +220,77 @@ export const ConfigurationForm = ({
     });
   };
 
-  const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
+  // Load declared structure from daily plans for a specific date
+  const handleLoadDeclaredStructure = async (day: number) => {
+    if (!bases || declaredBaseIds.length === 0) return;
+    setLoadingDeclared(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      // Fetch plans for all relevant base IDs
+      const allPlans: { teams: number[]; lossTeams: number[] }[] = [];
+
+      for (const baseId of declaredBaseIds) {
+        const { data } = await supabase
+          .from("daily_team_plans")
+          .select("*")
+          .eq("base_id", baseId)
+          .eq("plan_date", declaredDateStr)
+          .maybeSingle();
+
+        if (data) {
+          allPlans.push({
+            teams: Array.from({ length: 24 }, (_, i) => (data as any)[`teams_hour_${i}`] ?? 0),
+            lossTeams: Array.from({ length: 24 }, (_, i) => (data as any)[`loss_teams_hour_${i}`] ?? 0),
+          });
+        }
+      }
+
+      if (allPlans.length === 0) {
+        toast({
+          title: "Sem estrutura declarada",
+          description: `Nenhum plano encontrado para ${format(declaredDate, "dd/MM/yyyy")}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Sum all plans hour by hour
+      const summedTeams = Array(24).fill(0);
+      const summedLoss = Array(24).fill(0);
+      for (const plan of allPlans) {
+        for (let h = 0; h < 24; h++) {
+          summedTeams[h] += plan.teams[h];
+          summedLoss[h] += plan.lossTeams[h];
+        }
+      }
+
+      const teamsField = day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3";
+      const lossField = day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3";
+
+      setLocalConfig((prev) => ({
+        ...prev,
+        [teamsField]: summedTeams,
+        [lossField]: summedLoss,
+      }));
+
+      const sucursalLabel = hasSucursais && selectedSucursal !== "todas"
+        ? selectedSucursal
+        : hasSucursais ? "todas as sucursais" : selectedBase?.name;
+
+      toast({
+        title: "Estrutura declarada carregada",
+        description: `${allPlans.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
+      });
+      setDeclaredDateOpen(false);
+    } catch {
+      toast({ title: "Erro ao carregar estrutura declarada", variant: "destructive" });
+    } finally {
+      setLoadingDeclared(false);
+    }
+  };
+
+  // selectedBase already declared above in hooks section
+
 
   // Determine which days to show based on current hour + horizon
   const currentHour = new Date().getHours();
@@ -216,7 +316,7 @@ export const ConfigurationForm = ({
         <div className="space-y-6 mt-6">
           {/* Base Selection */}
           <div className="space-y-2">
-            <Label className="text-foreground">Base / Região</Label>
+            <Label className="text-foreground">Base / Regional</Label>
             <Select
               value={localConfig.baseId}
               onValueChange={(value) => handleChange("baseId", value)}
@@ -233,6 +333,30 @@ export const ConfigurationForm = ({
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Sucursal dropdown — only shown if base has sucursais */}
+            {hasSucursais && (
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">Sucursal</Label>
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="todas">Todas as sucursais</SelectItem>
+                    {baseConfig?.sucursais.map((s) => (
+                      <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {selectedSucursal === "todas"
+                    ? "Estruturas declaradas serão somadas de todas as sucursais"
+                    : `Focando na sucursal: ${selectedSucursal}`}
+                </p>
+              </div>
+            )}
+
             {selectedBase && (
               <p className="text-xs text-muted-foreground">
                 Lat: {selectedBase.lat}, Lon: {selectedBase.lon}
@@ -434,7 +558,7 @@ export const ConfigurationForm = ({
                   Dia 1 - Equipes por Hora
                 </h4>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 {teamStructures && teamStructures.length > 0 && (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -466,6 +590,46 @@ export const ConfigurationForm = ({
                     </PopoverContent>
                   </Popover>
                 )}
+                {/* Carregar Estrutura Declarada */}
+                <Popover open={declaredDateOpen} onOpenChange={setDeclaredDateOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 text-xs"
+                      disabled={loadingDeclared}
+                    >
+                      <CalendarIcon className="w-3 h-3" />
+                      Carregar Declarada
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" align="end">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a data:</p>
+                    <Calendar
+                      mode="single"
+                      selected={declaredDate}
+                      onSelect={(d) => d && setDeclaredDate(d)}
+                      locale={ptBR}
+                      className="pointer-events-auto"
+                    />
+                    <p className="text-xs text-muted-foreground mt-2 mb-3">
+                      {hasSucursais
+                        ? selectedSucursal === "todas"
+                          ? `Somará todas as sucursais de ${selectedBase?.name}`
+                          : `Carregará plano de ${selectedSucursal}`
+                        : `Carregará plano de ${selectedBase?.name ?? "base selecionada"}`}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => handleLoadDeclaredStructure(1)}
+                      disabled={loadingDeclared}
+                    >
+                      {loadingDeclared ? "Carregando..." : `Carregar para Dia 1`}
+                    </Button>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   type="button"
                   variant="outline"
