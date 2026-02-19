@@ -437,11 +437,9 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         )}
       </div>
 
-      {hasSucursais && (
-        <p className="text-[10px] text-muted-foreground mb-2">
-          {regional.sucursais.map(s => s.name).join(" · ")}
-        </p>
-      )}
+      <p className="text-[10px] text-muted-foreground mb-2 h-4 truncate">
+        {hasSucursais ? regional.sucursais.map(s => s.name).join(" · ") : ""}
+      </p>
 
       {/* Turno averages */}
       <div className="grid grid-cols-3 gap-2 mb-2">
