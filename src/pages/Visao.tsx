@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, ChevronLeft, ChevronRight, Eye } from "lucide-react";
@@ -50,6 +50,8 @@ const TURNO_COLORS = {
     header: "bg-blue-500/20 text-blue-400",
     cell: "text-blue-300",
     badge: "bg-blue-500/20 border border-blue-500/30 text-blue-300",
+    avgCell: "bg-blue-500/20 text-blue-300 font-bold",
+    avgHeader: "bg-blue-500/30 text-blue-300 font-bold",
   },
   B: {
     bg: "bg-amber-500/10",
@@ -57,6 +59,8 @@ const TURNO_COLORS = {
     header: "bg-amber-500/20 text-amber-400",
     cell: "text-amber-300",
     badge: "bg-amber-500/20 border border-amber-500/30 text-amber-300",
+    avgCell: "bg-amber-500/20 text-amber-300 font-bold",
+    avgHeader: "bg-amber-500/30 text-amber-300 font-bold",
   },
   C: {
     bg: "bg-purple-500/10",
@@ -64,6 +68,8 @@ const TURNO_COLORS = {
     header: "bg-purple-500/20 text-purple-400",
     cell: "text-purple-300",
     badge: "bg-purple-500/20 border border-purple-500/30 text-purple-300",
+    avgCell: "bg-purple-500/20 text-purple-300 font-bold",
+    avgHeader: "bg-purple-500/30 text-purple-300 font-bold",
   },
 } as const;
 
@@ -232,7 +238,7 @@ const RegionalDetailDialog = ({
                               {String(h).padStart(2, "0")}
                             </th>
                           ))}
-                          <th className="text-center py-1 px-1 text-muted-foreground font-medium min-w-[28px]">x̄</th>
+                          <th className={cn("text-center py-1 px-1 font-medium min-w-[32px] rounded-sm", colors.avgHeader)}>x̄</th>
                           {turno.letter !== "C" && <th className="w-2" />}
                         </>
                       );
@@ -248,17 +254,20 @@ const RegionalDetailDialog = ({
                     return (
                       <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
                         <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
-                        {TURNOS.map(turno => (
-                          <>
-                            {turno.hours.map(h => (
-                              <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
-                            ))}
-                            <td className="text-center py-0.5 font-mono text-foreground font-semibold">
-                              {avg(row, turno.hours)}
-                            </td>
-                            {turno.letter !== "C" && <td className="w-2" />}
-                          </>
-                        ))}
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
+                                {avg(row, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
                       </tr>
                     );
                   })}
@@ -272,17 +281,20 @@ const RegionalDetailDialog = ({
                     return (
                       <tr key={type} className="hover:bg-muted/20">
                         <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
-                        {TURNOS.map(turno => (
-                          <>
-                            {turno.hours.map(h => (
-                              <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
-                            ))}
-                            <td className="text-center py-0.5 font-mono text-warning/80 font-semibold">
-                              {avg(row, turno.hours)}
-                            </td>
-                            {turno.letter !== "C" && <td className="w-2" />}
-                          </>
-                        ))}
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>
+                                {avg(row, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
                       </tr>
                     );
                   })}
