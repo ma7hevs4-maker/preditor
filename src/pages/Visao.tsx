@@ -254,12 +254,14 @@ const RegionalDetailDialog = ({
                     return (
                       <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
                         <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
-                        {TURNOS.map(turno => (
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
                           <>
                             {turno.hours.map(h => (
                               <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
                             ))}
-                            <td className={cn("text-center py-0.5 font-mono rounded-sm", colors.avgCell)}>
+                            <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
                               {avg(row, turno.hours)}
                             </td>
                             {turno.letter !== "C" && <td className="w-2" />}
