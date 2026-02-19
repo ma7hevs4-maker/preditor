@@ -97,7 +97,7 @@ export const ConfigurationForm = ({
     setLocalConfig(config);
   }, [config]);
 
-  // When regional changes, update baseId to the primary base of the regional and reset sucursal
+  // When regional changes, update baseId to the primary base and reset sucursal/location
   useEffect(() => {
     if (!bases || !selectedRegionalLabel) return;
     const primaryId = getPrimaryBaseId(selectedRegionalLabel, bases, null);
@@ -105,16 +105,24 @@ export const ConfigurationForm = ({
       setLocalConfig((prev) => ({ ...prev, baseId: primaryId }));
     }
     setSelectedSucursal("todas");
+    setLocationSucursal("");
   }, [selectedRegionalLabel, bases]);
 
-  // When sucursal changes (for weather/historical purposes), update baseId to the selected sucursal's ID
+  // When sucursal or locationSucursal changes, update baseId for weather/historical lookups
   useEffect(() => {
     if (!bases || !selectedRegional) return;
-    const primaryId = getPrimaryBaseId(selectedRegional.label, bases, selectedSucursal !== "todas" ? selectedSucursal : null);
+    // If a specific sucursal is selected, use it directly
+    // If "todas" is selected, use locationSucursal (if set) or first sucursal as reference
+    const refSucursal =
+      selectedSucursal !== "todas"
+        ? selectedSucursal
+        : locationSucursal || null;
+    const primaryId = getPrimaryBaseId(selectedRegional.label, bases, refSucursal);
     if (primaryId) {
       setLocalConfig((prev) => ({ ...prev, baseId: primaryId }));
     }
-  }, [selectedSucursal, bases, selectedRegional]);
+  }, [selectedSucursal, locationSucursal, bases, selectedRegional]);
+
 
   const handleChange = (field: keyof SimulationConfig, value: number | string | number[]) => {
     setLocalConfig((prev) => ({ ...prev, [field]: value }));
