@@ -379,6 +379,26 @@ export const ConfigurationForm = ({
                 </p>
               </div>
             )}
+
+            {/* Location reference — only when "todas" is selected */}
+            {hasSucursais && selectedSucursal === "todas" && (
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">Localidade de referência</Label>
+                <Select value={locationSucursal} onValueChange={setLocationSucursal}>
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue placeholder="Selecione a sucursal de referência" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {selectedRegional?.sucursais.map((s) => (
+                      <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Localidade usada para previsão do tempo e dados históricos
+                </p>
+              </div>
+            )}
           </div>
 
 
