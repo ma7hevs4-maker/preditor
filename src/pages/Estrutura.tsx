@@ -329,7 +329,7 @@ const Estrutura = () => {
           {/* Summary */}
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
             <span>Equipes Totais (Dia): <strong className="text-foreground">{(totalAllIncidents / 24).toFixed(1)} eq/h</strong></span>
-            <span>Equipes BT (Dia): <strong className="text-[hsl(var(--chart-bt,25_95%_53%))]">{(totalBT / 24).toFixed(1)} eq/h</strong></span>
+            <span>Equipes BT (Dia): <strong className="text-orange-400">{(totalBT / 24).toFixed(1)} eq/h</strong></span>
             {existingPlan && <span className="text-primary font-medium">● Plano salvo</span>}
             {isDirty && <span className="text-warning font-medium">● Não salvo</span>}
           </div>
