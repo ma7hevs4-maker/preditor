@@ -73,6 +73,7 @@ export const ConfigurationForm = ({
   const [localConfig, setLocalConfig] = useState<SimulationConfig>(config);
   const [selectedRegionalLabel, setSelectedRegionalLabel] = useState<string>("");
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
+  const [locationSucursal, setLocationSucursal] = useState<string>("");
   const [declaredDateOpen, setDeclaredDateOpen] = useState(false);
   const [declaredDate, setDeclaredDate] = useState<Date>(new Date());
   const [loadingDeclared, setLoadingDeclared] = useState(false);
@@ -96,7 +97,7 @@ export const ConfigurationForm = ({
     setLocalConfig(config);
   }, [config]);
 
-  // When regional changes, update baseId to the primary base of the regional and reset sucursal
+  // When regional changes, update baseId to the primary base and reset sucursal/location
   useEffect(() => {
     if (!bases || !selectedRegionalLabel) return;
     const primaryId = getPrimaryBaseId(selectedRegionalLabel, bases, null);
@@ -104,16 +105,24 @@ export const ConfigurationForm = ({
       setLocalConfig((prev) => ({ ...prev, baseId: primaryId }));
     }
     setSelectedSucursal("todas");
+    setLocationSucursal("");
   }, [selectedRegionalLabel, bases]);
 
-  // When sucursal changes (for weather/historical purposes), update baseId to the selected sucursal's ID
+  // When sucursal or locationSucursal changes, update baseId for weather/historical lookups
   useEffect(() => {
     if (!bases || !selectedRegional) return;
-    const primaryId = getPrimaryBaseId(selectedRegional.label, bases, selectedSucursal !== "todas" ? selectedSucursal : null);
+    // If a specific sucursal is selected, use it directly
+    // If "todas" is selected, use locationSucursal (if set) or first sucursal as reference
+    const refSucursal =
+      selectedSucursal !== "todas"
+        ? selectedSucursal
+        : locationSucursal || null;
+    const primaryId = getPrimaryBaseId(selectedRegional.label, bases, refSucursal);
     if (primaryId) {
       setLocalConfig((prev) => ({ ...prev, baseId: primaryId }));
     }
-  }, [selectedSucursal, bases, selectedRegional]);
+  }, [selectedSucursal, locationSucursal, bases, selectedRegional]);
+
 
   const handleChange = (field: keyof SimulationConfig, value: number | string | number[]) => {
     setLocalConfig((prev) => ({ ...prev, [field]: value }));
@@ -367,6 +376,26 @@ export const ConfigurationForm = ({
                   {selectedSucursal === "todas"
                     ? "Estruturas declaradas serão somadas de todas as sucursais"
                     : `Sucursal selecionada: ${selectedSucursal}`}
+                </p>
+              </div>
+            )}
+
+            {/* Location reference — only when "todas" is selected */}
+            {hasSucursais && selectedSucursal === "todas" && (
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">Localidade de referência</Label>
+                <Select value={locationSucursal} onValueChange={setLocationSucursal}>
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue placeholder="Selecione a sucursal de referência" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {selectedRegional?.sucursais.map((s) => (
+                      <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Localidade usada para previsão do tempo e dados históricos
                 </p>
               </div>
             )}
