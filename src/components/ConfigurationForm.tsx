@@ -33,7 +33,7 @@ import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
 
 import { SimulationConfig } from "@/hooks/useSimulation";
-import { REGIONAIS, getBaseIdsForRegional } from "@/data/basesConfig";
+import { REGIONAIS, getBaseIdsForRegional, getPrimaryBaseId } from "@/data/basesConfig";
 import { toast } from "@/hooks/use-toast";
 
 interface ConfigurationFormProps {
