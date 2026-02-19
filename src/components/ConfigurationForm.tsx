@@ -31,7 +31,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
-import { useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
+import { } from "@/hooks/useDailyTeamPlans";
 import { SimulationConfig } from "@/hooks/useSimulation";
 import { findBaseConfig, getRelatedBaseIds } from "@/data/basesConfig";
 import { toast } from "@/hooks/use-toast";
@@ -91,12 +91,6 @@ export const ConfigurationForm = ({
 
   // Fetch daily plans for the declared date and relevant base IDs
   const declaredDateStr = format(declaredDate, "yyyy-MM-dd");
-
-  // We'll fetch plans for each base ID when user clicks the button
-  // Using a single base for simplicity — handle multi in the handler
-  const { data: teamStructures2 } = useTeamStructures(
-    declaredBaseIds.length === 1 ? declaredBaseIds[0] : null
-  );
 
   useEffect(() => {
     setLocalConfig(config);
