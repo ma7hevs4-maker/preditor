@@ -1,136 +1,149 @@
 /**
- * Mapeamento fixo de Bases e suas Sucursais.
- * Cada "Base" pode ter zero ou mais sucursais.
- * O nome da sucursal é usado para filtrar/somar estruturas declaradas.
+ * Mapeamento de Regionais (Bases) e suas Sucursais.
+ *
+ * No banco de dados, cada cidade é uma base independente (ex: "Araruama", "Cabo Frio").
+ * Aqui agrupamos as cidades em suas regionais para exibição no simulador.
+ *
+ * Uma "Regional" pode ter:
+ * - Sucursais: cidades filhas (buscadas e somadas quando seleciona "Todas")
+ * - Nenhuma sucursal: base única (ex: Campos, Macaé)
  */
 
 export interface Sucursal {
-  /** Nome da sucursal (cidade) */
+  /** Nome da sucursal — deve corresponder EXATAMENTE ao campo "name" na tabela bases */
   name: string;
-  /** Corresponde ao campo "name" da tabela bases no Supabase */
-  baseName: string;
 }
 
-export interface BaseConfig {
-  /** Nome da base/regional */
-  name: string;
-  /** Lista de sucursais, vazia se não houver subdivisão */
+export interface Regional {
+  /** Nome da regional/agrupamento exibido no dropdown */
+  label: string;
+  /** Sucursais pertencentes a esta regional */
   sucursais: Sucursal[];
 }
 
 /**
- * Mapeamento: nome da base (como cadastrado no banco) → configuração.
- * Para bases SEM sucursais, deixar sucursais vazio [].
- * Para bases COM sucursais, listar cada sucursal com seu baseName exato do banco.
+ * Mapa de regionais e suas sucursais.
+ * O campo `label` é o nome exibido no dropdown de Base.
+ * O campo `sucursais[].name` deve bater exatamente com o nome da base no banco.
+ *
+ * Para bases sem sucursais, o `label` deve corresponder ao nome da base no banco
+ * e `sucursais` fica vazio — a própria base será usada diretamente.
  */
-export const BASE_CONFIGS: BaseConfig[] = [
+export const REGIONAIS: Regional[] = [
   {
-    name: "Campos",
-    sucursais: [],
+    label: "Campos",
+    sucursais: [], // base única: name = "Campos"
   },
   {
-    name: "Macaé",
-    sucursais: [],
+    label: "Macaé",
+    sucursais: [], // base única: name = "Macaé"
   },
   {
-    name: "Lagos",
+    label: "Lagos",
     sucursais: [
-      { name: "Araruama", baseName: "Lagos - Araruama" },
-      { name: "Cabo Frio", baseName: "Lagos - Cabo Frio" },
+      { name: "Araruama" },
+      { name: "Cabo Frio" },
     ],
   },
   {
-    name: "Noroeste",
+    label: "Noroeste",
     sucursais: [
-      { name: "Cantagalo", baseName: "Noroeste - Cantagalo" },
-      { name: "Itaperuna", baseName: "Noroeste - Itaperuna" },
-      { name: "Pádua", baseName: "Noroeste - Pádua" },
+      { name: "Cantagalo" },
+      { name: "Itaperuna" },
+      { name: "Pádua" },
     ],
   },
   {
-    name: "Magé",
-    sucursais: [],
+    label: "Magé",
+    sucursais: [], // base única: name = "Magé"
   },
   {
-    name: "Niterói",
+    label: "Niterói",
     sucursais: [
-      { name: "Niterói", baseName: "Niterói - Niterói" },
-      { name: "Maricá", baseName: "Niterói - Maricá" },
+      { name: "Niterói" },
+      { name: "Maricá" },
     ],
   },
   {
-    name: "São Gonçalo",
-    sucursais: [],
+    label: "São Gonçalo",
+    sucursais: [], // base única: name = "São Gonçalo"
   },
   {
-    name: "Serrana",
+    label: "Serrana",
     sucursais: [
-      { name: "Petrópolis", baseName: "Serrana - Petrópolis" },
-      { name: "Teresópolis", baseName: "Serrana - Teresópolis" },
+      { name: "Petrópolis" },
+      { name: "Teresópolis" },
     ],
   },
   {
-    name: "Sul",
+    label: "Sul",
     sucursais: [
-      { name: "Angra dos Reis", baseName: "Sul - Angra dos Reis" },
-      { name: "Resende", baseName: "Sul - Resende" },
+      { name: "Angra dos Reis" },
+      { name: "Resende" },
     ],
   },
 ];
 
 /**
- * Dado o nome de uma base do banco, retorna a BaseConfig correspondente.
- * A correspondência é feita pelo campo name da base ou pelo baseName de alguma sucursal.
+ * Dado o nome de uma base do banco, retorna a Regional à qual pertence.
+ * Busca tanto pelo label da regional (para bases únicas) quanto pelo nome de sucursal.
  */
-export function findBaseConfig(baseName: string): BaseConfig | undefined {
-  // Match direto por nome da base
-  const direct = BASE_CONFIGS.find(
-    (bc) => bc.name.toLowerCase() === baseName.toLowerCase()
-  );
-  if (direct) return direct;
-
-  // Match por nome de sucursal
-  return BASE_CONFIGS.find((bc) =>
-    bc.sucursais.some(
-      (s) => s.baseName.toLowerCase() === baseName.toLowerCase()
-    )
+export function findRegionalForBase(baseName: string): Regional | undefined {
+  return REGIONAIS.find(
+    (r) =>
+      r.label.toLowerCase() === baseName.toLowerCase() ||
+      r.sucursais.some((s) => s.name.toLowerCase() === baseName.toLowerCase())
   );
 }
 
 /**
- * Dado uma base (do banco) e lista de todas as bases do banco,
- * retorna os IDs das bases que são sucursais dela (ou ela mesma se não tiver sucursais).
+ * Dado o label de uma regional e a lista de todas as bases do banco,
+ * retorna os IDs das bases que pertencem a ela.
+ *
+ * - Para regionais SEM sucursais: retorna o ID da base com nome = label
+ * - Para regionais COM sucursais: retorna IDs de todas as sucursais (ou só a selecionada)
  */
-export function getRelatedBaseIds(
-  selectedBase: { id: string; name: string },
+export function getBaseIdsForRegional(
+  regionalLabel: string,
   allBases: { id: string; name: string }[],
-  selectedSucursalName?: string | null
+  selectedSucursal?: string | null
 ): string[] {
-  const config = findBaseConfig(selectedBase.name);
+  const regional = REGIONAIS.find((r) => r.label === regionalLabel);
+  if (!regional) return [];
 
-  // Sem sucursais configuradas → retorna só ela mesma
-  if (!config || config.sucursais.length === 0) {
-    return [selectedBase.id];
+  // Base única (sem sucursais)
+  if (regional.sucursais.length === 0) {
+    const base = allBases.find(
+      (b) => b.name.toLowerCase() === regional.label.toLowerCase()
+    );
+    return base ? [base.id] : [];
   }
 
   // Sucursal específica selecionada
-  if (selectedSucursalName && selectedSucursalName !== "todas") {
-    const sucursal = config.sucursais.find((s) => s.name === selectedSucursalName);
-    if (!sucursal) return [selectedBase.id];
-    const matchedBase = allBases.find(
-      (b) => b.name.toLowerCase() === sucursal.baseName.toLowerCase()
+  if (selectedSucursal && selectedSucursal !== "todas") {
+    const base = allBases.find(
+      (b) => b.name.toLowerCase() === selectedSucursal.toLowerCase()
     );
-    return matchedBase ? [matchedBase.id] : [selectedBase.id];
+    return base ? [base.id] : [];
   }
 
-  // "Todas" as sucursais → retorna IDs de todas
-  const ids: string[] = [];
-  for (const sucursal of config.sucursais) {
-    const matched = allBases.find(
-      (b) => b.name.toLowerCase() === sucursal.baseName.toLowerCase()
-    );
-    if (matched) ids.push(matched.id);
-  }
-  // Se nenhuma sucursal foi encontrada no banco, cai de volta para a base principal
-  return ids.length > 0 ? ids : [selectedBase.id];
+  // Todas as sucursais
+  return regional.sucursais
+    .map((s) => allBases.find((b) => b.name.toLowerCase() === s.name.toLowerCase()))
+    .filter((b): b is { id: string; name: string } => !!b)
+    .map((b) => b.id);
+}
+
+/**
+ * Retorna o baseId principal para previsão do tempo e dados históricos.
+ * Para regionais com sucursais, usa a primeira sucursal disponível.
+ * Para regionais sem sucursais, usa a própria base.
+ */
+export function getPrimaryBaseId(
+  regionalLabel: string,
+  allBases: { id: string; name: string }[],
+  selectedSucursal?: string | null
+): string | null {
+  const ids = getBaseIdsForRegional(regionalLabel, allBases, selectedSucursal);
+  return ids[0] ?? null;
 }
