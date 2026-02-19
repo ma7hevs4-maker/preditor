@@ -328,21 +328,21 @@ export const ConfigurationForm = ({
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
-          {/* Base Selection */}
+          {/* Base (Regional) Selection */}
           <div className="space-y-2">
-            <Label className="text-foreground">Base / Regional</Label>
+            <Label className="text-foreground">Base</Label>
             <Select
-              value={localConfig.baseId}
-              onValueChange={(value) => handleChange("baseId", value)}
+              value={selectedRegionalLabel}
+              onValueChange={setSelectedRegionalLabel}
               disabled={basesLoading}
             >
               <SelectTrigger className="bg-secondary border-border">
                 <SelectValue placeholder={basesLoading ? "Carregando..." : "Selecione a base"} />
               </SelectTrigger>
               <SelectContent className="bg-card border-border max-h-60">
-                {bases?.map((base) => (
-                  <SelectItem key={base.id} value={base.id}>
-                    {base.name}
+                {REGIONAIS.map((r) => (
+                  <SelectItem key={r.label} value={r.label}>
+                    {r.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -366,14 +366,12 @@ export const ConfigurationForm = ({
                 <p className="text-xs text-muted-foreground">
                   {selectedSucursal === "todas"
                     ? "Estruturas declaradas serão somadas de todas as sucursais"
-                    : `Focando na sucursal: ${selectedSucursal}`}
+                    : `Sucursal selecionada: ${selectedSucursal}`}
                 </p>
               </div>
             )}
-
-
-
           </div>
+
 
           {/* Simulation Mode Selection */}
           <div className="space-y-2">
