@@ -50,6 +50,8 @@ const TURNO_COLORS = {
     header: "bg-blue-500/20 text-blue-400",
     cell: "text-blue-300",
     badge: "bg-blue-500/20 border border-blue-500/30 text-blue-300",
+    avgCell: "bg-blue-500/20 text-blue-300 font-bold",
+    avgHeader: "bg-blue-500/30 text-blue-300 font-bold",
   },
   B: {
     bg: "bg-amber-500/10",
@@ -57,6 +59,8 @@ const TURNO_COLORS = {
     header: "bg-amber-500/20 text-amber-400",
     cell: "text-amber-300",
     badge: "bg-amber-500/20 border border-amber-500/30 text-amber-300",
+    avgCell: "bg-amber-500/20 text-amber-300 font-bold",
+    avgHeader: "bg-amber-500/30 text-amber-300 font-bold",
   },
   C: {
     bg: "bg-purple-500/10",
@@ -64,6 +68,8 @@ const TURNO_COLORS = {
     header: "bg-purple-500/20 text-purple-400",
     cell: "text-purple-300",
     badge: "bg-purple-500/20 border border-purple-500/30 text-purple-300",
+    avgCell: "bg-purple-500/20 text-purple-300 font-bold",
+    avgHeader: "bg-purple-500/30 text-purple-300 font-bold",
   },
 } as const;
 
