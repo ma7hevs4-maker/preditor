@@ -25,7 +25,8 @@ type UT = "UTS" | "UTN";
 
 const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
 const BT_ONLY_TYPES = ["Corte e Religa", "Perdas", "Reguladas"] as const;
-const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...BT_ONLY_TYPES] as const;
+const LV_MK_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
+const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES] as const;
 
 // ---------- Data hooks ----------
 const useAllPlansForDate = (date: string) =>
@@ -298,6 +299,33 @@ const RegionalDetailDialog = ({
                       </tr>
                     );
                   })}
+                  {/* Separator before LV/MK types */}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {/* LV/MK types (display only, not counted in totals) */}
+                  {LV_MK_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>
+                                {avg(row, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -349,21 +377,22 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     [plans, regionalBaseIds]
   );
 
-  const teamsPerHour = useMemo(() => {
-    const arr = Array(24).fill(0);
-    regionalPlans.forEach(p => {
-      const t = planToTeamsArray(p);
-      t.forEach((v, h) => { arr[h] += v; });
-    });
-    return arr;
-  }, [regionalPlans]);
-
-  // BT per hour from entries
   const regionalPlanIds = regionalPlans.map(p => p.id);
   const regionalEntries = useMemo(
     () => allTypeEntries.filter(e => regionalPlanIds.includes(e.daily_plan_id)),
     [allTypeEntries, regionalPlanIds]
   );
+
+  const allHours = Array.from({ length: 24 }, (_, i) => i);
+
+  // teamsPerHour = sum of GERAIS_TYPES per hour (from entries, same logic as modal)
+  const teamsPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    regionalEntries.forEach(e => {
+      if ((GERAIS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [regionalEntries]);
 
   const btPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
@@ -373,15 +402,15 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     return arr;
   }, [regionalEntries]);
 
-  const allHours = Array.from({ length: 24 }, (_, i) => i);
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
   const hasData = regionalPlans.length > 0;
 
-  // Per-type 24h averages
+  // Per-type 24h averages (all types including LV/MK)
   const typeAvg24h = useMemo(() => {
+    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES];
     const result: Record<string, number> = {};
-    ALL_DISPLAY_TYPES.forEach(type => {
+    allTypes.forEach(type => {
       const arr = Array(24).fill(0);
       regionalEntries.forEach(e => {
         if (e.team_type === type) arr[e.hour] += e.quantity;
@@ -448,6 +477,16 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
               <div key={type} className="flex justify-between text-[10px]">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-warning">{val}</span>
+              </div>
+            );
+          })}
+          {LV_MK_TYPES.map(type => {
+            const val = typeAvg24h[type] || 0;
+            if (val === 0) return null;
+            return (
+              <div key={type} className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">{type}</span>
+                <span className="font-semibold text-muted-foreground/80">{val}</span>
               </div>
             );
           })}
