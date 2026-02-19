@@ -272,33 +272,6 @@ const RegionalDetailDialog = ({
                       </tr>
                     );
                   })}
-                  {/* Separator before BT types */}
-                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
-                  {/* BT ONLY types */}
-                  {BT_ONLY_TYPES.map(type => {
-                    const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
-                    if (!hasAny) return null;
-                    return (
-                      <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
-                        {TURNOS.map(turno => {
-                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
-                          return (
-                            <React.Fragment key={turno.letter}>
-                              {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
-                              ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>
-                                {avg(row, turno.hours)}
-                              </td>
-                              {turno.letter !== "C" && <td className="w-2" />}
-                            </React.Fragment>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
                   {/* Separator before LV/MK types */}
                   <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
                   {/* LV/MK types (display only, not counted in totals) */}
@@ -317,6 +290,33 @@ const RegionalDetailDialog = ({
                                 <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
                               ))}
                               <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>
+                                {avg(row, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {/* Separator before BT types */}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {/* BT ONLY types */}
+                  {BT_ONLY_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>
                                 {avg(row, turno.hours)}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
