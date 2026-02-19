@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,12 +22,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Play, RotateCcw, Users, Copy, Trash2, Download, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
+import { useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
 import { SimulationConfig } from "@/hooks/useSimulation";
+import { findBaseConfig, getRelatedBaseIds } from "@/data/basesConfig";
+import { toast } from "@/hooks/use-toast";
 
 interface ConfigurationFormProps {
   config: SimulationConfig;
