@@ -404,7 +404,7 @@ const Estrutura = () => {
                         {String(turno.hours[0]).padStart(2, "0")}h – {String(turno.hours[turno.hours.length - 1]).padStart(2, "0")}h
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -413,6 +413,15 @@ const Estrutura = () => {
                         title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
                       >
                         <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => apagarTurno(turnoIdx)}
+                        title="Apagar todos os valores do turno"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />Apagar Turno
                       </Button>
                     </div>
                   </div>
