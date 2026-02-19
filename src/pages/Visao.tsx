@@ -284,7 +284,7 @@ const RegionalDetailDialog = ({
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
-                            <>
+                            <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
                                 <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
                               ))}
@@ -292,7 +292,7 @@ const RegionalDetailDialog = ({
                                 {avg(row, turno.hours)}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
-                            </>
+                            </React.Fragment>
                           );
                         })}
                       </tr>
