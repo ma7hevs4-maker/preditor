@@ -226,7 +226,77 @@ export const ConfigurationForm = ({
     });
   };
 
+  // Load declared structure from daily plans for a specific date
+  const handleLoadDeclaredStructure = async (day: number) => {
+    if (!bases || declaredBaseIds.length === 0) return;
+    setLoadingDeclared(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      // Fetch plans for all relevant base IDs
+      const allPlans: { teams: number[]; lossTeams: number[] }[] = [];
+
+      for (const baseId of declaredBaseIds) {
+        const { data } = await supabase
+          .from("daily_team_plans")
+          .select("*")
+          .eq("base_id", baseId)
+          .eq("plan_date", declaredDateStr)
+          .maybeSingle();
+
+        if (data) {
+          allPlans.push({
+            teams: Array.from({ length: 24 }, (_, i) => (data as any)[`teams_hour_${i}`] ?? 0),
+            lossTeams: Array.from({ length: 24 }, (_, i) => (data as any)[`loss_teams_hour_${i}`] ?? 0),
+          });
+        }
+      }
+
+      if (allPlans.length === 0) {
+        toast({
+          title: "Sem estrutura declarada",
+          description: `Nenhum plano encontrado para ${format(declaredDate, "dd/MM/yyyy")}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Sum all plans hour by hour
+      const summedTeams = Array(24).fill(0);
+      const summedLoss = Array(24).fill(0);
+      for (const plan of allPlans) {
+        for (let h = 0; h < 24; h++) {
+          summedTeams[h] += plan.teams[h];
+          summedLoss[h] += plan.lossTeams[h];
+        }
+      }
+
+      const teamsField = day === 1 ? "teamsPerHour" : day === 2 ? "teamsPerHourDay2" : "teamsPerHourDay3";
+      const lossField = day === 1 ? "lossTeamsPerHour" : day === 2 ? "lossTeamsPerHourDay2" : "lossTeamsPerHourDay3";
+
+      setLocalConfig((prev) => ({
+        ...prev,
+        [teamsField]: summedTeams,
+        [lossField]: summedLoss,
+      }));
+
+      const sucursalLabel = hasSucursais && selectedSucursal !== "todas"
+        ? selectedSucursal
+        : hasSucursais ? "todas as sucursais" : selectedBase?.name;
+
+      toast({
+        title: "Estrutura declarada carregada",
+        description: `${allPlans.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
+      });
+      setDeclaredDateOpen(false);
+    } catch {
+      toast({ title: "Erro ao carregar estrutura declarada", variant: "destructive" });
+    } finally {
+      setLoadingDeclared(false);
+    }
+  };
+
   // selectedBase already declared above in hooks section
+
 
   // Determine which days to show based on current hour + horizon
   const currentHour = new Date().getHours();
