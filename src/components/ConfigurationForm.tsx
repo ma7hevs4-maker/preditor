@@ -226,7 +226,7 @@ export const ConfigurationForm = ({
     });
   };
 
-  const selectedBase = bases?.find((b) => b.id === localConfig.baseId);
+  // selectedBase already declared above in hooks section
 
   // Determine which days to show based on current hour + horizon
   const currentHour = new Date().getHours();
