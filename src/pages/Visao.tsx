@@ -259,11 +259,11 @@ const RegionalDetailDialog = ({
                           if (total === 0) return null;
                           return (
                             <tr key={type} className="hover:bg-muted/20">
-                              <td className="py-0.5 text-orange-400/80 truncate pr-2">{type}</td>
+                              <td className="py-0.5 text-warning truncate pr-2">{type}</td>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-orange-300">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
                               ))}
-                              <td className="text-center py-0.5 font-mono text-orange-300">{total}</td>
+                              <td className="text-center py-0.5 font-mono text-warning/80">{total}</td>
                             </tr>
                           );
                         })}
