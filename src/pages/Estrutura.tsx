@@ -34,8 +34,20 @@ const Estrutura = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [isCalendarViewOpen, setIsCalendarViewOpen] = useState(false);
 
+  // Auth/edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editPassword, setEditPassword] = useState("");
+  const [editPasswordError, setEditPasswordError] = useState(false);
+  const [editUnlocked, setEditUnlocked] = useState(false);
+
+  // Save as structure dialog state
+  const [saveStructureOpen, setSaveStructureOpen] = useState(false);
+  const [structureName, setStructureName] = useState("");
+  const [savingStructure, setSavingStructure] = useState(false);
+
   const { data: bases } = useBases();
   const { data: teamStructures } = useTeamStructures(selectedBaseId || null);
+  const addTeamStructure = useAddTeamStructure();
 
   useMemo(() => {
     if (bases && bases.length > 0 && !selectedBaseId) {
