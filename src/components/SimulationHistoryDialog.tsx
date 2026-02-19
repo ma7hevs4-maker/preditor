@@ -117,7 +117,14 @@ export const SimulationHistoryDialog = ({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-foreground truncate">{entry.name}</h4>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-medium text-foreground truncate">{entry.name}</h4>
+                          {entry.regional_label && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
+                              {entry.regional_label}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" />
