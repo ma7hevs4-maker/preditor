@@ -470,16 +470,6 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
               </div>
             );
           })}
-          {BT_ONLY_TYPES.map(type => {
-            const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
-            return (
-              <div key={type} className="flex justify-between text-[10px]">
-                <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-warning">{val}</span>
-              </div>
-            );
-          })}
           {LV_MK_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
@@ -487,6 +477,16 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
               <div key={type} className="flex justify-between text-[10px]">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-muted-foreground/80">{val}</span>
+              </div>
+            );
+          })}
+          {BT_ONLY_TYPES.map(type => {
+            const val = typeAvg24h[type] || 0;
+            if (val === 0) return null;
+            return (
+              <div key={type} className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">{type}</span>
+                <span className="font-semibold text-warning">{val}</span>
               </div>
             );
           })}
