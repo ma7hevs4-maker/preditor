@@ -624,7 +624,7 @@ export const ConfigurationForm = ({
                     <p className="text-xs text-muted-foreground mt-2 mb-3">
                       {hasSucursais
                         ? selectedSucursal === "todas"
-                          ? `Somará todas as sucursais de ${selectedBase?.name}`
+                          ? `Somará todas as sucursais de ${selectedRegional?.label}`
                           : `Carregará plano de ${selectedSucursal}`
                         : `Carregará plano de ${selectedBase?.name ?? "base selecionada"}`}
                     </p>
