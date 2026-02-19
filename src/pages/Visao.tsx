@@ -259,7 +259,7 @@ const RegionalDetailDialog = ({
                             {turno.hours.map(h => (
                               <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
                             ))}
-                            <td className="text-center py-0.5 font-mono text-foreground font-semibold">
+                            <td className={cn("text-center py-0.5 font-mono rounded-sm", colors.avgCell)}>
                               {avg(row, turno.hours)}
                             </td>
                             {turno.letter !== "C" && <td className="w-2" />}
