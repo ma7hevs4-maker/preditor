@@ -73,6 +73,7 @@ export const ConfigurationForm = ({
   const [localConfig, setLocalConfig] = useState<SimulationConfig>(config);
   const [selectedRegionalLabel, setSelectedRegionalLabel] = useState<string>("");
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
+  const [locationSucursal, setLocationSucursal] = useState<string>("");
   const [declaredDateOpen, setDeclaredDateOpen] = useState(false);
   const [declaredDate, setDeclaredDate] = useState<Date>(new Date());
   const [loadingDeclared, setLoadingDeclared] = useState(false);
