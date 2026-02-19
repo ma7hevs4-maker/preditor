@@ -1,35 +1,40 @@
-import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { useState, useMemo, useCallback } from "react";
+import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2 } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray } from "@/hooks/useTeamStructures";
-import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields } from "@/hooks/useDailyTeamPlans";
+import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields } from "@/hooks/useDailyTeamPlans";
+import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
+import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
-
-const TURNOS = [
-  { label: "Turno A (0-7h)", hours: [0, 1, 2, 3, 4, 5, 6, 7] },
-  { label: "Turno B (8-15h)", hours: [8, 9, 10, 11, 12, 13, 14, 15] },
-  { label: "Turno C (16-23h)", hours: [16, 17, 18, 19, 20, 21, 22, 23] },
-];
 
 const Estrutura = () => {
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>();
+  const [planningMode, setPlanningMode] = useState<"single" | "period">("single");
   const [teams, setTeams] = useState<number[]>(Array(24).fill(0));
   const [lossTeams, setLossTeams] = useState<number[]>(Array(24).fill(0));
+  // typeData: { [teamType]: number[] (24 hours) }
+  const [typeData, setTypeData] = useState<Record<string, number[]>>(() => {
+    const init: Record<string, number[]> = {};
+    TEAM_TYPES.forEach(t => { init[t] = Array(24).fill(0); });
+    return init;
+  });
   const [isDirty, setIsDirty] = useState(false);
+  const [isCalendarViewOpen, setIsCalendarViewOpen] = useState(false);
 
   const { data: bases } = useBases();
   const { data: teamStructures } = useTeamStructures(selectedBaseId || null);
 
-  // Set first base as default
   useMemo(() => {
     if (bases && bases.length > 0 && !selectedBaseId) {
       setSelectedBaseId(bases[0].id);
@@ -40,8 +45,17 @@ const Estrutura = () => {
   const { data: existingPlan, isLoading: planLoading } = useDailyTeamPlan(selectedBaseId || null, dateStr);
   const upsertPlan = useUpsertDailyTeamPlan();
   const deletePlan = useDeleteDailyTeamPlan();
+  const upsertTypeEntries = useUpsertTeamTypeEntries();
 
-  // Load existing plan when it changes
+  // Fetch type entries for existing plan
+  const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
+
+  // Fetch all plans for calendar view
+  const monthStart = format(startOfMonth(selectedDate), "yyyy-MM-dd");
+  const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
+  const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd);
+
+  // Load existing plan
   useMemo(() => {
     if (existingPlan) {
       setTeams(planToTeamsArray(existingPlan));
@@ -54,35 +68,104 @@ const Estrutura = () => {
     }
   }, [existingPlan, planLoading]);
 
+  // Load type entries
+  useMemo(() => {
+    const newTypeData: Record<string, number[]> = {};
+    TEAM_TYPES.forEach(t => { newTypeData[t] = Array(24).fill(0); });
+    if (typeEntries) {
+      typeEntries.forEach(e => {
+        if (newTypeData[e.team_type]) {
+          newTypeData[e.team_type][e.hour] = e.quantity;
+        }
+      });
+    }
+    setTypeData(newTypeData);
+  }, [typeEntries]);
+
   const handleTeamChange = (hour: number, value: number) => {
-    setTeams(prev => {
-      const next = [...prev];
-      next[hour] = value;
-      return next;
-    });
+    setTeams(prev => { const n = [...prev]; n[hour] = value; return n; });
     setIsDirty(true);
   };
 
   const handleLossTeamChange = (hour: number, value: number) => {
-    setLossTeams(prev => {
-      const next = [...prev];
-      next[hour] = value;
-      return next;
+    setLossTeams(prev => { const n = [...prev]; n[hour] = value; return n; });
+    setIsDirty(true);
+  };
+
+  const handleTypeChange = (type: string, hour: number, value: number) => {
+    setTypeData(prev => {
+      const n = { ...prev, [type]: [...prev[type]] };
+      n[type][hour] = value;
+      return n;
     });
     setIsDirty(true);
   };
 
+  const navigateDate = (dir: "prev" | "next") => {
+    setSelectedDate(prev => addDays(prev, dir === "prev" ? -1 : 1));
+  };
+
+  const replicarParaTurno = (turnoIdx: number, sourceHour: number) => {
+    const turno = TURNOS[turnoIdx];
+    setTeams(prev => {
+      const n = [...prev];
+      turno.hours.forEach(h => { n[h] = prev[sourceHour]; });
+      return n;
+    });
+    setLossTeams(prev => {
+      const n = [...prev];
+      turno.hours.forEach(h => { n[h] = prev[sourceHour]; });
+      return n;
+    });
+    setTypeData(prev => {
+      const n: Record<string, number[]> = {};
+      Object.entries(prev).forEach(([type, arr]) => {
+        n[type] = [...arr];
+        turno.hours.forEach(h => { n[type][h] = arr[sourceHour]; });
+      });
+      return n;
+    });
+    setIsDirty(true);
+    toast({ title: "Turno replicado", description: `Hora ${String(sourceHour).padStart(2, "0")}:00 replicada para ${turno.label}.` });
+  };
+
+  const saveSingleDay = async (date: Date) => {
+    const ds = format(date, "yyyy-MM-dd");
+    const planResult = await upsertPlan.mutateAsync({
+      base_id: selectedBaseId,
+      plan_date: ds,
+      ...teamsArrayToPlanFields(teams, lossTeams),
+    } as any);
+
+    // Save type entries
+    const planId = planResult?.id || existingPlan?.id;
+    if (planId) {
+      const entries: { team_type: string; hour: number; quantity: number }[] = [];
+      TEAM_TYPES.forEach(type => {
+        for (let h = 0; h < 24; h++) {
+          if (typeData[type][h] > 0) {
+            entries.push({ team_type: type, hour: h, quantity: typeData[type][h] });
+          }
+        }
+      });
+      await upsertTypeEntries.mutateAsync({ planId, entries });
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedBaseId) return;
-
     try {
-      await upsertPlan.mutateAsync({
-        base_id: selectedBaseId,
-        plan_date: dateStr,
-        ...teamsArrayToPlanFields(teams, lossTeams),
-      } as any);
+      if (planningMode === "single") {
+        await saveSingleDay(selectedDate);
+        toast({ title: "Plano salvo", description: `Equipes para ${format(selectedDate, "dd/MM/yyyy")} salvas.` });
+      } else if (selectedEndDate) {
+        const days = eachDayOfInterval({ start: selectedDate, end: selectedEndDate });
+        for (const day of days) {
+          await saveSingleDay(day);
+        }
+        toast({ title: "Período salvo", description: `Plano replicado para ${days.length} dias.` });
+      }
       setIsDirty(false);
-      toast({ title: "Plano salvo", description: `Equipes para ${format(selectedDate, "dd/MM/yyyy")} salvas com sucesso.` });
     } catch {
       toast({ title: "Erro ao salvar", variant: "destructive" });
     }
@@ -107,7 +190,11 @@ const Estrutura = () => {
     toast({ title: "Estrutura copiada", description: `"${structure.name}" aplicada.` });
   };
 
-  const selectedBase = bases?.find(b => b.id === selectedBaseId);
+  const plannedDates = useMemo(() => {
+    if (!monthPlans) return new Set<string>();
+    return new Set(monthPlans.map(p => p.plan_date));
+  }, [monthPlans]);
+
   const totalTeams = teams.reduce((s, v) => s + v, 0);
   const avgTeams = totalTeams / 24;
 
@@ -115,95 +202,129 @@ const Estrutura = () => {
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
       <div className="max-w-[1400px] mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Estrutura de Equipes</h1>
-          <p className="text-sm text-muted-foreground">Planeje a quantidade de equipes por hora para dias específicos</p>
+          <h1 className="text-2xl font-bold text-foreground">Planejamento de Equipes</h1>
+          <p className="text-sm text-muted-foreground">Defina a quantidade de equipes por tipo e hora para dias específicos</p>
         </div>
 
         {/* Controls */}
         <div className="glass-card p-4 mb-6">
-          <div className="flex flex-wrap items-end gap-4">
-            {/* Base Selector */}
+          <div className="flex flex-wrap items-end gap-3">
+            {/* Base */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Base</label>
               <Select value={selectedBaseId} onValueChange={setSelectedBaseId}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Selecione uma base" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[180px]"><SelectValue placeholder="Base" /></SelectTrigger>
                 <SelectContent>
-                  {bases?.map(base => (
-                    <SelectItem key={base.id} value={base.id}>{base.name}</SelectItem>
-                  ))}
+                  {bases?.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Date Picker */}
+            {/* Mode toggle */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Data</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-[200px] justify-start text-left font-normal", !selectedDate && "text-muted-foreground")}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(selectedDate, "dd/MM/yyyy")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(d) => d && setSelectedDate(d)}
-                    locale={ptBR}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
+              <label className="text-xs font-medium text-muted-foreground">Modo</label>
+              <div className="flex gap-1">
+                <Button size="sm" variant={planningMode === "single" ? "default" : "outline"} onClick={() => setPlanningMode("single")} className="text-xs h-8">Dia</Button>
+                <Button size="sm" variant={planningMode === "period" ? "default" : "outline"} onClick={() => setPlanningMode("period")} className="text-xs h-8">Período</Button>
+              </div>
             </div>
 
-            {/* Copy from Structure */}
+            {/* Date navigation */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{planningMode === "period" ? "Data início" : "Data"}</label>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigateDate("prev")}><ChevronLeft className="h-4 w-4" /></Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[140px] h-8 justify-start text-left font-normal text-xs">
+                      <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                      {format(selectedDate, "dd/MM/yyyy")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)} locale={ptBR} className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigateDate("next")}><ChevronRight className="h-4 w-4" /></Button>
+              </div>
+            </div>
+
+            {/* End date for period mode */}
+            {planningMode === "period" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Data fim</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[140px] h-8 justify-start text-left font-normal text-xs">
+                      <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                      {selectedEndDate ? format(selectedEndDate, "dd/MM/yyyy") : "Selecionar..."}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={selectedEndDate} onSelect={(d) => d && setSelectedEndDate(d)} locale={ptBR} disabled={(d) => d < selectedDate} className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {/* Calendar view dialog */}
+            <Dialog open={isCalendarViewOpen} onOpenChange={setIsCalendarViewOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8"><CalendarDays className="w-3.5 h-3.5 mr-1.5" />Planejados</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Dias planejados - {format(selectedDate, "MMMM yyyy", { locale: ptBR })}</DialogTitle>
+                </DialogHeader>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(d) => { if (d) { setSelectedDate(d); setIsCalendarViewOpen(false); } }}
+                  locale={ptBR}
+                  month={selectedDate}
+                  modifiers={{ planned: (d) => plannedDates.has(format(d, "yyyy-MM-dd")) }}
+                  modifiersClassNames={{ planned: "bg-primary/20 text-primary font-bold" }}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+                <p className="text-xs text-muted-foreground">{plannedDates.size} dia(s) planejado(s) neste mês</p>
+              </DialogContent>
+            </Dialog>
+
+            {/* Copy from structure */}
             {teamStructures && teamStructures.length > 0 && (
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Copiar de estrutura</label>
+                <label className="text-xs font-medium text-muted-foreground">Copiar estrutura</label>
                 <Select onValueChange={handleCopyFromStructure}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Selecionar estrutura..." />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-[160px] h-8 text-xs"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                   <SelectContent>
                     {teamStructures.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center gap-2">
-                          <Copy className="w-3 h-3" />
-                          {s.name}
-                        </div>
-                      </SelectItem>
+                      <SelectItem key={s.id} value={s.id}><Copy className="w-3 h-3 inline mr-1" />{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
 
+            {/* Actions */}
             <div className="flex gap-2 ml-auto">
               {existingPlan && (
-                <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deletePlan.isPending}>
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Remover
+                <Button variant="destructive" size="sm" className="h-8" onClick={handleDelete} disabled={deletePlan.isPending}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />Remover
                 </Button>
               )}
-              <Button onClick={handleSave} disabled={!isDirty || upsertPlan.isPending} size="sm">
-                {upsertPlan.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-                Salvar
+              <Button onClick={handleSave} disabled={!isDirty || upsertPlan.isPending} size="sm" className="h-8">
+                {upsertPlan.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
           </div>
 
           {/* Summary */}
-          <div className="mt-3 flex gap-4 text-sm text-muted-foreground">
+          <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
             <span>Total equipes×hora: <strong className="text-foreground">{totalTeams}</strong></span>
             <span>Média: <strong className="text-foreground">{avgTeams.toFixed(1)} eq/h</strong></span>
             {existingPlan && <span className="text-primary font-medium">● Plano salvo</span>}
-            {isDirty && <span className="text-warning font-medium">● Não salvo</span>}
+            {isDirty && <span className="text-yellow-500 font-medium">● Não salvo</span>}
           </div>
         </div>
 
@@ -215,31 +336,78 @@ const Estrutura = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {TURNOS.map(turno => (
-              <div key={turno.label} className="glass-card p-4">
-                <h3 className="text-sm font-semibold text-foreground mb-3">{turno.label}</h3>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-                  {turno.hours.map(hour => (
-                    <div key={hour} className="space-y-1">
-                      <label className="text-xs text-muted-foreground font-mono">{String(hour).padStart(2, "0")}:00</label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={teams[hour]}
-                        onChange={(e) => handleTeamChange(hour, parseInt(e.target.value) || 0)}
-                        className="h-8 text-center text-sm font-mono"
-                      />
-                      <Input
-                        type="number"
-                        min={0}
-                        value={lossTeams[hour]}
-                        onChange={(e) => handleLossTeamChange(hour, parseInt(e.target.value) || 0)}
-                        className="h-8 text-center text-sm font-mono text-destructive border-destructive/30"
-                        placeholder="Perda"
-                      />
-                    </div>
-                  ))}
+            {TURNOS.map((turno, turnoIdx) => (
+              <div key={turno.letter} className="glass-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-foreground">{turno.label}</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => replicarParaTurno(turnoIdx, turno.hours[0])}
+                    title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
+                  >
+                    <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
+                  </Button>
                 </div>
+
+                {/* Scrollable horizontal grid */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr>
+                        <th className="text-left py-1 pr-2 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[120px]">Tipo</th>
+                        {turno.hours.map(h => (
+                          <th key={h} className="text-center py-1 px-1 text-muted-foreground font-mono min-w-[56px]">
+                            {String(h).padStart(2, "0")}:00
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Total equipes row */}
+                      <tr className="border-t border-border">
+                        <td className="py-1 pr-2 font-medium text-foreground sticky left-0 bg-card z-10">Equipes</td>
+                        {turno.hours.map(h => (
+                          <td key={h} className="py-1 px-0.5">
+                            <Input type="number" min={0} value={teams[h]} onChange={(e) => handleTeamChange(h, parseInt(e.target.value) || 0)} className="h-7 text-center text-xs font-mono w-full" />
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Loss teams row */}
+                      <tr>
+                        <td className="py-1 pr-2 font-medium text-destructive sticky left-0 bg-card z-10">Perdas</td>
+                        {turno.hours.map(h => (
+                          <td key={h} className="py-1 px-0.5">
+                            <Input type="number" min={0} value={lossTeams[h]} onChange={(e) => handleLossTeamChange(h, parseInt(e.target.value) || 0)} className="h-7 text-center text-xs font-mono w-full text-destructive border-destructive/30" />
+                          </td>
+                        ))}
+                      </tr>
+                      {/* Separator */}
+                      <tr><td colSpan={turno.hours.length + 1} className="py-1"><div className="border-t border-border/50" /></td></tr>
+                      {/* Team type rows */}
+                      {TEAM_TYPES.map(type => (
+                        <tr key={type} className="hover:bg-muted/30">
+                          <td className="py-1 pr-2 text-muted-foreground sticky left-0 bg-card z-10 truncate" title={type}>
+                            {type}
+                          </td>
+                          {turno.hours.map(h => (
+                            <td key={h} className="py-1 px-0.5">
+                              <Input
+                                type="number"
+                                min={0}
+                                value={typeData[type]?.[h] ?? 0}
+                                onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
+                                className="h-7 text-center text-xs font-mono w-full"
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
                 <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
                   <span>Equipes: <strong>{turno.hours.reduce((s, h) => s + teams[h], 0)}</strong></span>
                   <span className="text-destructive">Perdas: <strong>{turno.hours.reduce((s, h) => s + lossTeams[h], 0)}</strong></span>
