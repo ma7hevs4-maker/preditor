@@ -196,7 +196,7 @@ const Estrutura = () => {
   }, [monthPlans]);
 
   // BT only: Perdas, Corte e Religa
-  const BT_ONLY_TYPES = ["Perdas", "Corte e Religa"] as const;
+  const BT_ONLY_TYPES = ["Perdas", "Corte e Religa", "Reguladas"] as const;
   // Excluded from calculations: LV and MK
   const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
 
