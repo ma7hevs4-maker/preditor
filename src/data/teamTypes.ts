@@ -1,7 +1,6 @@
 export const TEAM_TYPES = [
   "Emergência",
   "Gestores",
-  "Corte e Religa",
   "Poda",
   "Cesto Manutenção",
   "Cesto Obras",
@@ -9,6 +8,7 @@ export const TEAM_TYPES = [
   "LV Obras",
   "MK Manutenção",
   "MK Obras",
+  "Corte e Religa",
   "Perdas",
   "Reguladas",
 ] as const;
