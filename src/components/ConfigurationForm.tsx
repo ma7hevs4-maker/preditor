@@ -241,32 +241,35 @@ export const ConfigurationForm = ({
     });
   };
 
+  // Team types that count as "general" teams (equipes gerais)
+  const GENERAL_TEAM_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"];
+  // Team types that count as "BT loss" teams (equipes BT)
+  const BT_TEAM_TYPES = ["Corte e Religa", "Perdas", "Reguladas"];
+
   // Load declared structure from daily plans for a specific date
   const handleLoadDeclaredStructure = async (day: number) => {
     if (!bases || declaredBaseIds.length === 0) return;
     setLoadingDeclared(true);
     try {
       const { supabase } = await import("@/integrations/supabase/client");
+
       // Fetch plans for all relevant base IDs
-      const allPlans: { teams: number[]; lossTeams: number[] }[] = [];
+      const planIds: string[] = [];
 
       for (const baseId of declaredBaseIds) {
         const { data } = await supabase
           .from("daily_team_plans")
-          .select("*")
+          .select("id")
           .eq("base_id", baseId)
           .eq("plan_date", declaredDateStr)
           .maybeSingle();
 
-        if (data) {
-          allPlans.push({
-            teams: Array.from({ length: 24 }, (_, i) => (data as any)[`teams_hour_${i}`] ?? 0),
-            lossTeams: Array.from({ length: 24 }, (_, i) => (data as any)[`loss_teams_hour_${i}`] ?? 0),
-          });
+        if (data?.id) {
+          planIds.push(data.id);
         }
       }
 
-      if (allPlans.length === 0) {
+      if (planIds.length === 0) {
         toast({
           title: "Sem estrutura declarada",
           description: `Nenhum plano encontrado para ${format(declaredDate, "dd/MM/yyyy")}`,
@@ -275,13 +278,38 @@ export const ConfigurationForm = ({
         return;
       }
 
-      // Sum all plans hour by hour
+      // Fetch all team type entries for those plans
+      const { data: entries } = await supabase
+        .from("daily_team_type_entries")
+        .select("*")
+        .in("daily_plan_id", planIds);
+
+      // Sum by team type category per hour
       const summedTeams = Array(24).fill(0);
       const summedLoss = Array(24).fill(0);
-      for (const plan of allPlans) {
-        for (let h = 0; h < 24; h++) {
-          summedTeams[h] += plan.teams[h];
-          summedLoss[h] += plan.lossTeams[h];
+
+      if (entries && entries.length > 0) {
+        for (const entry of entries) {
+          if (GENERAL_TEAM_TYPES.includes(entry.team_type)) {
+            summedTeams[entry.hour] = (summedTeams[entry.hour] || 0) + (entry.quantity || 0);
+          } else if (BT_TEAM_TYPES.includes(entry.team_type)) {
+            summedLoss[entry.hour] = (summedLoss[entry.hour] || 0) + (entry.quantity || 0);
+          }
+        }
+      } else {
+        // Fallback: use totals from daily_team_plans if no type entries exist
+        const { data: plans } = await supabase
+          .from("daily_team_plans")
+          .select("*")
+          .in("id", planIds);
+
+        if (plans) {
+          for (const plan of plans) {
+            for (let h = 0; h < 24; h++) {
+              summedTeams[h] += (plan as any)[`teams_hour_${h}`] ?? 0;
+              summedLoss[h] += (plan as any)[`loss_teams_hour_${h}`] ?? 0;
+            }
+          }
         }
       }
 
@@ -300,7 +328,7 @@ export const ConfigurationForm = ({
 
       toast({
         title: "Estrutura declarada carregada",
-        description: `${allPlans.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
+        description: `${planIds.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
       });
       setDeclaredDateOpen(false);
     } catch {
