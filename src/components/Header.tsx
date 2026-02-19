@@ -168,27 +168,11 @@ export const Header = ({
             isSaving={isSaving}
           />
 
-          <AdminConfigDialog />
-
           <SimulationHistoryDialog
             baseId={config.regionalLabel ? undefined : selectedBase?.id}
             regionalLabel={config.regionalLabel}
             onLoadSimulation={onLoadSimulation}
           />
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleTheme}
-            className="bg-secondary/50 border-border hover:bg-secondary"
-            title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-          </Button>
         </div>
       </div>
 
