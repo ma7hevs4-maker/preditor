@@ -564,7 +564,7 @@ export const ConfigurationForm = ({
                   Dia 1 - Equipes por Hora
                 </h4>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 {teamStructures && teamStructures.length > 0 && (
                   <Popover>
                     <PopoverTrigger asChild>
@@ -596,6 +596,46 @@ export const ConfigurationForm = ({
                     </PopoverContent>
                   </Popover>
                 )}
+                {/* Carregar Estrutura Declarada */}
+                <Popover open={declaredDateOpen} onOpenChange={setDeclaredDateOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 text-xs"
+                      disabled={loadingDeclared}
+                    >
+                      <CalendarIcon className="w-3 h-3" />
+                      Carregar Declarada
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" align="end">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a data:</p>
+                    <Calendar
+                      mode="single"
+                      selected={declaredDate}
+                      onSelect={(d) => d && setDeclaredDate(d)}
+                      locale={ptBR}
+                      className="pointer-events-auto"
+                    />
+                    <p className="text-xs text-muted-foreground mt-2 mb-3">
+                      {hasSucursais
+                        ? selectedSucursal === "todas"
+                          ? `Somará todas as sucursais de ${selectedBase?.name}`
+                          : `Carregará plano de ${selectedSucursal}`
+                        : `Carregará plano de ${selectedBase?.name ?? "base selecionada"}`}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => handleLoadDeclaredStructure(1)}
+                      disabled={loadingDeclared}
+                    >
+                      {loadingDeclared ? "Carregando..." : `Carregar para Dia 1`}
+                    </Button>
+                  </PopoverContent>
+                </Popover>
                 <Button
                   type="button"
                   variant="outline"
