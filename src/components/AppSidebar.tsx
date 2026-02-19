@@ -71,16 +71,14 @@ export function AppSidebar() {
 
               {/* Configurações — opens AdminConfigDialog */}
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Configurações" asChild={false}>
-                  <AdminConfigDialog
-                    trigger={
-                      <button className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted/50 transition-colors w-full text-left">
-                        <Settings className="w-4 h-4 shrink-0" />
-                        {!collapsed && <span className="truncate">Configurações</span>}
-                      </button>
-                    }
-                  />
-                </SidebarMenuButton>
+                <AdminConfigDialog
+                  trigger={
+                    <SidebarMenuButton tooltip="Configurações">
+                      <Settings className="w-4 h-4 shrink-0" />
+                      {!collapsed && <span className="truncate">Configurações</span>}
+                    </SidebarMenuButton>
+                  }
+                />
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
