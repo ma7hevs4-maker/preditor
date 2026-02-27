@@ -39,7 +39,7 @@ export const SimulationEditDialog = ({
   const [editedResults, setEditedResults] = useState<SimulationRow[]>([]);
   const [btBacklog, setBtBacklog] = useState(0);
   const [mtBacklog, setMtBacklog] = useState(0);
-  const { settings } = useSystemSettings();
+  const { data: settings } = useSystemSettings();
 
   const remotoPercent = (() => {
     const setting = settings?.find(s => s.key === "operator_removal_percent");
