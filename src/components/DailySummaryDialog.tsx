@@ -326,7 +326,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                         Impacto Climático por Hora — {summary.dayLabel}
                       </span>
                     </div>
-                    <ScrollArea className="max-h-[300px]">
+                    <ScrollArea className="h-[400px]">
                       <table className="w-full text-xs">
                         <thead className="bg-secondary/30 sticky top-0">
                           <tr>
