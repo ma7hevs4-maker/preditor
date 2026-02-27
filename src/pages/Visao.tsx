@@ -25,8 +25,11 @@ type UT = "UTS" | "UTN";
 
 const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
 const LV_MK_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
+const APOIO_TYPES = ["Apoio UTS", "Apoio UTN"] as const;
 const BT_ONLY_TYPES = ["Corte e Religa", "Perdas", "Reguladas"] as const;
-const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...BT_ONLY_TYPES] as const;
+const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES] as const;
+// Types counted for all incidents (not just BT)
+const ALL_INCIDENTS_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as const;
 
 // ---------- Data hooks ----------
 const useAllPlansForDate = (date: string) =>
@@ -299,6 +302,33 @@ const RegionalDetailDialog = ({
                       </tr>
                     );
                   })}
+                  {/* Separator before Apoio types */}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {/* Apoio types (counted for all incidents) */}
+                  {APOIO_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
+                                {avg(row, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                   {/* Separator before BT types */}
                   <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
                   {/* BT ONLY types */}
@@ -389,7 +419,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
   const teamsPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
     regionalEntries.forEach(e => {
-      if ((GERAIS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+      if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
     });
     return arr;
   }, [regionalEntries]);
@@ -408,7 +438,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
 
   // Per-type 24h averages (all types including LV/MK)
   const typeAvg24h = useMemo(() => {
-    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES];
+    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES];
     const result: Record<string, number> = {};
     allTypes.forEach(type => {
       const arr = Array(24).fill(0);
@@ -475,6 +505,16 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
               <div key={type} className="flex justify-between text-[10px]">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-muted-foreground/80">{val}</span>
+              </div>
+            );
+          })}
+          {APOIO_TYPES.map(type => {
+            const val = typeAvg24h[type] || 0;
+            if (val === 0) return null;
+            return (
+              <div key={type} className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">{type}</span>
+                <span className="font-semibold text-foreground">{val}</span>
               </div>
             );
           })}
