@@ -892,8 +892,40 @@ export const ConfigurationForm = ({
                         </PopoverContent>
                       </Popover>
                     )}
+                    {/* Carregar Estrutura Declarada - Dia 2 */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs"
+                          disabled={loadingDeclared}
+                        >
+                          <CalendarIcon className="w-3 h-3" />
+                          Carregar Declarada
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="end">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a data:</p>
+                        <Calendar
+                          mode="single"
+                          selected={declaredDate}
+                          onSelect={(d) => d && setDeclaredDate(d)}
+                          locale={ptBR}
+                          className="pointer-events-auto"
+                        />
+                        <Button
+                          size="sm"
+                          className="w-full text-xs mt-2"
+                          onClick={() => handleLoadDeclaredStructure(2)}
+                          disabled={loadingDeclared}
+                        >
+                          {loadingDeclared ? "Carregando..." : "Carregar para Dia 2"}
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
                     <Button
-                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => copyFromDay1(2)}
@@ -1103,6 +1135,39 @@ export const ConfigurationForm = ({
                         </PopoverContent>
                       </Popover>
                     )}
+                    {/* Carregar Estrutura Declarada - Dia 3 */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs"
+                          disabled={loadingDeclared}
+                        >
+                          <CalendarIcon className="w-3 h-3" />
+                          Carregar Declarada
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="end">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Selecione a data:</p>
+                        <Calendar
+                          mode="single"
+                          selected={declaredDate}
+                          onSelect={(d) => d && setDeclaredDate(d)}
+                          locale={ptBR}
+                          className="pointer-events-auto"
+                        />
+                        <Button
+                          size="sm"
+                          className="w-full text-xs mt-2"
+                          onClick={() => handleLoadDeclaredStructure(3)}
+                          disabled={loadingDeclared}
+                        >
+                          {loadingDeclared ? "Carregando..." : "Carregar para Dia 3"}
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
                     <Button
                       type="button"
                       variant="outline"
