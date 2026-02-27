@@ -136,12 +136,11 @@ const RegionalDetailDialog = ({
 
   const teamsPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
-    filteredPlans.forEach(p => {
-      const t = planToTeamsArray(p);
-      t.forEach((v, h) => { arr[h] += v; });
+    filteredEntries.forEach(e => {
+      if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
     });
     return arr;
-  }, [filteredPlans]);
+  }, [filteredEntries]);
 
   const lossesPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
