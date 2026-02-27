@@ -279,15 +279,42 @@ const Estrutura = () => {
     if (!structure) return;
     setTeams(structureToTeamsArray(structure));
     setLossTeams(structureToLossTeamsArray(structure));
-    // Restore type data from snapshot if available
+
+    // Restore type data from snapshot when available
     const snapshot = (structure as any).type_data_snapshot as Record<string, number[]> | null;
     if (snapshot) {
       const newTypeData: Record<string, number[]> = {};
       TEAM_TYPES.forEach(t => {
-        newTypeData[t] = snapshot[t] ? [...snapshot[t]] : Array(24).fill(0);
+        const values = snapshot[t];
+        newTypeData[t] = Array.isArray(values)
+          ? Array.from({ length: 24 }, (_, h) => Number(values[h] ?? 0))
+          : Array(24).fill(0);
       });
       setTypeData(newTypeData);
+    } else {
+      // Fallback for legacy structures created before type_data_snapshot existed
+      const fallbackTypeData: Record<string, number[]> = {};
+      TEAM_TYPES.forEach(t => { fallbackTypeData[t] = Array(24).fill(0); });
+
+      const emergencyKey = TEAM_TYPES.includes("Emergência") ? "Emergência" : TEAM_TYPES[0];
+      const perdasKey = TEAM_TYPES.includes("Perdas") ? "Perdas" : null;
+
+      for (let h = 0; h < 24; h++) {
+        const total = Number((structure as any)[`teams_hour_${h}`] ?? 0);
+        const perdas = Number((structure as any)[`loss_teams_hour_${h}`] ?? 0);
+        const apoio = Math.max(total - perdas, 0);
+
+        fallbackTypeData[emergencyKey][h] = apoio;
+        if (perdasKey) fallbackTypeData[perdasKey][h] = Math.max(perdas, 0);
+      }
+
+      setTypeData(fallbackTypeData);
+      toast({
+        title: "Estrutura legada copiada",
+        description: "Sem detalhamento por tipo salvo. Aplicado fallback automático (Emergência/Perdas).",
+      });
     }
+
     setIsDirty(true);
     toast({ title: "Estrutura copiada", description: `"${structure.name}" aplicada.` });
   };
