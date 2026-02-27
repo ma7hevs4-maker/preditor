@@ -481,6 +481,16 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
               </div>
             );
           })}
+          {APOIO_TYPES.map(type => {
+            const val = typeAvg24h[type] || 0;
+            if (val === 0) return null;
+            return (
+              <div key={type} className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">{type}</span>
+                <span className="font-semibold text-foreground">{val}</span>
+              </div>
+            );
+          })}
           {BT_ONLY_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
