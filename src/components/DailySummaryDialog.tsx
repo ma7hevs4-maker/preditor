@@ -46,6 +46,7 @@ interface DaySummary {
   hoursInDay: number;
   finalBacklogBt: number;
   finalBacklogMt: number;
+  rows: SimulationRow[]; // raw rows for hourly detail
 }
 
 export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) => {
