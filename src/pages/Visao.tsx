@@ -533,20 +533,20 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
 
       {/* 24h summary */}
       {hasData && (
-        <div className="border-t border-border/30 pt-2 flex justify-between text-[10px]">
+        <div className="border-t border-border/30 pt-2 flex justify-between text-xs">
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. Totais (24h)</span>
-            <span className="font-bold text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. MT (24h)</span>
-            <span className="font-bold text-foreground">{avgTotalTeams24h}</span>
+            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. BT (24h)</span>
-            <span className="font-bold text-warning">{avgBT24h}</span>
+            <span className="font-bold text-sm text-warning">{avgBT24h}</span>
           </div>
         </div>
       )}
