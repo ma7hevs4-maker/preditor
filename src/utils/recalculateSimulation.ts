@@ -10,7 +10,7 @@ export const recalculateSimulation = (
   rows: SimulationRow[],
   initialBacklogBT: number,
   initialBacklogMT: number,
-  remotoPercent: number = 0.4 // default 40%
+  remotoPercent: number = 0.1 // default 10% (matches system_settings operator_removal_percent)
 ): SimulationRow[] => {
   if (rows.length === 0) return [];
 
