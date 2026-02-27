@@ -70,6 +70,16 @@ const Estrutura = () => {
   const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
   const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd);
 
+  // Fetch plans for calendar view dialog (may be a different month)
+  const calendarViewMonthStart = format(startOfMonth(calendarViewMonth), "yyyy-MM-dd");
+  const calendarViewMonthEnd = format(endOfMonth(calendarViewMonth), "yyyy-MM-dd");
+  const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd);
+
+  const calendarPlannedDates = useMemo(() => {
+    if (!calendarViewMonthPlans) return new Set<string>();
+    return new Set(calendarViewMonthPlans.map(p => p.plan_date));
+  }, [calendarViewMonthPlans]);
+
   // Load existing plan
   useMemo(() => {
     if (existingPlan) {
