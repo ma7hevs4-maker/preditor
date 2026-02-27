@@ -1103,7 +1103,7 @@ export const ConfigurationForm = ({
                       Dia 3 - Equipes por Hora
                     </h4>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
                     {teamStructures && teamStructures.length > 0 && (
                       <Popover>
                         <PopoverTrigger asChild>
