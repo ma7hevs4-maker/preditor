@@ -588,7 +588,7 @@ const Visao = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Visão de Estrutura</h1>
           <p className="text-sm text-muted-foreground">Visualização das equipes planejadas por regional</p>
