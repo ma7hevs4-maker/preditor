@@ -33,6 +33,7 @@ const Estrutura = () => {
   });
   const [isDirty, setIsDirty] = useState(false);
   const [isCalendarViewOpen, setIsCalendarViewOpen] = useState(false);
+  const [calendarViewMonth, setCalendarViewMonth] = useState<Date>(new Date());
 
   // Auth/edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -68,6 +69,16 @@ const Estrutura = () => {
   const monthStart = format(startOfMonth(selectedDate), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
   const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd);
+
+  // Fetch plans for calendar view dialog (may be a different month)
+  const calendarViewMonthStart = format(startOfMonth(calendarViewMonth), "yyyy-MM-dd");
+  const calendarViewMonthEnd = format(endOfMonth(calendarViewMonth), "yyyy-MM-dd");
+  const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd);
+
+  const calendarPlannedDates = useMemo(() => {
+    if (!calendarViewMonthPlans) return new Set<string>();
+    return new Set(calendarViewMonthPlans.map(p => p.plan_date));
+  }, [calendarViewMonthPlans]);
 
   // Load existing plan
   useMemo(() => {
@@ -409,25 +420,26 @@ const Estrutura = () => {
             )}
 
             {/* Calendar view dialog */}
-            <Dialog open={isCalendarViewOpen} onOpenChange={setIsCalendarViewOpen}>
+            <Dialog open={isCalendarViewOpen} onOpenChange={(open) => { setIsCalendarViewOpen(open); if (open) setCalendarViewMonth(selectedDate); }}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8"><CalendarDays className="w-3.5 h-3.5 mr-1.5" />Planejados</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Dias planejados - {format(selectedDate, "MMMM yyyy", { locale: ptBR })}</DialogTitle>
+                  <DialogTitle>Dias planejados - {format(calendarViewMonth, "MMMM yyyy", { locale: ptBR })}</DialogTitle>
                 </DialogHeader>
                 <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={(d) => { if (d) { setSelectedDate(d); setIsCalendarViewOpen(false); } }}
                   locale={ptBR}
-                  
-                  modifiers={{ planned: (d) => plannedDates.has(format(d, "yyyy-MM-dd")) }}
+                  month={calendarViewMonth}
+                  onMonthChange={setCalendarViewMonth}
+                  modifiers={{ planned: (d) => calendarPlannedDates.has(format(d, "yyyy-MM-dd")) }}
                   modifiersClassNames={{ planned: "bg-primary/20 text-primary font-bold" }}
                   className={cn("p-3 pointer-events-auto")}
                 />
-                <p className="text-xs text-muted-foreground">{plannedDates.size} dia(s) planejado(s) neste mês</p>
+                <p className="text-xs text-muted-foreground">{calendarPlannedDates.size} dia(s) planejado(s) neste mês</p>
               </DialogContent>
             </Dialog>
 
