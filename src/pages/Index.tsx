@@ -165,7 +165,8 @@ const Index = () => {
     effectiveWeatherForecast,
     systemSettings,
     weatherImpactEnabled,
-    stableWeatherTriggers
+    stableWeatherTriggers,
+    operationalOverride.enabled ? operationalOverride : undefined
   );
 
   // Use loaded simulation or live data
