@@ -392,7 +392,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
   const teamsPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
     regionalEntries.forEach(e => {
-      if ((GERAIS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+      if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
     });
     return arr;
   }, [regionalEntries]);
