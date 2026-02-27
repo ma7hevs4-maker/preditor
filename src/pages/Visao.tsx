@@ -475,11 +475,11 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       <div className="grid grid-cols-3 gap-2 mb-2">
         {TURNOS.map(turno => {
           const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
-          const avgVal = avg(teamsPerHour, turno.hours);
+          const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-[10px] font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className="text-sm font-bold text-foreground">{avgVal}</div>
+              <div className="text-sm font-bold text-foreground">{avgTotal}</div>
             </div>
           );
         })}
