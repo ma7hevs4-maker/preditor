@@ -300,7 +300,7 @@ const Estrutura = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Planejamento de Equipes</h1>
           <p className="text-sm text-muted-foreground">Defina a quantidade de equipes por tipo e hora para dias específicos</p>
