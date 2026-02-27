@@ -9,12 +9,23 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SimulationRow } from "@/hooks/useSimulation";
-import { BarChart3, Zap, CloudRain, TrendingDown, Users } from "lucide-react";
+import { BarChart3, Zap, CloudRain, TrendingDown, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { getHalfLifeBucket } from "@/hooks/useHalfLife";
 
 interface DailySummaryDialogProps {
   simulationData: SimulationRow[];
 }
+
+// Rain thresholds matching database triggers
+const getFaixaChuvaLabel = (mm: number): string => {
+  if (mm < 0.2) return "Seco";
+  if (mm < 3.0) return "Fraca";
+  if (mm < 6.0) return "Moderada";
+  if (mm < 10.0) return "Forte";
+  return "Muito Forte";
+};
 
 interface DaySummary {
   day: number;
@@ -35,11 +46,21 @@ interface DaySummary {
   hoursInDay: number;
   finalBacklogBt: number;
   finalBacklogMt: number;
+  rows: SimulationRow[]; // raw rows for hourly detail
 }
 
 export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedTriggers, setExpandedTriggers] = useState<Set<number>>(new Set());
 
+  const toggleTriggerExpand = (day: number) => {
+    setExpandedTriggers(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  };
   // Group data by day and calculate summaries
   const dailySummaries: DaySummary[] = [];
   
@@ -90,6 +111,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
         hoursInDay: rows.length,
         finalBacklogBt: Math.round(lastRow?.incidentes_bt_saldo ?? 0),
         finalBacklogMt: Math.round(lastRow?.incidentes_mt_saldo ?? 0),
+        rows: sortedRows,
       };
       
       dailySummaries.push(summary);
@@ -109,7 +131,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
           Resumo Diário
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-card border-border">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <BarChart3 className="w-5 h-5 text-primary" />
@@ -207,21 +229,30 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                     </div>
                   </div>
 
-                  {/* Gatilhos */}
+                  {/* Gatilhos - Clickable */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">
                       <CloudRain className="w-3 h-3" />
                       Gatilhos
                     </div>
-                    <div className="bg-amber-500/10 rounded p-2">
+                    <button
+                      onClick={() => toggleTriggerExpand(summary.day)}
+                      className="w-full bg-amber-500/10 rounded p-2 hover:bg-amber-500/20 transition-colors cursor-pointer text-left"
+                    >
                       <div className="flex justify-between items-center">
                         <p className="text-xs text-muted-foreground">Horas</p>
-                        <p className={cn(
-                          "font-mono font-semibold text-sm",
-                          summary.triggersActive > 0 ? "text-amber-400" : "text-muted-foreground"
-                        )}>
-                          {summary.triggersActive}h
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className={cn(
+                            "font-mono font-semibold text-sm",
+                            summary.triggersActive > 0 ? "text-amber-400" : "text-muted-foreground"
+                          )}>
+                            {summary.triggersActive}h
+                          </p>
+                          {expandedTriggers.has(summary.day) 
+                            ? <ChevronUp className="w-3 h-3 text-muted-foreground" />
+                            : <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                          }
+                        </div>
                       </div>
                       {summary.triggersActive > 0 && (
                         <div className="mt-1 pt-1 border-t border-amber-500/20">
@@ -232,7 +263,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                           </div>
                         </div>
                       )}
-                    </div>
+                    </button>
                   </div>
 
                   {/* Entrada Adicional por Clima */}
@@ -286,7 +317,107 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                   </div>
                 </div>
 
-                {/* Summary footer */}
+                {/* Expanded Hourly Trigger Details */}
+                {expandedTriggers.has(summary.day) && (
+                  <div className="mt-4 border border-border/50 rounded-lg overflow-hidden">
+                    <div className="bg-secondary/40 px-3 py-2 flex items-center gap-2 border-b border-border/30">
+                      <CloudRain className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-semibold text-foreground">
+                        Impacto Climático por Hora — {summary.dayLabel}
+                      </span>
+                    </div>
+                    <ScrollArea className="max-h-[300px]">
+                      <table className="w-full text-xs">
+                        <thead className="bg-secondary/30 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-1.5 text-left text-muted-foreground font-medium">Hora</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Chuva</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Vento</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Rajada</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Temp</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Faixa</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Gatilho</th>
+                            <th className="px-2 py-1.5 text-center text-primary font-medium">BT %</th>
+                            <th className="px-2 py-1.5 text-center text-purple-400 font-medium">MT %</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Decay</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.rows.map((row) => {
+                            const hasActive = row.uplift_bt_raw_pct > 0 || row.uplift_mt_raw_pct > 0;
+                            const hasAnyImpact = row.uplift_bt_pct > 0 || row.uplift_mt_pct > 0;
+                            return (
+                              <tr
+                                key={`${row.dia}_${row.hora}`}
+                                className={cn(
+                                  "border-t border-border/10 transition-colors",
+                                  hasActive && "bg-amber-500/5",
+                                  !hasActive && hasAnyImpact && "bg-amber-500/[0.02]"
+                                )}
+                              >
+                                <td className="px-2 py-1.5 font-mono font-medium text-foreground">
+                                  {String(row.hora).padStart(2, "0")}:00
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono",
+                                  row.precip_mm >= 0.2 ? "text-blue-400" : "text-muted-foreground"
+                                )}>
+                                  {row.precip_mm.toFixed(1)}mm
+                                </td>
+                                <td className="px-2 py-1.5 text-center font-mono text-muted-foreground">
+                                  {row.wind_kmh.toFixed(0)}
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono",
+                                  row.gust_kmh >= 30 ? "text-orange-400" : "text-muted-foreground"
+                                )}>
+                                  {row.gust_kmh.toFixed(0)}
+                                </td>
+                                <td className="px-2 py-1.5 text-center font-mono text-muted-foreground">
+                                  {row.temp_c.toFixed(0)}°
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center",
+                                  row.precip_mm >= 6 ? "text-red-400" : row.precip_mm >= 0.2 ? "text-blue-400" : "text-muted-foreground"
+                                )}>
+                                  {getFaixaChuvaLabel(row.precip_mm)}
+                                </td>
+                                <td className="px-2 py-1.5 text-center">
+                                  <span className={cn(
+                                    "inline-block w-2 h-2 rounded-full",
+                                    hasActive ? "bg-amber-400" : hasAnyImpact ? "bg-amber-400/30" : "bg-muted-foreground/20"
+                                  )} />
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono font-medium",
+                                  row.uplift_bt_pct > 0 ? "text-primary" : "text-muted-foreground"
+                                )}>
+                                  {row.uplift_bt_pct > 0 ? `+${row.uplift_bt_pct.toFixed(0)}%` : "—"}
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono font-medium",
+                                  row.uplift_mt_pct > 0 ? "text-purple-400" : "text-muted-foreground"
+                                )}>
+                                  {row.uplift_mt_pct > 0 ? `+${row.uplift_mt_pct.toFixed(0)}%` : "—"}
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono",
+                                  row.tslr !== null && row.tslr > 0 ? "text-amber-400" : "text-muted-foreground"
+                                )}>
+                                  {row.tslr !== null && row.tslr > 0
+                                    ? `${(row.decayMultiplier * 100).toFixed(0)}%`
+                                    : "—"
+                                  }
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </ScrollArea>
+                  </div>
+                )}
+
                 <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Balanço BT (entrada - saídas)</p>
