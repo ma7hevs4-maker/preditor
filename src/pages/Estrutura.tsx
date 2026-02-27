@@ -33,6 +33,7 @@ const Estrutura = () => {
   });
   const [isDirty, setIsDirty] = useState(false);
   const [isCalendarViewOpen, setIsCalendarViewOpen] = useState(false);
+  const [calendarViewMonth, setCalendarViewMonth] = useState<Date>(new Date());
 
   // Auth/edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
