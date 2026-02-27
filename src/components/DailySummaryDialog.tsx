@@ -131,7 +131,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
           Resumo Diário
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-card border-border">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <BarChart3 className="w-5 h-5 text-primary" />
