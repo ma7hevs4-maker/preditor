@@ -7,6 +7,7 @@ import { PlanningTable } from "@/components/PlanningTable";
 import { IncidentChart } from "@/components/IncidentChart";
 import { ConfigPanel } from "@/components/ConfigPanel";
 import { WeatherOverride } from "@/components/WeatherOverrideDialog";
+import { OperationalOverride } from "@/components/OperationalOverrideDialog";
 import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
 
 import { toast } from "@/hooks/use-toast";
@@ -76,6 +77,12 @@ const Index = () => {
 
   // Weather impact toggle
   const { enabled: weatherImpactEnabled, setEnabled: setWeatherImpactEnabled } = useWeatherImpact();
+
+  // Operational override for simulation testing
+  const [operationalOverride, setOperationalOverride] = useState<OperationalOverride>({
+    enabled: false,
+    overrides: {},
+  });
 
   // Weather override for simulation testing
   const [weatherOverride, setWeatherOverride] = useState<WeatherOverride>({
@@ -158,7 +165,8 @@ const Index = () => {
     effectiveWeatherForecast,
     systemSettings,
     weatherImpactEnabled,
-    stableWeatherTriggers
+    stableWeatherTriggers,
+    operationalOverride.enabled ? operationalOverride : undefined
   );
 
   // Use loaded simulation or live data
@@ -335,6 +343,8 @@ const Index = () => {
           isSaving={saveSimulation.isPending}
           weatherOverride={weatherOverride}
           onWeatherOverrideChange={setWeatherOverride}
+          operationalOverride={operationalOverride}
+          onOperationalOverrideChange={setOperationalOverride}
           totalIncidents={hasSimulationInput ? finalTotalBacklog : 0}
         />
 

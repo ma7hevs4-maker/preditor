@@ -1,7 +1,8 @@
-import { Cloud, MapPin, Zap, Clock, CloudOff, CloudLightning } from "lucide-react";
+import { Cloud, MapPin, Zap, Clock, CloudOff, CloudLightning, SlidersHorizontal } from "lucide-react";
 import { ConfigurationForm } from "@/components/ConfigurationForm";
 import { SimulationHistoryDialog } from "@/components/SimulationHistoryDialog";
 import { WeatherOverrideDialog, WeatherOverride } from "@/components/WeatherOverrideDialog";
+import { OperationalOverrideDialog, OperationalOverride } from "@/components/OperationalOverrideDialog";
 import { ContingencyLevelIndicator } from "@/components/ContingencyLevelIndicator";
 import { useEffect, useState } from "react";
 import { SimulationConfig } from "@/hooks/useSimulation";
@@ -28,6 +29,8 @@ interface HeaderProps {
   isSaving?: boolean;
   weatherOverride?: WeatherOverride;
   onWeatherOverrideChange?: (override: WeatherOverride) => void;
+  operationalOverride?: OperationalOverride;
+  onOperationalOverrideChange?: (override: OperationalOverride) => void;
   totalIncidents?: number;
 }
 
@@ -46,10 +49,13 @@ export const Header = ({
   isSaving,
   weatherOverride,
   onWeatherOverrideChange,
+  operationalOverride,
+  onOperationalOverrideChange,
   totalIncidents = 0
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherOverrideOpen, setWeatherOverrideOpen] = useState(false);
+  const [operationalOverrideOpen, setOperationalOverrideOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -127,6 +133,22 @@ export const Header = ({
             </Button>
           )}
 
+          {/* Simulate Operational Button - Icon only */}
+          {onOperationalOverrideChange && operationalOverride && (
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(
+                "bg-secondary/50 border-border hover:bg-secondary",
+                operationalOverride.enabled && "border-primary text-primary hover:text-primary"
+              )}
+              onClick={() => setOperationalOverrideOpen(true)}
+              title={operationalOverride.enabled ? "Operacional Simulado (ativo)" : "Simular Operacional"}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </Button>
+          )}
+
           {/* Weather Provider Switch */}
           {onWeatherProviderChange && (
             <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-lg">
@@ -183,6 +205,17 @@ export const Header = ({
           onOpenChange={setWeatherOverrideOpen}
           override={weatherOverride}
           onOverrideChange={onWeatherOverrideChange}
+          horizonHours={config.horizonHours}
+        />
+      )}
+
+      {/* Operational Override Dialog */}
+      {onOperationalOverrideChange && operationalOverride && (
+        <OperationalOverrideDialog
+          open={operationalOverrideOpen}
+          onOpenChange={setOperationalOverrideOpen}
+          override={operationalOverride}
+          onOverrideChange={onOperationalOverrideChange}
           horizonHours={config.horizonHours}
         />
       )}
