@@ -478,8 +478,8 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
           const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
-              <div className={cn("text-[10px] font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className="text-sm font-bold text-foreground">{avgTotal}</div>
+              <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
+              <div className="text-base font-bold text-foreground">{avgTotal}</div>
             </div>
           );
         })}
