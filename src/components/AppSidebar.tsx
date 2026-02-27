@@ -32,7 +32,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={`${collapsed ? "w-14" : "w-52"} transition-all duration-200 border-r border-border bg-card flex flex-col`}
+      className={`${collapsed ? "w-14" : "w-52"} transition-all duration-200 border-r border-border bg-card flex flex-col z-50`}
       collapsible="icon"
     >
       {/* Logo centered */}
