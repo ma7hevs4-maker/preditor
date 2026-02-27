@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
 import { SimulationRow } from "@/hooks/useSimulation";
 import { recalculateSimulation } from "@/utils/recalculateSimulation";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface SimulationEditDialogProps {
   open: boolean;
