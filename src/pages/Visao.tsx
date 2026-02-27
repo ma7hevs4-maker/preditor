@@ -514,7 +514,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className="text-base font-bold text-foreground">{avgTotal}</div>
+              <div className={cn("text-base font-bold", colors.cell)}>{avgTotal}</div>
             </div>
           );
         })}
