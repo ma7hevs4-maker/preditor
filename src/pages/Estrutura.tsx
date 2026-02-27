@@ -182,10 +182,32 @@ const Estrutura = () => {
 
   const saveSingleDay = async (date: Date) => {
     const ds = format(date, "yyyy-MM-dd");
+
+    // Derive teams/lossTeams from typeData (source of truth)
+    const BT_ONLY_SET = new Set(BT_ONLY_TYPES as readonly string[]);
+    const EXCLUDED_SET = new Set(EXCLUDED_TYPES as readonly string[]);
+    const derivedTeams: number[] = Array(24).fill(0);
+    const derivedLossTeams: number[] = Array(24).fill(0);
+    for (let h = 0; h < 24; h++) {
+      let total = 0;
+      let btOnly = 0;
+      TEAM_TYPES.forEach(type => {
+        const val = typeData[type]?.[h] ?? 0;
+        if (!EXCLUDED_SET.has(type)) {
+          total += val;
+        }
+        if (BT_ONLY_SET.has(type)) {
+          btOnly += val;
+        }
+      });
+      derivedTeams[h] = total;
+      derivedLossTeams[h] = btOnly;
+    }
+
     const planResult = await upsertPlan.mutateAsync({
       base_id: selectedBaseId,
       plan_date: ds,
-      ...teamsArrayToPlanFields(teams, lossTeams),
+      ...teamsArrayToPlanFields(derivedTeams, derivedLossTeams),
     } as any);
 
     // Save type entries
