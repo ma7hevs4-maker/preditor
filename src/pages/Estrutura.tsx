@@ -251,11 +251,13 @@ const Estrutura = () => {
     setSavingStructure(true);
     try {
       // Build structure from current teams/lossTeams
-      const structureFields: Record<string, number> = {};
+      const structureFields: Record<string, any> = {};
       for (let h = 0; h < 24; h++) {
         structureFields[`teams_hour_${h}`] = teams[h] || 0;
         structureFields[`loss_teams_hour_${h}`] = lossTeams[h] || 0;
       }
+      // Include type data snapshot
+      structureFields.type_data_snapshot = typeData;
       await addTeamStructure.mutateAsync({
         base_id: selectedBaseId,
         name: structureName.trim(),
@@ -277,6 +279,15 @@ const Estrutura = () => {
     if (!structure) return;
     setTeams(structureToTeamsArray(structure));
     setLossTeams(structureToLossTeamsArray(structure));
+    // Restore type data from snapshot if available
+    const snapshot = (structure as any).type_data_snapshot as Record<string, number[]> | null;
+    if (snapshot) {
+      const newTypeData: Record<string, number[]> = {};
+      TEAM_TYPES.forEach(t => {
+        newTypeData[t] = snapshot[t] ? [...snapshot[t]] : Array(24).fill(0);
+      });
+      setTypeData(newTypeData);
+    }
     setIsDirty(true);
     toast({ title: "Estrutura copiada", description: `"${structure.name}" aplicada.` });
   };

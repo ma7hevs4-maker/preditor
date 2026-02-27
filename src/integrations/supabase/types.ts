@@ -623,6 +623,7 @@ export type Database = {
           teams_hour_7: number
           teams_hour_8: number
           teams_hour_9: number
+          type_data_snapshot: Json | null
           updated_at: string
         }
         Insert: {
@@ -679,6 +680,7 @@ export type Database = {
           teams_hour_7?: number
           teams_hour_8?: number
           teams_hour_9?: number
+          type_data_snapshot?: Json | null
           updated_at?: string
         }
         Update: {
@@ -735,6 +737,7 @@ export type Database = {
           teams_hour_7?: number
           teams_hour_8?: number
           teams_hour_9?: number
+          type_data_snapshot?: Json | null
           updated_at?: string
         }
         Relationships: [
