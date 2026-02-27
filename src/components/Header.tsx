@@ -49,10 +49,13 @@ export const Header = ({
   isSaving,
   weatherOverride,
   onWeatherOverrideChange,
+  operationalOverride,
+  onOperationalOverrideChange,
   totalIncidents = 0
 }: HeaderProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weatherOverrideOpen, setWeatherOverrideOpen] = useState(false);
+  const [operationalOverrideOpen, setOperationalOverrideOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
