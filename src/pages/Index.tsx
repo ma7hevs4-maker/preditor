@@ -343,6 +343,8 @@ const Index = () => {
           isSaving={saveSimulation.isPending}
           weatherOverride={weatherOverride}
           onWeatherOverrideChange={setWeatherOverride}
+          operationalOverride={operationalOverride}
+          onOperationalOverrideChange={setOperationalOverride}
           totalIncidents={hasSimulationInput ? finalTotalBacklog : 0}
         />
 

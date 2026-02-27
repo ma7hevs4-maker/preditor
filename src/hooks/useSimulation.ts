@@ -343,5 +343,5 @@ export const useSimulation = (
     }
 
     return result;
-  }, [config, historicalData, weatherData, systemSettings, weatherImpactEnabled, weatherTriggers]);
+  }, [config, historicalData, weatherData, systemSettings, weatherImpactEnabled, weatherTriggers, operationalOverride]);
 };

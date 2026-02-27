@@ -208,6 +208,17 @@ export const Header = ({
           horizonHours={config.horizonHours}
         />
       )}
+
+      {/* Operational Override Dialog */}
+      {onOperationalOverrideChange && operationalOverride && (
+        <OperationalOverrideDialog
+          open={operationalOverrideOpen}
+          onOpenChange={setOperationalOverrideOpen}
+          override={operationalOverride}
+          onOverrideChange={onOperationalOverrideChange}
+          horizonHours={config.horizonHours}
+        />
+      )}
     </header>
   );
 };
