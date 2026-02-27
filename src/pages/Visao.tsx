@@ -492,7 +492,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-foreground">{val}</span>
               </div>
@@ -502,7 +502,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-muted-foreground/80">{val}</span>
               </div>
@@ -512,7 +512,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-foreground">{val}</span>
               </div>
@@ -522,7 +522,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-warning">{val}</span>
               </div>
