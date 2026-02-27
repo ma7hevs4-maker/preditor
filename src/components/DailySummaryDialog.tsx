@@ -229,21 +229,30 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                     </div>
                   </div>
 
-                  {/* Gatilhos */}
+                  {/* Gatilhos - Clickable */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider">
                       <CloudRain className="w-3 h-3" />
                       Gatilhos
                     </div>
-                    <div className="bg-amber-500/10 rounded p-2">
+                    <button
+                      onClick={() => toggleTriggerExpand(summary.day)}
+                      className="w-full bg-amber-500/10 rounded p-2 hover:bg-amber-500/20 transition-colors cursor-pointer text-left"
+                    >
                       <div className="flex justify-between items-center">
                         <p className="text-xs text-muted-foreground">Horas</p>
-                        <p className={cn(
-                          "font-mono font-semibold text-sm",
-                          summary.triggersActive > 0 ? "text-amber-400" : "text-muted-foreground"
-                        )}>
-                          {summary.triggersActive}h
-                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className={cn(
+                            "font-mono font-semibold text-sm",
+                            summary.triggersActive > 0 ? "text-amber-400" : "text-muted-foreground"
+                          )}>
+                            {summary.triggersActive}h
+                          </p>
+                          {expandedTriggers.has(summary.day) 
+                            ? <ChevronUp className="w-3 h-3 text-muted-foreground" />
+                            : <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                          }
+                        </div>
                       </div>
                       {summary.triggersActive > 0 && (
                         <div className="mt-1 pt-1 border-t border-amber-500/20">
@@ -254,7 +263,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                           </div>
                         </div>
                       )}
-                    </div>
+                    </button>
                   </div>
 
                   {/* Entrada Adicional por Clima */}
