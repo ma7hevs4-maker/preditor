@@ -132,6 +132,36 @@ export const SimulationEditDialog = ({
 
         <ScrollArea className="max-h-[60vh] pr-4">
           <div className="space-y-6">
+            {/* Backlog atual */}
+            <div className="p-3 rounded-lg border border-border bg-secondary/20 space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Incidentes Atuais (Backlog Inicial)
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Backlog BT</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={btBacklog}
+                    onChange={(e) => setBtBacklog(parseInt(e.target.value) || 0)}
+                    className="h-9 font-mono bg-secondary border-border"
+                    onFocus={(e) => e.target.select()}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Backlog MT</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={mtBacklog}
+                    onChange={(e) => setMtBacklog(parseInt(e.target.value) || 0)}
+                    className="h-9 font-mono bg-secondary border-border"
+                    onFocus={(e) => e.target.select()}
+                  />
+                </div>
+              </div>
+            </div>
             {uniqueDays.map((dia) => {
               const dayHours = getHoursByDay(dia);
               if (dayHours.length === 0) return null;
