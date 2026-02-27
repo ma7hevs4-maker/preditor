@@ -50,7 +50,16 @@ interface DaySummary {
 
 export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedTriggers, setExpandedTriggers] = useState<Set<number>>(new Set());
 
+  const toggleTriggerExpand = (day: number) => {
+    setExpandedTriggers(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  };
   // Group data by day and calculate summaries
   const dailySummaries: DaySummary[] = [];
   
