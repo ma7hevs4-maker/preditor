@@ -445,7 +445,9 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       regionalEntries.forEach(e => {
         if (e.team_type === type) arr[e.hour] += e.quantity;
       });
-      result[type] = avg(arr, allHours);
+      // Sum of turno averages (avg A + avg B + avg C)
+      const sumOfTurnoAvgs = TURNOS.reduce((sum, turno) => sum + avg(arr, turno.hours), 0);
+      result[type] = sumOfTurnoAvgs;
     });
     return result;
   }, [regionalEntries]);
