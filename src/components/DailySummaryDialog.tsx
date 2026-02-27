@@ -18,6 +18,15 @@ interface DailySummaryDialogProps {
   simulationData: SimulationRow[];
 }
 
+// Rain thresholds matching database triggers
+const getFaixaChuvaLabel = (mm: number): string => {
+  if (mm < 0.2) return "Seco";
+  if (mm < 3.0) return "Fraca";
+  if (mm < 6.0) return "Moderada";
+  if (mm < 10.0) return "Forte";
+  return "Muito Forte";
+};
+
 interface DaySummary {
   day: number;
   dayLabel: string;
