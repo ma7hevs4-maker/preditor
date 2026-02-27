@@ -250,11 +250,14 @@ const Estrutura = () => {
     if (!structureName.trim() || !selectedBaseId) return;
     setSavingStructure(true);
     try {
-      // Build structure from current teams/lossTeams
+      // Build structure from current type grid (source of truth in this screen)
       const structureFields: Record<string, any> = {};
       for (let h = 0; h < 24; h++) {
-        structureFields[`teams_hour_${h}`] = teams[h] || 0;
-        structureFields[`loss_teams_hour_${h}`] = lossTeams[h] || 0;
+        const totalHour = TEAM_TYPES.reduce((sum, type) => sum + (typeData[type]?.[h] ?? 0), 0);
+        const perdasHour = typeData["Perdas"]?.[h] ?? 0;
+
+        structureFields[`teams_hour_${h}`] = totalHour;
+        structureFields[`loss_teams_hour_${h}`] = perdasHour;
       }
       // Include type data snapshot
       structureFields.type_data_snapshot = typeData;
