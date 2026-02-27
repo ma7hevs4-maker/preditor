@@ -107,13 +107,13 @@ export const SimulationEditDialog = ({
   };
 
   const handleSave = () => {
-    // Recalculate backlogs based on edited team allocations
+    const updatedEntry = { ...entry, bt_initial_backlog: btBacklog, mt_initial_backlog: mtBacklog };
     const recalculated = recalculateSimulation(
       editedResults,
-      entry.bt_initial_backlog,
-      entry.mt_initial_backlog
+      btBacklog,
+      mtBacklog
     );
-    onSave(entry, recalculated);
+    onSave(updatedEntry, recalculated);
     onOpenChange(false);
   };
 
