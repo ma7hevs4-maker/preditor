@@ -925,7 +925,7 @@ export const ConfigurationForm = ({
                         </Button>
                       </PopoverContent>
                     </Popover>
-                      type="button"
+                    <Button
                       variant="outline"
                       size="sm"
                       onClick={() => copyFromDay1(2)}
