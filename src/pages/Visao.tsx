@@ -459,7 +459,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       )}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-foreground">{regional.label}</h3>
+        <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
           <Badge variant="secondary" className="text-xs">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
         ) : (
