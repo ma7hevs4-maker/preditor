@@ -5,6 +5,7 @@ import { SystemSetting } from "./useSystemSettings";
 import { WeatherTrigger } from "./useWeatherTriggers";
 import { calculateWeatherUplift, calculateActiveTriggersUplift } from "./useWeatherUplift";
 import { calculateDecayInfo, DecayInfo, setLastRainUplifts, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
+import { OperationalOverride } from "@/components/OperationalOverrideDialog";
 
 export interface SimulationConfig {
   baseId: string;
