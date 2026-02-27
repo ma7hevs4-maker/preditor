@@ -7,6 +7,7 @@ import { PlanningTable } from "@/components/PlanningTable";
 import { IncidentChart } from "@/components/IncidentChart";
 import { ConfigPanel } from "@/components/ConfigPanel";
 import { WeatherOverride } from "@/components/WeatherOverrideDialog";
+import { OperationalOverride } from "@/components/OperationalOverrideDialog";
 import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
 
 import { toast } from "@/hooks/use-toast";
