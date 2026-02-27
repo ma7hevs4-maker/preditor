@@ -8,6 +8,8 @@ export const TEAM_TYPES = [
   "LV Obras",
   "MK Manutenção",
   "MK Obras",
+  "Apoio UTS",
+  "Apoio UTN",
   "Corte e Religa",
   "Perdas",
   "Reguladas",

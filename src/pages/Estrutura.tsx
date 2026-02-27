@@ -286,10 +286,12 @@ const Estrutura = () => {
     return new Set(monthPlans.map(p => p.plan_date));
   }, [monthPlans]);
 
-  // BT only: Perdas, Corte e Religa
+  // BT only: Perdas, Corte e Religa, Reguladas
   const BT_ONLY_TYPES = ["Perdas", "Corte e Religa", "Reguladas"] as const;
   // Excluded from calculations: LV and MK
   const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
+  // Apoio types count for all incidents (not excluded, not BT only)
+  // "Apoio UTS" and "Apoio UTN" are automatically included in totalAllIncidents since they're not in EXCLUDED or BT_ONLY
 
   const totalAllIncidents = TEAM_TYPES
     .filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))

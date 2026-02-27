@@ -25,8 +25,11 @@ type UT = "UTS" | "UTN";
 
 const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
 const LV_MK_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras"] as const;
+const APOIO_TYPES = ["Apoio UTS", "Apoio UTN"] as const;
 const BT_ONLY_TYPES = ["Corte e Religa", "Perdas", "Reguladas"] as const;
-const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...BT_ONLY_TYPES] as const;
+const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES] as const;
+// Types counted for all incidents (not just BT)
+const ALL_INCIDENTS_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as const;
 
 // ---------- Data hooks ----------
 const useAllPlansForDate = (date: string) =>
