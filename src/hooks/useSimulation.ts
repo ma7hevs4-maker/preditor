@@ -138,7 +138,7 @@ export const useSimulation = (
       }
 
       // Get historical data for this hour
-      const historical = historicalData.find((h) => h.hour === hora) || {
+      const historicalRaw = historicalData.find((h) => h.hour === hora) || {
         bt_productivity: 1,
         bt_entry_rate: 10,
         bt_operator_removal: 0.5,
@@ -146,6 +146,19 @@ export const useSimulation = (
         mt_entry_rate: 5,
         mt_operator_removal: 0.2,
       };
+
+      // Apply operational override if active
+      const opKey = `${dia + 1}_${hora}`;
+      const opOverride = operationalOverride?.overrides?.[opKey];
+      const historical = opOverride ? {
+        ...historicalRaw,
+        bt_productivity: historicalRaw.bt_productivity * (1 + opOverride.bt_productivity_pct / 100),
+        mt_productivity: historicalRaw.mt_productivity * (1 + opOverride.mt_productivity_pct / 100),
+        bt_entry_rate: historicalRaw.bt_entry_rate * (1 + opOverride.bt_entry_rate_pct / 100),
+        mt_entry_rate: historicalRaw.mt_entry_rate * (1 + opOverride.mt_entry_rate_pct / 100),
+        bt_operator_removal: historicalRaw.bt_operator_removal * (1 + opOverride.bt_operator_removal_pct / 100),
+        mt_operator_removal: historicalRaw.mt_operator_removal * (1 + opOverride.mt_operator_removal_pct / 100),
+      } : historicalRaw;
 
       // Get weather for this hour
       const weather = weatherData?.[i] || {
