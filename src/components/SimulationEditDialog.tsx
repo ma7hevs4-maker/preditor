@@ -118,7 +118,8 @@ export const SimulationEditDialog = ({
     const recalculated = recalculateSimulation(
       editedResults,
       btBacklog,
-      mtBacklog
+      mtBacklog,
+      remotoPercent
     );
     onSave(updatedEntry, recalculated);
     onOpenChange(false);
