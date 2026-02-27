@@ -78,6 +78,12 @@ const Index = () => {
   // Weather impact toggle
   const { enabled: weatherImpactEnabled, setEnabled: setWeatherImpactEnabled } = useWeatherImpact();
 
+  // Operational override for simulation testing
+  const [operationalOverride, setOperationalOverride] = useState<OperationalOverride>({
+    enabled: false,
+    overrides: {},
+  });
+
   // Weather override for simulation testing
   const [weatherOverride, setWeatherOverride] = useState<WeatherOverride>({
     enabled: false,
