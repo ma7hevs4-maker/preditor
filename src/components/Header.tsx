@@ -133,6 +133,22 @@ export const Header = ({
             </Button>
           )}
 
+          {/* Simulate Operational Button - Icon only */}
+          {onOperationalOverrideChange && operationalOverride && (
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(
+                "bg-secondary/50 border-border hover:bg-secondary",
+                operationalOverride.enabled && "border-primary text-primary hover:text-primary"
+              )}
+              onClick={() => setOperationalOverrideOpen(true)}
+              title={operationalOverride.enabled ? "Operacional Simulado (ativo)" : "Simular Operacional"}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </Button>
+          )}
+
           {/* Weather Provider Switch */}
           {onWeatherProviderChange && (
             <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-lg">
