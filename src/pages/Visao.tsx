@@ -360,15 +360,20 @@ const RegionalDetailDialog = ({
             </div>
 
             {/* 24h summary footer */}
-            <div className="flex gap-4 mt-3 pt-3 border-t border-border/30 flex-wrap">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Média equipes totais (24h):</span>
-                <span className="font-bold text-foreground">{avgTotalTeams24h}</span>
+            <div className="flex gap-6 mt-3 pt-3 border-t border-border/30 flex-wrap">
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
+                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
               </div>
-              <div className="w-px h-4 bg-border self-center" />
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Média equipes BT (24h):</span>
-                <span className="font-bold text-warning">{avgBT24h}</span>
+              <div className="w-px bg-border/50 self-stretch" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
+                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+              </div>
+              <div className="w-px bg-border/50 self-stretch" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
+                <span className="font-bold text-sm text-warning">{avgBT24h}</span>
               </div>
             </div>
           </>
