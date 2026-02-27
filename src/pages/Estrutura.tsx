@@ -251,11 +251,13 @@ const Estrutura = () => {
     setSavingStructure(true);
     try {
       // Build structure from current teams/lossTeams
-      const structureFields: Record<string, number> = {};
+      const structureFields: Record<string, any> = {};
       for (let h = 0; h < 24; h++) {
         structureFields[`teams_hour_${h}`] = teams[h] || 0;
         structureFields[`loss_teams_hour_${h}`] = lossTeams[h] || 0;
       }
+      // Include type data snapshot
+      structureFields.type_data_snapshot = typeData;
       await addTeamStructure.mutateAsync({
         base_id: selectedBaseId,
         name: structureName.trim(),
