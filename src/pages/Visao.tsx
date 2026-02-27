@@ -411,7 +411,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
 
   // Per-type 24h averages (all types including LV/MK)
   const typeAvg24h = useMemo(() => {
-    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES];
+    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES];
     const result: Record<string, number> = {};
     allTypes.forEach(type => {
       const arr = Array(24).fill(0);
