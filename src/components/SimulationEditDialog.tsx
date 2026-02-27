@@ -36,10 +36,16 @@ export const SimulationEditDialog = ({
   onSave,
 }: SimulationEditDialogProps) => {
   const [editedResults, setEditedResults] = useState<SimulationRow[]>([]);
+  const [btBacklog, setBtBacklog] = useState(0);
+  const [mtBacklog, setMtBacklog] = useState(0);
 
   useEffect(() => {
     if (entry?.results_snapshot) {
       setEditedResults([...entry.results_snapshot]);
+    }
+    if (entry) {
+      setBtBacklog(entry.bt_initial_backlog);
+      setMtBacklog(entry.mt_initial_backlog);
     }
   }, [entry]);
 
