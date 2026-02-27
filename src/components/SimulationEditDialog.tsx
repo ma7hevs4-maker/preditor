@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { SimulationHistoryEntry } from "@/hooks/useSimulationHistory";
 import { SimulationRow } from "@/hooks/useSimulation";
 import { recalculateSimulation } from "@/utils/recalculateSimulation";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface SimulationEditDialogProps {
   open: boolean;
@@ -38,6 +39,12 @@ export const SimulationEditDialog = ({
   const [editedResults, setEditedResults] = useState<SimulationRow[]>([]);
   const [btBacklog, setBtBacklog] = useState(0);
   const [mtBacklog, setMtBacklog] = useState(0);
+  const { data: settings } = useSystemSettings();
+
+  const remotoPercent = (() => {
+    const setting = settings?.find(s => s.key === "operator_removal_percent");
+    return setting ? parseFloat(setting.value) / 100 : 0.1;
+  })();
 
   useEffect(() => {
     if (entry?.results_snapshot) {
@@ -111,7 +118,8 @@ export const SimulationEditDialog = ({
     const recalculated = recalculateSimulation(
       editedResults,
       btBacklog,
-      mtBacklog
+      mtBacklog,
+      remotoPercent
     );
     onSave(updatedEntry, recalculated);
     onOpenChange(false);
