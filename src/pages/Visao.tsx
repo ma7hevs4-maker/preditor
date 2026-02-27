@@ -467,7 +467,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         )}
       </div>
 
-      <p className="text-[10px] text-muted-foreground mb-2 h-4 truncate">
+      <p className="text-xs text-muted-foreground mb-2 h-4 truncate">
         {hasSucursais ? regional.sucursais.map(s => s.name).join(" · ") : ""}
       </p>
 
