@@ -29,6 +29,8 @@ interface HeaderProps {
   isSaving?: boolean;
   weatherOverride?: WeatherOverride;
   onWeatherOverrideChange?: (override: WeatherOverride) => void;
+  operationalOverride?: OperationalOverride;
+  onOperationalOverrideChange?: (override: OperationalOverride) => void;
   totalIncidents?: number;
 }
 
