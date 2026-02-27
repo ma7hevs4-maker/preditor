@@ -459,15 +459,15 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       )}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-foreground">{regional.label}</h3>
+        <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-xs">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
+          <Badge variant="secondary" className="text-sm">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
       </div>
 
-      <p className="text-[10px] text-muted-foreground mb-2 h-4 truncate">
+      <p className="text-xs text-muted-foreground mb-2 h-4 truncate">
         {hasSucursais ? regional.sucursais.map(s => s.name).join(" · ") : ""}
       </p>
 
@@ -478,8 +478,8 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
           const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
-              <div className={cn("text-[10px] font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className="text-sm font-bold text-foreground">{avgTotal}</div>
+              <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
+              <div className="text-base font-bold text-foreground">{avgTotal}</div>
             </div>
           );
         })}
@@ -492,7 +492,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-foreground">{val}</span>
               </div>
@@ -502,7 +502,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-muted-foreground/80">{val}</span>
               </div>
@@ -512,7 +512,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-foreground">{val}</span>
               </div>
@@ -522,7 +522,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
             const val = typeAvg24h[type] || 0;
             if (val === 0) return null;
             return (
-              <div key={type} className="flex justify-between text-[10px]">
+              <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
                 <span className="font-semibold text-warning">{val}</span>
               </div>
@@ -533,20 +533,20 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
 
       {/* 24h summary */}
       {hasData && (
-        <div className="border-t border-border/30 pt-2 flex justify-between text-[10px]">
+        <div className="border-t border-border/30 pt-2 flex justify-between text-xs">
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. Totais (24h)</span>
-            <span className="font-bold text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. MT (24h)</span>
-            <span className="font-bold text-foreground">{avgTotalTeams24h}</span>
+            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. BT (24h)</span>
-            <span className="font-bold text-warning">{avgBT24h}</span>
+            <span className="font-bold text-sm text-warning">{avgBT24h}</span>
           </div>
         </div>
       )}
