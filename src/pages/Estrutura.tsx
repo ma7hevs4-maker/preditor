@@ -279,6 +279,15 @@ const Estrutura = () => {
     if (!structure) return;
     setTeams(structureToTeamsArray(structure));
     setLossTeams(structureToLossTeamsArray(structure));
+    // Restore type data from snapshot if available
+    const snapshot = (structure as any).type_data_snapshot as Record<string, number[]> | null;
+    if (snapshot) {
+      const newTypeData: Record<string, number[]> = {};
+      TEAM_TYPES.forEach(t => {
+        newTypeData[t] = snapshot[t] ? [...snapshot[t]] : Array(24).fill(0);
+      });
+      setTypeData(newTypeData);
+    }
     setIsDirty(true);
     toast({ title: "Estrutura copiada", description: `"${structure.name}" aplicada.` });
   };
