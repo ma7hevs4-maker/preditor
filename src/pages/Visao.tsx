@@ -355,6 +355,35 @@ const RegionalDetailDialog = ({
                       </tr>
                     );
                   })}
+                  {/* Separator + Total Processos row */}
+                  <tr><td colSpan={100}><div className="border-t border-border/30 my-1" /></td></tr>
+                  {(() => {
+                    const COUNTED_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES];
+                    const totalRow = Array(24).fill(0);
+                    COUNTED_TYPES.forEach(type => {
+                      const r = typePerHour[type] || [];
+                      r.forEach((v, h) => { totalRow[h] += v; });
+                    });
+                    return (
+                      <tr className="font-semibold">
+                        <td className="py-1 pr-2 text-foreground sticky left-0 bg-background z-10">Total Processos</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                              ))}
+                              <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>
+                                {avg(totalRow, turno.hours)}
+                              </td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>
