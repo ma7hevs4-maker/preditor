@@ -111,6 +111,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
         hoursInDay: rows.length,
         finalBacklogBt: Math.round(lastRow?.incidentes_bt_saldo ?? 0),
         finalBacklogMt: Math.round(lastRow?.incidentes_mt_saldo ?? 0),
+        rows: sortedRows,
       };
       
       dailySummaries.push(summary);
