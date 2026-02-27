@@ -73,7 +73,8 @@ export const useSimulation = (
   weatherData: WeatherHour[] | undefined,
   systemSettings?: SystemSetting[],
   weatherImpactEnabled: boolean = true,
-  weatherTriggers?: WeatherTrigger[]
+  weatherTriggers?: WeatherTrigger[],
+  operationalOverride?: OperationalOverride
 ) => {
   return useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
