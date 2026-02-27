@@ -51,29 +51,29 @@ const TURNO_COLORS = {
   A: {
     bg: "bg-blue-500/10",
     border: "border-blue-500/30",
-    header: "bg-blue-500/20 text-blue-400",
-    cell: "text-blue-300",
-    badge: "bg-blue-500/20 border border-blue-500/30 text-blue-300",
-    avgCell: "bg-blue-500/20 text-blue-300 font-bold",
-    avgHeader: "bg-blue-500/30 text-blue-300 font-bold",
+    header: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+    cell: "text-blue-600 dark:text-blue-300",
+    badge: "bg-blue-500/20 border border-blue-500/30 text-blue-600 dark:text-blue-300",
+    avgCell: "bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold",
+    avgHeader: "bg-blue-500/25 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 font-bold",
   },
   B: {
     bg: "bg-amber-500/10",
     border: "border-amber-500/30",
-    header: "bg-amber-500/20 text-amber-400",
-    cell: "text-amber-300",
-    badge: "bg-amber-500/20 border border-amber-500/30 text-amber-300",
-    avgCell: "bg-amber-500/20 text-amber-300 font-bold",
-    avgHeader: "bg-amber-500/30 text-amber-300 font-bold",
+    header: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
+    cell: "text-amber-600 dark:text-amber-300",
+    badge: "bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300",
+    avgCell: "bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold",
+    avgHeader: "bg-amber-500/25 dark:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold",
   },
   C: {
     bg: "bg-purple-500/10",
     border: "border-purple-500/30",
-    header: "bg-purple-500/20 text-purple-400",
-    cell: "text-purple-300",
-    badge: "bg-purple-500/20 border border-purple-500/30 text-purple-300",
-    avgCell: "bg-purple-500/20 text-purple-300 font-bold",
-    avgHeader: "bg-purple-500/30 text-purple-300 font-bold",
+    header: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
+    cell: "text-purple-600 dark:text-purple-300",
+    badge: "bg-purple-500/20 border border-purple-500/30 text-purple-600 dark:text-purple-300",
+    avgCell: "bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold",
+    avgHeader: "bg-purple-500/25 dark:bg-purple-500/30 text-purple-700 dark:text-purple-300 font-bold",
   },
 } as const;
 
@@ -514,7 +514,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className="text-base font-bold text-foreground">{avgTotal}</div>
+              <div className={cn("text-base font-bold", colors.cell)}>{avgTotal}</div>
             </div>
           );
         })}
