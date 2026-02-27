@@ -422,7 +422,7 @@ const Estrutura = () => {
                   selected={selectedDate}
                   onSelect={(d) => { if (d) { setSelectedDate(d); setIsCalendarViewOpen(false); } }}
                   locale={ptBR}
-                  month={selectedDate}
+                  
                   modifiers={{ planned: (d) => plannedDates.has(format(d, "yyyy-MM-dd")) }}
                   modifiersClassNames={{ planned: "bg-primary/20 text-primary font-bold" }}
                   className={cn("p-3 pointer-events-auto")}
