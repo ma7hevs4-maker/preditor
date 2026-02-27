@@ -317,7 +317,107 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                   </div>
                 </div>
 
-                {/* Summary footer */}
+                {/* Expanded Hourly Trigger Details */}
+                {expandedTriggers.has(summary.day) && (
+                  <div className="mt-4 border border-border/50 rounded-lg overflow-hidden">
+                    <div className="bg-secondary/40 px-3 py-2 flex items-center gap-2 border-b border-border/30">
+                      <CloudRain className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-semibold text-foreground">
+                        Impacto Climático por Hora — {summary.dayLabel}
+                      </span>
+                    </div>
+                    <ScrollArea className="max-h-[300px]">
+                      <table className="w-full text-xs">
+                        <thead className="bg-secondary/30 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-1.5 text-left text-muted-foreground font-medium">Hora</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Chuva</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Vento</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Rajada</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Temp</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Faixa</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Gatilho</th>
+                            <th className="px-2 py-1.5 text-center text-primary font-medium">BT %</th>
+                            <th className="px-2 py-1.5 text-center text-purple-400 font-medium">MT %</th>
+                            <th className="px-2 py-1.5 text-center text-muted-foreground font-medium">Decay</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {summary.rows.map((row) => {
+                            const hasActive = row.uplift_bt_raw_pct > 0 || row.uplift_mt_raw_pct > 0;
+                            const hasAnyImpact = row.uplift_bt_pct > 0 || row.uplift_mt_pct > 0;
+                            return (
+                              <tr
+                                key={`${row.dia}_${row.hora}`}
+                                className={cn(
+                                  "border-t border-border/10 transition-colors",
+                                  hasActive && "bg-amber-500/5",
+                                  !hasActive && hasAnyImpact && "bg-amber-500/[0.02]"
+                                )}
+                              >
+                                <td className="px-2 py-1.5 font-mono font-medium text-foreground">
+                                  {String(row.hora).padStart(2, "0")}:00
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono",
+                                  row.precip_mm >= 0.2 ? "text-blue-400" : "text-muted-foreground"
+                                )}>
+                                  {row.precip_mm.toFixed(1)}mm
+                                </td>
+                                <td className="px-2 py-1.5 text-center font-mono text-muted-foreground">
+                                  {row.wind_kmh.toFixed(0)}
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono",
+                                  row.gust_kmh >= 30 ? "text-orange-400" : "text-muted-foreground"
+                                )}>
+                                  {row.gust_kmh.toFixed(0)}
+                                </td>
+                                <td className="px-2 py-1.5 text-center font-mono text-muted-foreground">
+                                  {row.temp_c.toFixed(0)}°
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center",
+                                  row.precip_mm >= 6 ? "text-red-400" : row.precip_mm >= 0.2 ? "text-blue-400" : "text-muted-foreground"
+                                )}>
+                                  {getFaixaChuvaLabel(row.precip_mm)}
+                                </td>
+                                <td className="px-2 py-1.5 text-center">
+                                  <span className={cn(
+                                    "inline-block w-2 h-2 rounded-full",
+                                    hasActive ? "bg-amber-400" : hasAnyImpact ? "bg-amber-400/30" : "bg-muted-foreground/20"
+                                  )} />
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono font-medium",
+                                  row.uplift_bt_pct > 0 ? "text-primary" : "text-muted-foreground"
+                                )}>
+                                  {row.uplift_bt_pct > 0 ? `+${row.uplift_bt_pct.toFixed(0)}%` : "—"}
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono font-medium",
+                                  row.uplift_mt_pct > 0 ? "text-purple-400" : "text-muted-foreground"
+                                )}>
+                                  {row.uplift_mt_pct > 0 ? `+${row.uplift_mt_pct.toFixed(0)}%` : "—"}
+                                </td>
+                                <td className={cn(
+                                  "px-2 py-1.5 text-center font-mono",
+                                  row.tslr !== null && row.tslr > 0 ? "text-amber-400" : "text-muted-foreground"
+                                )}>
+                                  {row.tslr !== null && row.tslr > 0
+                                    ? `${(row.decayMultiplier * 100).toFixed(0)}%`
+                                    : "—"
+                                  }
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </ScrollArea>
+                  </div>
+                )}
+
                 <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-4 gap-4 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Balanço BT (entrada - saídas)</p>
