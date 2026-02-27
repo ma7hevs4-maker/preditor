@@ -358,7 +358,7 @@ const RegionalDetailDialog = ({
                   {/* Separator + Total Processos row */}
                   <tr><td colSpan={100}><div className="border-t border-border/30 my-1" /></td></tr>
                   {(() => {
-                    const COUNTED_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES];
+                    const COUNTED_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES];
                     const totalRow = Array(24).fill(0);
                     COUNTED_TYPES.forEach(type => {
                       const r = typePerHour[type] || [];
