@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { CalendarIcon, ChevronLeft, ChevronRight, Eye, LayoutGrid, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
