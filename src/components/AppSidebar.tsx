@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
+  { title: "Central Climática", url: "/clima", icon: CloudSun },
   { title: "Simulação", url: "/", icon: Zap },
   { title: "Estrutura", url: "/estrutura", icon: Users },
   { title: "Visão", url: "/visao", icon: Eye },
