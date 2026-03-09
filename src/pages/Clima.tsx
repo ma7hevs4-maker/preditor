@@ -1,15 +1,18 @@
 import { useState, useMemo } from "react";
-import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, X, Clock, Droplets, Info } from "lucide-react";
+import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info } from "lucide-react";
 import { useBases, Base } from "@/hooks/useBases";
 import { useWeather, WeatherHour } from "@/hooks/useWeather";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherTriggers, isTriggerActive, WeatherTrigger } from "@/hooks/useWeatherTriggers";
+import { useHistoricalData } from "@/hooks/useHistoricalData";
 import { REGIONAIS } from "@/data/basesConfig";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { WeatherHourDetailDialog } from "@/components/clima/WeatherHourDetailDialog";
+import { translateWeatherDescription } from "@/utils/weatherTranslations";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -36,6 +39,16 @@ function getWindLevel(kmh: number) {
   return { label: "Leve", cls: "text-muted-foreground" };
 }
 
+function getTriggerNameColor(trigger: WeatherTrigger) {
+  const name = trigger.name.toLowerCase();
+  if (name.includes("muito forte")) return "text-destructive";
+  if (name.includes("forte")) return "text-warning";
+  if (name.includes("moderada") || name.includes("moderado")) return "text-orange-500 dark:text-orange-400";
+  if (name.includes("fraca") || name.includes("leve")) return "text-blue-500 dark:text-blue-400";
+  if (name.includes("frio")) return "text-cyan-500 dark:text-cyan-400";
+  return "text-warning";
+}
+
 // Hourly detail dialog for a base
 function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, selectedDay, provider }: {
   open: boolean;
@@ -47,8 +60,9 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
   provider: string;
 }) {
   const providerInfo = PROVIDER_LABELS[provider] || PROVIDER_LABELS.openmeteo;
+  const [selectedHour, setSelectedHour] = useState<WeatherHour | null>(null);
+  const { data: historicalData } = useHistoricalData(base.id);
 
-  // Build hour-by-hour trigger map
   const hourTriggerMap = useMemo(() => {
     const map = new Map<number, WeatherTrigger[]>();
     dayHours.forEach(h => {
@@ -58,177 +72,195 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
     return map;
   }, [dayHours, triggers]);
 
-  // Trigger summary: group by trigger, show hour ranges
   const triggerRanges = useMemo(() => {
-    const triggerMap = new Map<string, { trigger: WeatherTrigger; hours: number[]; }>();
+    const triggerMap = new Map<string, { trigger: WeatherTrigger; hours: number[] }>();
     dayHours.forEach(h => {
       const active = hourTriggerMap.get(h.hour) || [];
       active.forEach(t => {
         const existing = triggerMap.get(t.id);
-        if (existing) {
-          existing.hours.push(h.hour);
-        } else {
-          triggerMap.set(t.id, { trigger: t, hours: [h.hour] });
-        }
+        if (existing) existing.hours.push(h.hour);
+        else triggerMap.set(t.id, { trigger: t, hours: [h.hour] });
       });
     });
 
     return Array.from(triggerMap.values()).map(({ trigger, hours }) => {
-      // Find consecutive ranges
       const ranges: string[] = [];
       let start = hours[0], end = hours[0];
       for (let i = 1; i < hours.length; i++) {
-        if (hours[i] === end + 1) {
-          end = hours[i];
-        } else {
-          ranges.push(start === end ? `${start}h` : `${start}h–${end}h`);
-          start = end = hours[i];
-        }
+        if (hours[i] === end + 1) { end = hours[i]; }
+        else { ranges.push(start === end ? `${start}h` : `${start}h–${end}h`); start = end = hours[i]; }
       }
       ranges.push(start === end ? `${start}h` : `${start}h–${end}h`);
       return { trigger, hours: hours.length, ranges: ranges.join(", ") };
     });
   }, [dayHours, hourTriggerMap]);
 
+  const selectedHourHistorical = useMemo(() => {
+    if (!selectedHour || !historicalData) return null;
+    return historicalData.find(d => d.hour === selectedHour.hour) || null;
+  }, [selectedHour, historicalData]);
+
+  const selectedHourTriggers = useMemo(() => {
+    if (!selectedHour) return [];
+    return hourTriggerMap.get(selectedHour.hour) || [];
+  }, [selectedHour, hourTriggerMap]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] p-0">
-        <DialogHeader className="p-4 pb-2 border-b border-border">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                <CloudSun className="w-5 h-5 text-primary" />
-                {base.name}
-              </DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {format(selectedDay, "EEEE, dd 'de' MMMM", { locale: ptBR })} · Coordenadas: {base.lat.toFixed(4)}, {base.lon.toFixed(4)}
-              </p>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl max-h-[85vh] p-0">
+          <DialogHeader className="p-4 pb-2 border-b border-border">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <CloudSun className="w-5 h-5 text-primary" />
+                  {base.name}
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {format(selectedDay, "EEEE, dd 'de' MMMM", { locale: ptBR })} · Coordenadas: {base.lat.toFixed(4)}, {base.lon.toFixed(4)}
+                </p>
+              </div>
+              <Badge variant="outline" className={cn("text-[10px] gap-1", providerInfo.color)}>
+                <Database className="w-3 h-3" />
+                {providerInfo.label}
+              </Badge>
             </div>
-            <Badge variant="outline" className={cn("text-[10px] gap-1", providerInfo.color)}>
-              <Database className="w-3 h-3" />
-              {providerInfo.label}
-            </Badge>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh]">
-          <div className="p-4 space-y-4">
-            {/* Trigger summary */}
-            {triggerRanges.length > 0 && (
-              <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning" />
-                  <span className="text-sm font-semibold text-foreground">Gatilhos previstos para este dia</span>
-                </div>
-                {triggerRanges.map(({ trigger, hours, ranges }) => (
-                  <div key={trigger.id} className="flex items-center justify-between text-xs bg-card/50 rounded px-3 py-2">
-                    <div>
-                      <span className="font-medium text-foreground">{trigger.name}</span>
-                      {trigger.description && (
-                        <span className="text-muted-foreground ml-1">— {trigger.description}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-muted-foreground whitespace-nowrap">
-                      <span className="font-mono">{hours}h total</span>
-                      <span className="text-[10px]">{ranges}</span>
-                    </div>
+          <ScrollArea className="max-h-[70vh]">
+            <div className="p-4 space-y-4">
+              {/* Trigger summary with colored names */}
+              {triggerRanges.length > 0 && (
+                <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                    <span className="text-sm font-semibold text-foreground">Gatilhos previstos para este dia</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  {triggerRanges.map(({ trigger, hours, ranges }) => (
+                    <div key={trigger.id} className="flex items-center justify-between text-xs bg-card/50 rounded px-3 py-2">
+                      <div>
+                        <span className={cn("font-semibold", getTriggerNameColor(trigger))}>{trigger.name}</span>
+                        {trigger.description && (
+                          <span className="text-muted-foreground ml-1">— {trigger.description}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-muted-foreground whitespace-nowrap">
+                        <span className="font-mono text-foreground font-semibold">{hours}h total</span>
+                        <span className="text-[10px]">{ranges}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {/* Hourly table */}
-            <div className="rounded-lg border border-border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-muted/30 border-b border-border">
-                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-muted/30 z-10">Hora</th>
-                      <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Condição</th>
-                      <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
-                        <div className="flex items-center justify-end gap-1"><Thermometer className="w-3 h-3" />Temp</div>
-                      </th>
-                      <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
-                        <div className="flex items-center justify-end gap-1"><CloudRain className="w-3 h-3" />Chuva</div>
-                      </th>
-                      <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
-                        <div className="flex items-center justify-end gap-1"><Droplets className="w-3 h-3" />Umid.</div>
-                      </th>
-                      <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
-                        <div className="flex items-center justify-end gap-1"><Wind className="w-3 h-3" />Vento</div>
-                      </th>
-                      <th className="text-right px-2 py-2 font-semibold text-muted-foreground">Rajada</th>
-                      <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Gatilhos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dayHours.map((h, i) => {
-                      const rainLvl = getRainLevel(h.precip_mm);
-                      const windLvl = getWindLevel(h.wind_kmh);
-                      const activeTriggers = hourTriggerMap.get(h.hour) || [];
-                      const hasTrigg = activeTriggers.length > 0;
+              {/* Hourly table - clickable rows */}
+              <div className="rounded-lg border border-border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted/30 border-b border-border">
+                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-muted/30 z-10">Hora</th>
+                        <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Condição</th>
+                        <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
+                          <div className="flex items-center justify-end gap-1"><Thermometer className="w-3 h-3" />Temp</div>
+                        </th>
+                        <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
+                          <div className="flex items-center justify-end gap-1"><CloudRain className="w-3 h-3" />Chuva</div>
+                        </th>
+                        <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
+                          <div className="flex items-center justify-end gap-1"><Droplets className="w-3 h-3" />Umid.</div>
+                        </th>
+                        <th className="text-right px-2 py-2 font-semibold text-muted-foreground">
+                          <div className="flex items-center justify-end gap-1"><Wind className="w-3 h-3" />Vento</div>
+                        </th>
+                        <th className="text-right px-2 py-2 font-semibold text-muted-foreground">Rajada</th>
+                        <th className="text-center px-2 py-2 font-semibold text-muted-foreground">Gatilhos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dayHours.map((h, i) => {
+                        const rainLvl = getRainLevel(h.precip_mm);
+                        const windLvl = getWindLevel(h.wind_kmh);
+                        const activeTriggers = hourTriggerMap.get(h.hour) || [];
+                        const hasTrigg = activeTriggers.length > 0;
 
-                      return (
-                        <tr key={i} className={cn(
-                          "border-b border-border/50 transition-colors",
-                          hasTrigg ? "bg-warning/5" : "hover:bg-muted/20"
-                        )}>
-                          <td className="px-3 py-2 font-mono font-semibold text-foreground sticky left-0 bg-card/80 z-10">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-3 h-3 text-muted-foreground" />
-                              {String(h.hour).padStart(2, "0")}:00
-                            </div>
-                          </td>
-                          <td className="text-center px-2 py-2">
-                            <div className="flex items-center justify-center gap-1">
-                              <img
-                                src={`https://openweathermap.org/img/wn/${h.icon}.png`}
-                                alt={h.description}
-                                className="w-6 h-6"
-                              />
-                              <span className="text-[10px] text-muted-foreground capitalize truncate max-w-[80px]">{h.description}</span>
-                            </div>
-                          </td>
-                          <td className="text-right px-2 py-2 font-mono text-foreground">{h.temp_c.toFixed(1)}°</td>
-                          <td className="text-right px-2 py-2">
-                            <span className={cn("font-mono px-1.5 py-0.5 rounded text-[10px] font-semibold", rainLvl.cls)}>
-                              {h.precip_mm.toFixed(1)} mm
-                            </span>
-                          </td>
-                          <td className="text-right px-2 py-2 font-mono text-muted-foreground">{h.humidity}%</td>
-                          <td className={cn("text-right px-2 py-2 font-mono", windLvl.cls)}>{h.wind_kmh.toFixed(0)} km/h</td>
-                          <td className="text-right px-2 py-2 font-mono text-muted-foreground">{h.gust_kmh?.toFixed(0) ?? "—"}</td>
-                          <td className="text-center px-2 py-2">
-                            {hasTrigg ? (
-                              <div className="flex flex-wrap justify-center gap-0.5">
-                                {activeTriggers.map(t => (
-                                  <span key={t.id} className="inline-block w-2 h-2 rounded-full bg-warning" title={t.name} />
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground">—</span>
+                        return (
+                          <tr
+                            key={i}
+                            onClick={() => setSelectedHour(h)}
+                            className={cn(
+                              "border-b border-border/50 transition-colors cursor-pointer",
+                              hasTrigg ? "bg-warning/5 hover:bg-warning/10" : "hover:bg-muted/30"
                             )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          >
+                            <td className="px-3 py-2 font-mono font-semibold text-foreground sticky left-0 bg-card/80 z-10">
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="w-3 h-3 text-muted-foreground" />
+                                {String(h.hour).padStart(2, "0")}:00
+                              </div>
+                            </td>
+                            <td className="text-center px-2 py-2">
+                              <div className="flex items-center justify-center gap-1">
+                                <img
+                                  src={`https://openweathermap.org/img/wn/${h.icon}.png`}
+                                  alt={h.description}
+                                  className="w-6 h-6"
+                                />
+                                <span className="text-[10px] text-muted-foreground capitalize truncate max-w-[80px]">
+                                  {translateWeatherDescription(h.description)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="text-right px-2 py-2 font-mono text-foreground">{h.temp_c.toFixed(1)}°</td>
+                            <td className="text-right px-2 py-2">
+                              <span className={cn("font-mono px-1.5 py-0.5 rounded text-[10px] font-semibold", rainLvl.cls)}>
+                                {h.precip_mm.toFixed(1)} mm
+                              </span>
+                            </td>
+                            <td className="text-right px-2 py-2 font-mono text-muted-foreground">{h.humidity}%</td>
+                            <td className={cn("text-right px-2 py-2 font-mono", windLvl.cls)}>{h.wind_kmh.toFixed(0)} km/h</td>
+                            <td className="text-right px-2 py-2 font-mono text-muted-foreground">{h.gust_kmh?.toFixed(0) ?? "—"}</td>
+                            <td className="text-center px-2 py-2">
+                              {hasTrigg ? (
+                                <div className="flex flex-wrap justify-center gap-0.5">
+                                  {activeTriggers.map(t => (
+                                    <span key={t.id} className="inline-block w-2 h-2 rounded-full bg-warning" title={t.name} />
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground px-1">
+                <div className="flex items-center gap-1"><Info className="w-3 h-3" /> Legenda chuva:</div>
+                <span className="px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400">Fraca (0.2-3mm)</span>
+                <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">Moderada (3-6mm)</span>
+                <span className="px-1.5 py-0.5 rounded bg-warning/10 text-warning">Forte (6-10mm)</span>
+                <span className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">Muito Forte (&gt;10mm)</span>
+                <span className="ml-auto text-[9px] italic">Clique em um horário para mais detalhes</span>
               </div>
             </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground px-1">
-              <div className="flex items-center gap-1"><Info className="w-3 h-3" /> Legenda chuva:</div>
-              <span className="px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400">Fraca (0.2-3mm)</span>
-              <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">Moderada (3-6mm)</span>
-              <span className="px-1.5 py-0.5 rounded bg-warning/10 text-warning">Forte (6-10mm)</span>
-              <span className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">Muito Forte (&gt;10mm)</span>
-            </div>
-          </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      <WeatherHourDetailDialog
+        open={!!selectedHour}
+        onOpenChange={(open) => { if (!open) setSelectedHour(null); }}
+        hour={selectedHour}
+        activeTriggers={selectedHourTriggers}
+        historicalData={selectedHourHistorical}
+        baseName={base.name}
+      />
+    </>
   );
 }
 
