@@ -683,6 +683,37 @@ const Visao = () => {
                 ? "Magé · Niterói · São Gonçalo · Serrana · Sul"
                 : "Campos · Macaé · Lagos · Noroeste"}
             </span>
+
+            <div className="ml-auto">
+              <div className="flex rounded-lg overflow-hidden border border-border">
+                <button
+                  onClick={() => setViewMode("cards")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5",
+                    viewMode === "cards"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                  title="Visão por regional"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  Regionais
+                </button>
+                <button
+                  onClick={() => setViewMode("consolidated")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5",
+                    viewMode === "consolidated"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                  title="Visão consolidada"
+                >
+                  <Rows3 className="h-3.5 w-3.5" />
+                  Consolidado
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
