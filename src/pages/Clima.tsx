@@ -450,8 +450,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
   );
 }
 
-function UTGroupSection({ title, regionais, allBases, provider, selectedDay }: {
-  title: string;
+function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
   regionais: string[];
   allBases: Base[];
   provider: "openmeteo" | "openweathermap";
@@ -477,27 +476,21 @@ function UTGroupSection({ title, regionais, allBases, provider, selectedDay }: {
   }, [regionais, allBases]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <h2 className="text-base font-bold text-foreground whitespace-nowrap">{title}</h2>
-        <div className="flex-1 h-px bg-border" />
-      </div>
-
+    <div className="flex flex-wrap items-start gap-6">
       {basesInGroup.map(({ regional, bases }) => (
         <div key={regional} className="space-y-2">
-          {bases.length > 1 && (
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
-              {regional}
-            </h3>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
+            {regional}
+          </h3>
+          <div className="flex flex-wrap gap-3">
             {bases.map(base => (
-              <BaseWeatherCard
-                key={base.id}
-                base={base}
-                provider={provider}
-                selectedDay={selectedDay}
-              />
+              <div key={base.id} className="w-[220px]">
+                <BaseWeatherCard
+                  base={base}
+                  provider={provider}
+                  selectedDay={selectedDay}
+                />
+              </div>
             ))}
           </div>
         </div>
