@@ -269,6 +269,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
   const [detailOpen, setDetailOpen] = useState(false);
   const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider);
   const { data: triggers } = useWeatherTriggers(base.id);
+  const { data: historicalData } = useHistoricalData(base.id);
 
   const dayHours = useMemo(() => {
     if (!data?.forecast) return [];
@@ -316,6 +317,47 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
     const rainHours = dayHours.filter(h => h.precip_mm >= 0.2).length;
     return { maxPrecip, totalPrecip, maxWind, maxGust, minTemp, maxTemp, rainHours };
   }, [dayHours]);
+
+  // Operational daily summary: historical entries, adjusted entries, operator removal
+  const operationalSummary = useMemo(() => {
+    if (!historicalData || historicalData.length === 0 || dayHours.length === 0 || !triggers) return null;
+
+    let totalBtEntry = 0, totalMtEntry = 0;
+    let totalBtEntryAdj = 0, totalMtEntryAdj = 0;
+    let totalBtOpRemoval = 0, totalMtOpRemoval = 0;
+    let totalBtOpRemovalAdj = 0, totalMtOpRemovalAdj = 0;
+
+    dayHours.forEach(h => {
+      const hist = historicalData.find(d => d.hour === h.hour);
+      if (!hist) return;
+
+      const activeTriggers = triggers.filter(t => isTriggerActive(t, h.precip_mm, h.wind_kmh, h.temp_c, h.gust_kmh));
+      let upliftBT = 0, upliftMT = 0;
+      activeTriggers.forEach(t => {
+        upliftBT += (t.impact_percent_bt ?? t.impact_percent ?? 0);
+        upliftMT += (t.impact_percent_mt ?? t.impact_percent ?? 0);
+      });
+
+      totalBtEntry += hist.bt_entry_rate;
+      totalMtEntry += hist.mt_entry_rate;
+      totalBtEntryAdj += hist.bt_entry_rate * (1 + upliftBT / 100);
+      totalMtEntryAdj += hist.mt_entry_rate * (1 + upliftMT / 100);
+      totalBtOpRemoval += hist.bt_operator_removal;
+      totalMtOpRemoval += hist.mt_operator_removal;
+      totalBtOpRemovalAdj += hist.bt_operator_removal * (1 + upliftBT / 100);
+      totalMtOpRemovalAdj += hist.mt_operator_removal * (1 + upliftMT / 100);
+    });
+
+    const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
+
+    return {
+      totalBtEntry, totalMtEntry,
+      totalBtEntryAdj, totalMtEntryAdj,
+      totalBtOpRemoval, totalMtOpRemoval,
+      totalBtOpRemovalAdj, totalMtOpRemovalAdj,
+      hasUplift,
+    };
+  }, [historicalData, dayHours, triggers]);
 
   if (isLoading) {
     return (
@@ -427,6 +469,59 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
             {triggerAnalysis.activeTriggers.length > 2 && (
               <p className="text-[10px] text-muted-foreground text-center">+{triggerAnalysis.activeTriggers.length - 2} mais</p>
             )}
+          </div>
+        )}
+
+        {/* Operational daily summary */}
+        {operationalSummary && (
+          <div className="mt-2 rounded-lg border border-border/50 bg-muted/10 p-2 space-y-1.5">
+            <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Resumo Operacional</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              {/* BT */}
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-semibold text-blue-500 dark:text-blue-400">BT</p>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Entrada</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalBtEntry.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalBtEntryAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Ret. Op.</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalBtOpRemoval.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalBtOpRemovalAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+              {/* MT */}
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-semibold text-orange-500 dark:text-orange-400">MT</p>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Entrada</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalMtEntry.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalMtEntryAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Ret. Op.</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalMtOpRemoval.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalMtOpRemovalAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
