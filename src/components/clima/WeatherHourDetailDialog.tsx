@@ -161,7 +161,7 @@ export function WeatherHourDetailDialog({
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-primary" />
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Dados Históricos — {String(hour.hour).padStart(2, "0")}h
+                  Dados Históricos {hasUplift ? "& Ajustados" : ""} — {String(hour.hour).padStart(2, "0")}h
                 </h4>
               </div>
               <div className="grid grid-cols-2 gap-3">
