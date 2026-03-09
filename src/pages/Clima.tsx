@@ -338,14 +338,21 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
         upliftMT += (t.impact_percent_mt ?? t.impact_percent ?? 0);
       });
 
-      totalBtEntry += hist.bt_entry_rate;
-      totalMtEntry += hist.mt_entry_rate;
-      totalBtEntryAdj += hist.bt_entry_rate * (1 + upliftBT / 100);
-      totalMtEntryAdj += hist.mt_entry_rate * (1 + upliftMT / 100);
-      totalBtOpRemoval += hist.bt_operator_removal;
-      totalMtOpRemoval += hist.mt_operator_removal;
-      totalBtOpRemovalAdj += hist.bt_operator_removal * (1 + upliftBT / 100);
-      totalMtOpRemovalAdj += hist.mt_operator_removal * (1 + upliftMT / 100);
+      const btEntry = hist.bt_entry_rate;
+      const mtEntry = hist.mt_entry_rate;
+      const btEntryAdj = btEntry * (1 + upliftBT / 100);
+      const mtEntryAdj = mtEntry * (1 + upliftMT / 100);
+
+      totalBtEntry += btEntry;
+      totalMtEntry += mtEntry;
+      totalBtEntryAdj += btEntryAdj;
+      totalMtEntryAdj += mtEntryAdj;
+
+      // operator_removal is a ratio applied to the adjusted entry
+      totalBtOpRemoval += btEntry * hist.bt_operator_removal;
+      totalMtOpRemoval += mtEntry * hist.mt_operator_removal;
+      totalBtOpRemovalAdj += btEntryAdj * hist.bt_operator_removal;
+      totalMtOpRemovalAdj += mtEntryAdj * hist.mt_operator_removal;
     });
 
     const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
