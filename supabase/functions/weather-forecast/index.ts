@@ -131,7 +131,7 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
   const hourlyForecast: WeatherHour[] = [];
   
   if (data.list && data.list.length > 0) {
-    // OpenWeatherMap 5-day forecast gives data every 3 hours
+    const timezoneOffsetSeconds = data.city?.timezone ?? 0;
     // We'll interpolate to create hourly data
     for (let i = 0; i < data.list.length - 1 && hourlyForecast.length < hours; i++) {
       const current = data.list[i];
