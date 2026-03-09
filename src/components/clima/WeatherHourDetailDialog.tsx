@@ -1,4 +1,4 @@
-import { Clock, CloudRain, Wind, Thermometer, Droplets, AlertTriangle, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { Clock, CloudRain, Wind, Thermometer, Droplets, AlertTriangle, TrendingUp, TrendingDown, Users, Zap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
