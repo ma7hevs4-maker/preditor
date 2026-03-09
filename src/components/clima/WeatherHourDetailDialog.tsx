@@ -1,4 +1,4 @@
-import { Clock, CloudRain, Wind, Thermometer, Droplets, AlertTriangle, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { Clock, CloudRain, Wind, Thermometer, Droplets, AlertTriangle, TrendingUp, TrendingDown, Users, Zap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,14 @@ export function WeatherHourDetailDialog({
 }: WeatherHourDetailDialogProps) {
   if (!hour) return null;
 
+  // Calculate total uplift from active triggers
+  let upliftBT = 0;
+  let upliftMT = 0;
+  for (const t of activeTriggers) {
+    upliftBT += (t.impact_percent_bt ?? t.impact_percent ?? 0);
+    upliftMT += (t.impact_percent_mt ?? t.impact_percent ?? 0);
+  }
+  const hasUplift = upliftBT > 0 || upliftMT > 0;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -153,7 +161,7 @@ export function WeatherHourDetailDialog({
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-primary" />
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Dados Históricos — {String(hour.hour).padStart(2, "0")}h
+                  Dados Históricos {hasUplift ? "& Ajustados" : ""} — {String(hour.hour).padStart(2, "0")}h
                 </h4>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -166,14 +174,28 @@ export function WeatherHourDetailDialog({
                         <TrendingUp className="w-3 h-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Entrada</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-foreground">{historicalData.bt_entry_rate.toFixed(1)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold text-foreground">{historicalData.bt_entry_rate.toFixed(1)}</span>
+                        {upliftBT > 0 && (
+                          <span className="text-[10px] font-mono font-bold text-warning">
+                            → {(historicalData.bt_entry_rate * (1 + upliftBT / 100)).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between bg-muted/30 rounded px-2 py-1.5">
                       <div className="flex items-center gap-1">
                         <TrendingDown className="w-3 h-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Ret. Operador</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-foreground">{historicalData.bt_operator_removal.toFixed(1)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold text-foreground">{historicalData.bt_operator_removal.toFixed(1)}</span>
+                        {upliftBT > 0 && (
+                          <span className="text-[10px] font-mono font-bold text-warning">
+                            → {(historicalData.bt_operator_removal * (1 + upliftBT / 100)).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between bg-muted/30 rounded px-2 py-1.5">
                       <div className="flex items-center gap-1">
@@ -193,14 +215,28 @@ export function WeatherHourDetailDialog({
                         <TrendingUp className="w-3 h-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Entrada</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-foreground">{historicalData.mt_entry_rate.toFixed(1)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold text-foreground">{historicalData.mt_entry_rate.toFixed(1)}</span>
+                        {upliftMT > 0 && (
+                          <span className="text-[10px] font-mono font-bold text-warning">
+                            → {(historicalData.mt_entry_rate * (1 + upliftMT / 100)).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between bg-muted/30 rounded px-2 py-1.5">
                       <div className="flex items-center gap-1">
                         <TrendingDown className="w-3 h-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Ret. Operador</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-foreground">{historicalData.mt_operator_removal.toFixed(1)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold text-foreground">{historicalData.mt_operator_removal.toFixed(1)}</span>
+                        {upliftMT > 0 && (
+                          <span className="text-[10px] font-mono font-bold text-warning">
+                            → {(historicalData.mt_operator_removal * (1 + upliftMT / 100)).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between bg-muted/30 rounded px-2 py-1.5">
                       <div className="flex items-center gap-1">
