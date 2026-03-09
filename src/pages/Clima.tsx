@@ -267,8 +267,7 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 // Component that fetches weather for a single base and renders its card
 function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider: "openmeteo" | "openweathermap"; selectedDay: Date }) {
   const [detailOpen, setDetailOpen] = useState(false);
-  const maxHours = provider === "openweathermap" ? 120 : 168;
-  const { data, isLoading } = useWeather(base.lat, base.lon, maxHours, provider);
+  const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider);
   const { data: triggers } = useWeatherTriggers(base.id);
 
   const dayHours = useMemo(() => {
@@ -523,16 +522,17 @@ function WeatherMapView({ selectedUT }: { selectedUT: "UTN" | "UTS" }) {
 
 export default function Clima() {
   const { data: bases, isLoading: basesLoading } = useBases();
-  const { provider } = useWeatherProvider();
   const [dayOffset, setDayOffset] = useState(0);
   const [selectedUT, setSelectedUT] = useState<"UTN" | "UTS">("UTN");
   const [viewMode, setViewMode] = useState<"cards" | "map">("cards");
 
   const today = startOfDay(new Date());
   const selectedDay = addDays(today, dayOffset);
-  const maxDays = provider === "openweathermap" ? 4 : 6; // OWM: 5 dias (0-4), Open-Meteo: 7 dias (0-6)
+  const maxDays = 6; // 7 dias (0-6)
 
-  const providerInfo = PROVIDER_LABELS[provider] || PROVIDER_LABELS.openmeteo;
+  // OWM para os 5 primeiros dias (0-4), Open-Meteo para os 2 últimos (5-6)
+  const activeProvider: "openmeteo" | "openweathermap" = dayOffset <= 4 ? "openweathermap" : "openmeteo";
+  const providerInfo = PROVIDER_LABELS[activeProvider];
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 space-y-5">
@@ -653,7 +653,7 @@ export default function Clima() {
         <UTGroupSection
           regionais={selectedUT === "UTN" ? UTN_REGIONAIS : UTS_REGIONAIS}
           allBases={bases}
-          provider={provider}
+          provider={activeProvider}
           selectedDay={selectedDay}
         />
       ) : (
