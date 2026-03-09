@@ -94,8 +94,8 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Prom
       const weatherInfo = getWeatherInfoFromWMO(hourlyData.weather_code[i], isDay);
       
       hourlyForecast.push({
-        hour: datetime.getHours(),
-        datetime: datetime.toISOString(),
+        hour: Number(hourlyData.time[i].slice(11, 13)),
+        datetime: `${hourlyData.time[i]}:00`,
         temp_c: Math.round(hourlyData.temperature_2m[i] * 10) / 10,
         precip_mm: Math.round(hourlyData.precipitation[i] * 100) / 100,
         wind_kmh: Math.round(hourlyData.wind_speed_10m[i] * 10) / 10, // Already in km/h from Open-Meteo
