@@ -59,7 +59,8 @@ function getWeatherInfoFromWMO(code: number, isDay: boolean): { description: str
 async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Promise<WeatherHour[]> {
   console.log(`Fetching from Open-Meteo for lat: ${lat}, lon: ${lon}`);
   
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,is_day&forecast_days=4&timezone=auto`;
+  const forecastDays = Math.min(Math.ceil(hours / 24) + 1, 16);
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,is_day&forecast_days=${forecastDays}&timezone=auto`;
   
   const response = await fetch(url);
   
