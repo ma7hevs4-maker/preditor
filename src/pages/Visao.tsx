@@ -717,19 +717,29 @@ const Visao = () => {
           </div>
         </div>
 
-        {/* Regional Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          {visibleRegionais.map(regional => (
-            <RegionalCard
-              key={regional.label}
-              regional={regional}
-              plans={plans || []}
-              allTypeEntries={allTypeEntries || []}
-              allBases={allBases}
-              onOpen={() => setOpenRegional(regional.label)}
-            />
-          ))}
-        </div>
+        {viewMode === "cards" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {visibleRegionais.map(regional => (
+              <RegionalCard
+                key={regional.label}
+                regional={regional}
+                plans={plans || []}
+                allTypeEntries={allTypeEntries || []}
+                allBases={allBases}
+                onOpen={() => setOpenRegional(regional.label)}
+              />
+            ))}
+          </div>
+        ) : (
+          <ConsolidatedView
+            ut={selectedUT}
+            regionais={visibleRegionais}
+            plans={plans || []}
+            allTypeEntries={allTypeEntries || []}
+            allBases={allBases}
+            selectedDate={selectedDate}
+          />
+        )}
 
         {/* No plans at all */}
         {(!plans || plans.length === 0) && (
