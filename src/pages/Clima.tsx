@@ -540,6 +540,15 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
                     )}
                   </span>
                 </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Ent. Equipe</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.mtEntryForTeam.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.mtEntryForTeamAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
