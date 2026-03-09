@@ -269,6 +269,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
   const [detailOpen, setDetailOpen] = useState(false);
   const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider);
   const { data: triggers } = useWeatherTriggers(base.id);
+  const { data: historicalData } = useHistoricalData(base.id);
 
   const dayHours = useMemo(() => {
     if (!data?.forecast) return [];
