@@ -357,11 +357,24 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
 
     const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
 
+    // Entrada para Equipe = Entrada - Ret. Op.
+    const btEntryForTeam = totalBtEntry - totalBtOpRemoval;
+    const mtEntryForTeam = totalMtEntry - totalMtOpRemoval;
+    const btEntryForTeamAdj = totalBtEntryAdj - totalBtOpRemovalAdj;
+    const mtEntryForTeamAdj = totalMtEntryAdj - totalMtOpRemovalAdj;
+
+    // Equipes Necessárias = BT/3 + MT/1.5
+    const teamsNeeded = Math.ceil(btEntryForTeam / 3 + mtEntryForTeam / 1.5);
+    const teamsNeededAdj = Math.ceil(btEntryForTeamAdj / 3 + mtEntryForTeamAdj / 1.5);
+
     return {
       totalBtEntry, totalMtEntry,
       totalBtEntryAdj, totalMtEntryAdj,
       totalBtOpRemoval, totalMtOpRemoval,
       totalBtOpRemovalAdj, totalMtOpRemovalAdj,
+      btEntryForTeam, mtEntryForTeam,
+      btEntryForTeamAdj, mtEntryForTeamAdj,
+      teamsNeeded, teamsNeededAdj,
       hasUplift,
     };
   }, [historicalData, dayHours, triggers]);
@@ -505,6 +518,15 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
                     )}
                   </span>
                 </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Ent. Equipe</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.btEntryForTeam.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.btEntryForTeamAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
               </div>
               {/* MT */}
               <div className="space-y-0.5">
@@ -527,6 +549,27 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
                     )}
                   </span>
                 </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Ent. Equipe</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.mtEntryForTeam.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.mtEntryForTeamAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {/* Equipes Necessárias */}
+            <div className="border-t border-border/30 pt-1.5 mt-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground font-semibold">Equipes Necessárias</span>
+                <span className="font-mono font-bold text-foreground">
+                  {operationalSummary.teamsNeeded}
+                  {operationalSummary.hasUplift && (
+                    <span className="text-warning ml-1">→ {operationalSummary.teamsNeededAdj}</span>
+                  )}
+                </span>
               </div>
             </div>
           </div>
