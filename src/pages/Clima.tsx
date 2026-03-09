@@ -405,8 +405,8 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
       <div
         onClick={() => setDetailOpen(true)}
         className={cn(
-          "rounded-xl border bg-card/50 p-4 transition-all hover:bg-card/80 cursor-pointer hover:shadow-lg group",
-          hasActiveTriggers ? "border-warning/40" : "border-border"
+          "glass-card p-4 transition-all cursor-pointer hover:ring-2 hover:ring-primary/30 group",
+          hasActiveTriggers && "ring-1 ring-warning/40"
         )}
       >
         {/* Header */}
