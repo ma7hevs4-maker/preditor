@@ -450,8 +450,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
   );
 }
 
-function UTGroupSection({ title, regionais, allBases, provider, selectedDay }: {
-  title: string;
+function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
   regionais: string[];
   allBases: Base[];
   provider: "openmeteo" | "openweathermap";
@@ -477,27 +476,21 @@ function UTGroupSection({ title, regionais, allBases, provider, selectedDay }: {
   }, [regionais, allBases]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <h2 className="text-base font-bold text-foreground whitespace-nowrap">{title}</h2>
-        <div className="flex-1 h-px bg-border" />
-      </div>
-
+    <div className="flex flex-wrap items-start gap-6">
       {basesInGroup.map(({ regional, bases }) => (
         <div key={regional} className="space-y-2">
-          {bases.length > 1 && (
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
-              {regional}
-            </h3>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
+            {regional}
+          </h3>
+          <div className="flex flex-wrap gap-3">
             {bases.map(base => (
-              <BaseWeatherCard
-                key={base.id}
-                base={base}
-                provider={provider}
-                selectedDay={selectedDay}
-              />
+              <div key={base.id} className="w-[220px]">
+                <BaseWeatherCard
+                  base={base}
+                  provider={provider}
+                  selectedDay={selectedDay}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -510,6 +503,7 @@ export default function Clima() {
   const { data: bases, isLoading: basesLoading } = useBases();
   const { provider } = useWeatherProvider();
   const [dayOffset, setDayOffset] = useState(0);
+  const [selectedUT, setSelectedUT] = useState<"UTN" | "UTS">("UTN");
 
   const today = startOfDay(new Date());
   const selectedDay = addDays(today, dayOffset);
@@ -554,30 +548,59 @@ export default function Clima() {
         </div>
       </div>
 
-      {/* Day pills */}
-      <div className="flex gap-2">
-        {Array.from({ length: maxDays + 1 }, (_, i) => {
-          const day = addDays(today, i);
-          const label = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : format(day, "EEE dd", { locale: ptBR });
-          return (
-            <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setDayOffset(i)}>
-              {label}
-            </Button>
-          );
-        })}
+      {/* UT Toggle + Day pills row */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          <button
+            onClick={() => setSelectedUT("UTN")}
+            className={cn(
+              "px-4 py-1.5 text-sm font-semibold transition-colors",
+              selectedUT === "UTN"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+            )}
+          >
+            UTN
+          </button>
+          <button
+            onClick={() => setSelectedUT("UTS")}
+            className={cn(
+              "px-4 py-1.5 text-sm font-semibold transition-colors",
+              selectedUT === "UTS"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+            )}
+          >
+            UTS
+          </button>
+        </div>
+
+        <div className="flex gap-2">
+          {Array.from({ length: maxDays + 1 }, (_, i) => {
+            const day = addDays(today, i);
+            const label = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : format(day, "EEE dd", { locale: ptBR });
+            return (
+              <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setDayOffset(i)}>
+                {label}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       {basesLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card/50 p-4 animate-pulse h-48" />
+        <div className="flex flex-wrap gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card/50 p-4 animate-pulse h-48 w-[220px]" />
           ))}
         </div>
       ) : bases && bases.length > 0 ? (
-        <div className="space-y-8">
-          <UTGroupSection title="UTN — Unidade Técnica Norte" regionais={UTN_REGIONAIS} allBases={bases} provider={provider} selectedDay={selectedDay} />
-          <UTGroupSection title="UTS — Unidade Técnica Sul" regionais={UTS_REGIONAIS} allBases={bases} provider={provider} selectedDay={selectedDay} />
-        </div>
+        <UTGroupSection
+          regionais={selectedUT === "UTN" ? UTN_REGIONAIS : UTS_REGIONAIS}
+          allBases={bases}
+          provider={provider}
+          selectedDay={selectedDay}
+        />
       ) : (
         <div className="text-center py-12 text-muted-foreground">
           <CloudSun className="w-12 h-12 mx-auto mb-3 opacity-30" />
