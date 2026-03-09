@@ -137,7 +137,7 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
                     <span className="text-sm font-semibold text-foreground">Gatilhos previstos para este dia</span>
                   </div>
                   {triggerRanges.map(({ trigger, hours, ranges }) => (
-                    <div key={trigger.id} className="flex items-center justify-between text-xs bg-card/50 rounded px-3 py-2">
+                    <div key={trigger.id} className="flex items-center justify-between text-xs bg-warning/10 rounded px-3 py-2">
                       <div>
                         <span className={cn("font-semibold", getTriggerNameColor(trigger))}>{trigger.name}</span>
                         {trigger.description && (
