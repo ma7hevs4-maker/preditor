@@ -654,7 +654,7 @@ export default function Clima() {
         <UTGroupSection
           regionais={selectedUT === "UTN" ? UTN_REGIONAIS : UTS_REGIONAIS}
           allBases={bases}
-          provider={provider}
+          provider={activeProvider}
           selectedDay={selectedDay}
         />
       ) : (
