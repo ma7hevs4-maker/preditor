@@ -215,7 +215,14 @@ export function WeatherHourDetailDialog({
                         <TrendingUp className="w-3 h-3 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Entrada</span>
                       </div>
-                      <span className="text-xs font-mono font-bold text-foreground">{historicalData.mt_entry_rate.toFixed(1)}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono font-bold text-foreground">{historicalData.mt_entry_rate.toFixed(1)}</span>
+                        {upliftMT > 0 && (
+                          <span className="text-[10px] font-mono font-bold text-warning">
+                            → {(historicalData.mt_entry_rate * (1 + upliftMT / 100)).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between bg-muted/30 rounded px-2 py-1.5">
                       <div className="flex items-center gap-1">
