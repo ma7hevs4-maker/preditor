@@ -1,4 +1,4 @@
-import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
+  { title: "Central Climática", url: "/clima", icon: CloudSun },
   { title: "Simulação", url: "/", icon: Zap },
   { title: "Estrutura", url: "/estrutura", icon: Users },
   { title: "Visão", url: "/visao", icon: Eye },
