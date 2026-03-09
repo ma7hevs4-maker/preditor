@@ -594,6 +594,7 @@ const Visao = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedUT, setSelectedUT] = useState<UT>("UTS");
   const [openRegional, setOpenRegional] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "consolidated">("cards");
 
   const { data: bases } = useBases();
   const allBases = useMemo(() => bases || [], [bases]);
