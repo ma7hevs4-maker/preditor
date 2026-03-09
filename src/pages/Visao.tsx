@@ -589,6 +589,289 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
   );
 };
 
+// ---------- Consolidated View ----------
+interface ConsolidatedViewProps {
+  ut: UT;
+  regionais: Regional[];
+  plans: DailyTeamPlan[];
+  allTypeEntries: TeamTypeEntry[];
+  allBases: { id: string; name: string }[];
+  selectedDate: Date;
+}
+
+const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, selectedDate }: ConsolidatedViewProps) => {
+  // Gather all base IDs for the selected UT
+  const utBaseIds = useMemo(() => {
+    const ids: string[] = [];
+    regionais.forEach(r => {
+      if (r.sucursais.length > 0) {
+        r.sucursais.forEach(s => {
+          const base = allBases.find(b => b.name.toLowerCase() === s.name.toLowerCase());
+          if (base) ids.push(base.id);
+        });
+      } else {
+        const base = allBases.find(b => b.name.toLowerCase() === r.label.toLowerCase());
+        if (base) ids.push(base.id);
+      }
+    });
+    return ids;
+  }, [regionais, allBases]);
+
+  const utPlans = useMemo(() => plans.filter(p => utBaseIds.includes(p.base_id)), [plans, utBaseIds]);
+  const utPlanIds = utPlans.map(p => p.id);
+  const utEntries = useMemo(() => allTypeEntries.filter(e => utPlanIds.includes(e.daily_plan_id)), [allTypeEntries, utPlanIds]);
+
+  const allHours = Array.from({ length: 24 }, (_, i) => i);
+
+  const typePerHour = useMemo((): Record<string, number[]> => {
+    const map: Record<string, number[]> = {};
+    ALL_DISPLAY_TYPES.forEach(type => { map[type] = Array(24).fill(0); });
+    utEntries.forEach(e => { if (map[e.team_type]) map[e.team_type][e.hour] += e.quantity; });
+    return map;
+  }, [utEntries]);
+
+  const teamsPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    utEntries.forEach(e => {
+      if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [utEntries]);
+
+  const btPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    utEntries.forEach(e => {
+      if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [utEntries]);
+
+  const avgTotalTeams24h = avg(teamsPerHour, allHours);
+  const avgBT24h = avg(btPerHour, allHours);
+
+  if (utPlans.length === 0) {
+    return (
+      <div className="glass-card p-12 flex flex-col items-center justify-center text-center">
+        <Eye className="w-10 h-10 text-muted-foreground mb-3" />
+        <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum plano encontrado</h3>
+        <p className="text-sm text-muted-foreground">
+          Não há planejamento consolidado para {ut} em {format(selectedDate, "dd/MM/yyyy")}.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass-card p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">{ut} — Consolidado</h2>
+          <p className="text-xs text-muted-foreground">
+            {regionais.map(r => r.label).join(" · ")} — {format(selectedDate, "dd/MM/yyyy")}
+          </p>
+        </div>
+        <Badge variant="secondary" className="text-base px-3 py-1">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
+      </div>
+
+      {/* Turno averages */}
+      <div className="grid grid-cols-3 gap-3 mb-4 max-w-md">
+        {TURNOS.map(turno => {
+          const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+          const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
+          return (
+            <div key={turno.letter} className={cn("rounded-md p-3 text-center border", colors.bg, colors.border)}>
+              <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
+              <div className={cn("text-2xl font-bold", colors.cell)}>{avgTotal}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Detailed table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse min-w-[700px]">
+          <thead>
+            <tr>
+              <th className="text-left py-2 pr-3 text-muted-foreground font-medium min-w-[120px] sticky left-0 bg-card z-10">Tipo</th>
+              {TURNOS.map(turno => {
+                const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                return (
+                  <React.Fragment key={turno.letter}>
+                    <th colSpan={turno.hours.length + 1} className={cn("text-center py-1 px-1 font-semibold text-xs rounded-t border-b", colors.header)}>
+                      {turno.label}
+                    </th>
+                    {turno.letter !== "C" && <th className="w-2" />}
+                  </React.Fragment>
+                );
+              })}
+            </tr>
+            <tr>
+              <th className="sticky left-0 bg-card z-10" />
+              {TURNOS.map(turno => {
+                const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                return (
+                  <React.Fragment key={turno.letter}>
+                    {turno.hours.map(h => (
+                      <th key={h} className={cn("text-center py-1 px-0.5 font-mono font-medium min-w-[24px]", colors.cell)}>
+                        {String(h).padStart(2, "0")}
+                      </th>
+                    ))}
+                    <th className={cn("text-center py-1 px-1 font-medium min-w-[32px] rounded-sm", colors.avgHeader)}>x̄</th>
+                    {turno.letter !== "C" && <th className="w-2" />}
+                  </React.Fragment>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Type rows grouped like in detail dialog */}
+            {[
+              { types: GERAIS_TYPES, color: "text-foreground", labelColor: "text-muted-foreground" },
+            ].map(({ types, color, labelColor }) =>
+              types.map((type, idx) => {
+                const row = typePerHour[type] || [];
+                const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                if (!hasAny) return null;
+                return (
+                  <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
+                    <td className={cn("py-0.5 pr-2 sticky left-0 bg-card z-10", labelColor)}>{type}</td>
+                    {TURNOS.map(turno => {
+                      const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                      return (
+                        <React.Fragment key={turno.letter}>
+                          {turno.hours.map(h => (
+                            <td key={h} className={cn("text-center py-0.5 font-mono", color)}>{row[h] || 0}</td>
+                          ))}
+                          <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                          {turno.letter !== "C" && <td className="w-2" />}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
+            <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+            {LV_MK_TYPES.map(type => {
+              const row = typePerHour[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              if (!hasAny) return null;
+              return (
+                <tr key={type} className="hover:bg-muted/20">
+                  <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-card z-10">{type}</td>
+                  {TURNOS.map(turno => {
+                    const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                    return (
+                      <React.Fragment key={turno.letter}>
+                        {turno.hours.map(h => (
+                          <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                        ))}
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                        {turno.letter !== "C" && <td className="w-2" />}
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+            <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+            {APOIO_TYPES.map(type => {
+              const row = typePerHour[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              if (!hasAny) return null;
+              return (
+                <tr key={type} className="hover:bg-muted/20">
+                  <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-card z-10">{type}</td>
+                  {TURNOS.map(turno => {
+                    const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                    return (
+                      <React.Fragment key={turno.letter}>
+                        {turno.hours.map(h => (
+                          <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                        ))}
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                        {turno.letter !== "C" && <td className="w-2" />}
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+            <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+            {BT_ONLY_TYPES.map(type => {
+              const row = typePerHour[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              if (!hasAny) return null;
+              return (
+                <tr key={type} className="hover:bg-muted/20">
+                  <td className="py-0.5 text-warning pr-2 sticky left-0 bg-card z-10">{type}</td>
+                  {TURNOS.map(turno => {
+                    const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                    return (
+                      <React.Fragment key={turno.letter}>
+                        {turno.hours.map(h => (
+                          <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                        ))}
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>{avg(row, turno.hours)}</td>
+                        {turno.letter !== "C" && <td className="w-2" />}
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+            {/* Total row */}
+            <tr><td colSpan={100}><div className="border-t border-border/30 my-1" /></td></tr>
+            {(() => {
+              const COUNTED_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES];
+              const totalRow = Array(24).fill(0);
+              COUNTED_TYPES.forEach(type => {
+                const r = typePerHour[type] || [];
+                r.forEach((v, h) => { totalRow[h] += v; });
+              });
+              return (
+                <tr className="font-semibold">
+                  <td className="py-1 pr-2 text-foreground sticky left-0 bg-card z-10">Total Processos</td>
+                  {TURNOS.map(turno => {
+                    const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                    return (
+                      <React.Fragment key={turno.letter}>
+                        {turno.hours.map(h => (
+                          <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                        ))}
+                        <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>{avg(totalRow, turno.hours)}</td>
+                        {turno.letter !== "C" && <td className="w-2" />}
+                      </React.Fragment>
+                    );
+                  })}
+                </tr>
+              );
+            })()}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 24h summary */}
+      <div className="flex gap-6 mt-4 pt-3 border-t border-border/30 flex-wrap">
+        <div className="flex flex-col items-center">
+          <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
+          <span className="font-bold text-lg text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+        </div>
+        <div className="w-px bg-border/50 self-stretch" />
+        <div className="flex flex-col items-center">
+          <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
+          <span className="font-bold text-lg text-foreground">{avgTotalTeams24h}</span>
+        </div>
+        <div className="w-px bg-border/50 self-stretch" />
+        <div className="flex flex-col items-center">
+          <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
+          <span className="font-bold text-lg text-warning">{avgBT24h}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ---------- Main Page ----------
 const Visao = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
