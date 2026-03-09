@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info, Map, LayoutGrid } from "lucide-react";
+import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info, Map as MapIcon, LayoutGrid } from "lucide-react";
 import { useBases, Base } from "@/hooks/useBases";
 import { useWeather, WeatherHour } from "@/hooks/useWeather";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
@@ -620,7 +620,7 @@ export default function Clima() {
                 : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
             )}
           >
-            <Map className="w-3.5 h-3.5" />
+            <MapIcon className="w-3.5 h-3.5" />
             Mapa
           </button>
         </div>
