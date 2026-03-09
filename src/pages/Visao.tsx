@@ -980,7 +980,7 @@ const Visao = () => {
                   title="Visão por regional"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
-                  Regionais
+                  Polos
                 </button>
                 <button
                   onClick={() => setViewMode("consolidated")}
