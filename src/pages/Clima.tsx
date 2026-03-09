@@ -476,9 +476,9 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
   }, [regionais, allBases]);
 
   return (
-    <div className="flex items-start gap-4 overflow-x-auto pb-2">
+    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${basesInGroup.length}, minmax(0, 1fr))` }}>
       {basesInGroup.map(({ regional, bases }) => (
-        <div key={regional} className="flex-shrink-0 space-y-2 min-w-[220px] max-w-[260px]">
+        <div key={regional} className="space-y-2 min-w-0">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
             {regional}
           </h3>
