@@ -41,6 +41,14 @@ export function WeatherHourDetailDialog({
 }: WeatherHourDetailDialogProps) {
   if (!hour) return null;
 
+  // Calculate total uplift from active triggers
+  let upliftBT = 0;
+  let upliftMT = 0;
+  for (const t of activeTriggers) {
+    upliftBT += (t.impact_percent_bt ?? t.impact_percent ?? 0);
+    upliftMT += (t.impact_percent_mt ?? t.impact_percent ?? 0);
+  }
+  const hasUplift = upliftBT > 0 || upliftMT > 0;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
