@@ -357,11 +357,24 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
 
     const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
 
+    // Entrada para Equipe = Entrada - Ret. Op.
+    const btEntryForTeam = totalBtEntry - totalBtOpRemoval;
+    const mtEntryForTeam = totalMtEntry - totalMtOpRemoval;
+    const btEntryForTeamAdj = totalBtEntryAdj - totalBtOpRemovalAdj;
+    const mtEntryForTeamAdj = totalMtEntryAdj - totalMtOpRemovalAdj;
+
+    // Equipes Necessárias = BT/3 + MT/1.5
+    const teamsNeeded = Math.ceil(btEntryForTeam / 3 + mtEntryForTeam / 1.5);
+    const teamsNeededAdj = Math.ceil(btEntryForTeamAdj / 3 + mtEntryForTeamAdj / 1.5);
+
     return {
       totalBtEntry, totalMtEntry,
       totalBtEntryAdj, totalMtEntryAdj,
       totalBtOpRemoval, totalMtOpRemoval,
       totalBtOpRemovalAdj, totalMtOpRemovalAdj,
+      btEntryForTeam, mtEntryForTeam,
+      btEntryForTeamAdj, mtEntryForTeamAdj,
+      teamsNeeded, teamsNeededAdj,
       hasUplift,
     };
   }, [historicalData, dayHours, triggers]);
