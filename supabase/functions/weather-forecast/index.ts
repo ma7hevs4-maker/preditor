@@ -120,8 +120,6 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
   const hourlyForecast: WeatherHour[] = [];
   
   if (data.list && data.list.length > 0) {
-    const now = new Date();
-    
     // OpenWeatherMap 5-day forecast gives data every 3 hours
     // We'll interpolate to create hourly data
     for (let i = 0; i < data.list.length - 1 && hourlyForecast.length < hours; i++) {
@@ -129,18 +127,11 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
       const next = data.list[i + 1];
       
       const currentTime = new Date(current.dt * 1000);
-      const nextTime = new Date(next.dt * 1000);
-      
-      // Skip if in the past
-      if (nextTime < now && i < data.list.length - 2) continue;
       
       // Create 3 hourly entries by interpolating between current and next
       for (let h = 0; h < 3 && hourlyForecast.length < hours; h++) {
         const factor = h / 3;
         const interpTime = new Date(currentTime.getTime() + (h * 60 * 60 * 1000));
-        
-        // Skip if before current time
-        if (interpTime < now && hourlyForecast.length === 0) continue;
         
         const temp = current.main.temp + (next.main.temp - current.main.temp) * factor;
         const humidity = Math.round(current.main.humidity + (next.main.humidity - current.main.humidity) * factor);
