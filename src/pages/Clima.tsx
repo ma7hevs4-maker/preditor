@@ -318,6 +318,47 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
     return { maxPrecip, totalPrecip, maxWind, maxGust, minTemp, maxTemp, rainHours };
   }, [dayHours]);
 
+  // Operational daily summary: historical entries, adjusted entries, operator removal
+  const operationalSummary = useMemo(() => {
+    if (!historicalData || historicalData.length === 0 || dayHours.length === 0 || !triggers) return null;
+
+    let totalBtEntry = 0, totalMtEntry = 0;
+    let totalBtEntryAdj = 0, totalMtEntryAdj = 0;
+    let totalBtOpRemoval = 0, totalMtOpRemoval = 0;
+    let totalBtOpRemovalAdj = 0, totalMtOpRemovalAdj = 0;
+
+    dayHours.forEach(h => {
+      const hist = historicalData.find(d => d.hour === h.hour);
+      if (!hist) return;
+
+      const activeTriggers = triggers.filter(t => isTriggerActive(t, h.precip_mm, h.wind_kmh, h.temp_c, h.gust_kmh));
+      let upliftBT = 0, upliftMT = 0;
+      activeTriggers.forEach(t => {
+        upliftBT += (t.impact_percent_bt ?? t.impact_percent ?? 0);
+        upliftMT += (t.impact_percent_mt ?? t.impact_percent ?? 0);
+      });
+
+      totalBtEntry += hist.bt_entry_rate;
+      totalMtEntry += hist.mt_entry_rate;
+      totalBtEntryAdj += hist.bt_entry_rate * (1 + upliftBT / 100);
+      totalMtEntryAdj += hist.mt_entry_rate * (1 + upliftMT / 100);
+      totalBtOpRemoval += hist.bt_operator_removal;
+      totalMtOpRemoval += hist.mt_operator_removal;
+      totalBtOpRemovalAdj += hist.bt_operator_removal * (1 + upliftBT / 100);
+      totalMtOpRemovalAdj += hist.mt_operator_removal * (1 + upliftMT / 100);
+    });
+
+    const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
+
+    return {
+      totalBtEntry, totalMtEntry,
+      totalBtEntryAdj, totalMtEntryAdj,
+      totalBtOpRemoval, totalMtOpRemoval,
+      totalBtOpRemovalAdj, totalMtOpRemovalAdj,
+      hasUplift,
+    };
+  }, [historicalData, dayHours, triggers]);
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-border bg-card/50 p-4 animate-pulse">
