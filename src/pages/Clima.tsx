@@ -472,6 +472,59 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
           </div>
         )}
 
+        {/* Operational daily summary */}
+        {operationalSummary && (
+          <div className="mt-2 rounded-lg border border-border/50 bg-muted/10 p-2 space-y-1.5">
+            <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Resumo Operacional</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              {/* BT */}
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-semibold text-blue-500 dark:text-blue-400">BT</p>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Entrada</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalBtEntry.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalBtEntryAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Ret. Op.</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalBtOpRemoval.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalBtOpRemovalAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+              {/* MT */}
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-semibold text-orange-500 dark:text-orange-400">MT</p>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Entrada</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalMtEntry.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalMtEntryAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-muted-foreground">Ret. Op.</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {operationalSummary.totalMtOpRemoval.toFixed(0)}
+                    {operationalSummary.hasUplift && (
+                      <span className="text-warning ml-1">→ {operationalSummary.totalMtOpRemovalAdj.toFixed(0)}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
           Clique para detalhes hora a hora
         </p>
