@@ -476,21 +476,20 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
   }, [regionais, allBases]);
 
   return (
-    <div className="flex flex-wrap items-start gap-6">
+    <div className="flex items-start gap-4 overflow-x-auto pb-2">
       {basesInGroup.map(({ regional, bases }) => (
-        <div key={regional} className="space-y-2">
+        <div key={regional} className="flex-shrink-0 space-y-2 min-w-[220px] max-w-[260px]">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
             {regional}
           </h3>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-3">
             {bases.map(base => (
-              <div key={base.id} className="w-[220px]">
-                <BaseWeatherCard
-                  base={base}
-                  provider={provider}
-                  selectedDay={selectedDay}
-                />
-              </div>
+              <BaseWeatherCard
+                key={base.id}
+                base={base}
+                provider={provider}
+                selectedDay={selectedDay}
+              />
             ))}
           </div>
         </div>
