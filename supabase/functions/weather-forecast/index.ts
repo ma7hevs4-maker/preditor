@@ -142,7 +142,8 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
       // Create 3 hourly entries by interpolating between current and next
       for (let h = 0; h < 3 && hourlyForecast.length < hours; h++) {
         const factor = h / 3;
-        const interpTime = new Date(currentTime.getTime() + (h * 60 * 60 * 1000));
+        const localUnixSeconds = current.dt + timezoneOffsetSeconds + (h * 60 * 60);
+        const localDate = new Date(localUnixSeconds * 1000);
         
         const temp = current.main.temp + (next.main.temp - current.main.temp) * factor;
         const humidity = Math.round(current.main.humidity + (next.main.humidity - current.main.humidity) * factor);
@@ -154,12 +155,13 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
         const precipPerHour = rain3h / 3;
         
         const weather = current.weather[0];
-        const isDay = interpTime.getHours() >= 6 && interpTime.getHours() < 18;
+        const localHour = localDate.getUTCHours();
+        const isDay = localHour >= 6 && localHour < 18;
         const dayNight = isDay ? 'd' : 'n';
         
         hourlyForecast.push({
-          hour: interpTime.getHours(),
-          datetime: interpTime.toISOString(),
+          hour: localHour,
+          datetime: formatLocalDateTime(localDate),
           temp_c: Math.round(temp * 10) / 10,
           precip_mm: Math.round(precipPerHour * 100) / 100,
           wind_kmh: Math.round(windSpeed * 3.6 * 10) / 10, // OWM returns m/s, convert to km/h
