@@ -529,8 +529,7 @@ export default function Clima() {
   const [viewMode, setViewMode] = useState<"cards" | "map">("cards");
 
   const today = startOfDay(new Date());
-  const selectedDay = addDays(today, dayOffset);
-  const maxDays = 3;
+  const maxDays = provider === "openweathermap" ? 4 : 6; // OWM: 5 dias (0-4), Open-Meteo: 7 dias (0-6)
 
   const providerInfo = PROVIDER_LABELS[provider] || PROVIDER_LABELS.openmeteo;
 
