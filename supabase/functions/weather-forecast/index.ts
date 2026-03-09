@@ -75,16 +75,9 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Prom
   const hourlyData = data.hourly;
   
   if (hourlyData && hourlyData.time) {
-    const now = new Date();
-    const currentHourIndex = hourlyData.time.findIndex((time: string) => {
-      const forecastTime = new Date(time);
-      return forecastTime >= now;
-    });
+    const endIndex = Math.min(hours, hourlyData.time.length);
 
-    const startIndex = Math.max(0, currentHourIndex);
-    const endIndex = Math.min(startIndex + hours, hourlyData.time.length);
-
-    for (let i = startIndex; i < endIndex; i++) {
+    for (let i = 0; i < endIndex; i++) {
       const datetime = new Date(hourlyData.time[i]);
       const isDay = hourlyData.is_day[i] === 1;
       const weatherInfo = getWeatherInfoFromWMO(hourlyData.weather_code[i], isDay);
