@@ -398,17 +398,17 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{base.name}</h4>
+          <h4 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{base.name}</h4>
           <div className="flex items-center gap-1.5">
             {hasActiveTriggers && (
-              <Badge variant="outline" className="text-[10px] border-warning/50 text-warning bg-warning/10 px-1.5 py-0">
-                <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
+              <Badge variant="outline" className="text-xs border-warning/50 text-warning bg-warning/10 px-1.5 py-0">
+                <AlertTriangle className="w-3 h-3 mr-0.5" />
                 {triggerAnalysis.totalActiveHours}h
               </Badge>
             )}
             {summary.rainHours > 0 && (
-              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", rainLvl.cls)}>
-                <CloudRain className="w-2.5 h-2.5 mr-0.5" />
+              <Badge variant="outline" className={cn("text-xs px-1.5 py-0", rainLvl.cls)}>
+                <CloudRain className="w-3 h-3 mr-0.5" />
                 {summary.rainHours}h
               </Badge>
             )}
@@ -418,19 +418,19 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
         {/* Main metrics row */}
         <div className="grid grid-cols-3 gap-1 mb-2.5">
           <div className="text-center p-1.5 rounded bg-muted/20">
-            <CloudRain className="w-3.5 h-3.5 text-blue-400 mx-auto mb-0.5" />
-            <p className="text-[10px] text-muted-foreground">Chuva</p>
-            <p className="text-xs font-mono font-bold text-foreground">{summary.totalPrecip.toFixed(1)}<span className="text-[10px] text-muted-foreground">mm</span></p>
+            <CloudRain className="w-4 h-4 text-blue-400 mx-auto mb-0.5" />
+            <p className="text-xs text-muted-foreground">Chuva</p>
+            <p className="text-sm font-mono font-bold text-foreground">{summary.totalPrecip.toFixed(1)}<span className="text-xs text-muted-foreground">mm</span></p>
           </div>
           <div className="text-center p-1.5 rounded bg-muted/20">
-            <Wind className="w-3.5 h-3.5 text-cyan-400 mx-auto mb-0.5" />
-            <p className="text-[10px] text-muted-foreground">Vento</p>
-            <p className="text-xs font-mono font-bold text-foreground">{summary.maxWind.toFixed(0)}<span className="text-[10px] text-muted-foreground">km/h</span></p>
+            <Wind className="w-4 h-4 text-cyan-400 mx-auto mb-0.5" />
+            <p className="text-xs text-muted-foreground">Vento</p>
+            <p className="text-sm font-mono font-bold text-foreground">{summary.maxWind.toFixed(0)}<span className="text-xs text-muted-foreground">km/h</span></p>
           </div>
           <div className="text-center p-1.5 rounded bg-muted/20">
-            <Thermometer className="w-3.5 h-3.5 text-orange-400 mx-auto mb-0.5" />
-            <p className="text-[10px] text-muted-foreground">Temp</p>
-            <p className="text-xs font-mono font-bold text-foreground">{summary.minTemp.toFixed(0)}°<span className="text-[10px] text-muted-foreground">–</span>{summary.maxTemp.toFixed(0)}°</p>
+            <Thermometer className="w-4 h-4 text-orange-400 mx-auto mb-0.5" />
+            <p className="text-xs text-muted-foreground">Temp</p>
+            <p className="text-sm font-mono font-bold text-foreground">{summary.minTemp.toFixed(0)}°<span className="text-xs text-muted-foreground">–</span>{summary.maxTemp.toFixed(0)}°</p>
           </div>
         </div>
 
@@ -458,9 +458,9 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
             })}
           </div>
           <div className="flex justify-between mt-0.5">
-            <span className="text-[8px] text-muted-foreground">0h</span>
-            <span className="text-[8px] text-muted-foreground">12h</span>
-            <span className="text-[8px] text-muted-foreground">23h</span>
+            <span className="text-[10px] text-muted-foreground">0h</span>
+            <span className="text-[10px] text-muted-foreground">12h</span>
+            <span className="text-[10px] text-muted-foreground">23h</span>
           </div>
         </div>
 
@@ -468,26 +468,26 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
         {triggerAnalysis.activeTriggers.length > 0 && (
           <div className="mt-2 space-y-0.5">
             {triggerAnalysis.activeTriggers.slice(0, 2).map(({ trigger, hours }) => (
-              <div key={trigger.id} className="flex items-center justify-between text-[10px] bg-warning/5 rounded px-2 py-0.5">
+              <div key={trigger.id} className="flex items-center justify-between text-xs bg-warning/5 rounded px-2 py-0.5">
                 <span className="text-warning font-medium truncate mr-2">{trigger.name}</span>
                 <span className="text-muted-foreground whitespace-nowrap">{hours}h</span>
               </div>
             ))}
             {triggerAnalysis.activeTriggers.length > 2 && (
-              <p className="text-[10px] text-muted-foreground text-center">+{triggerAnalysis.activeTriggers.length - 2} mais</p>
+              <p className="text-xs text-muted-foreground text-center">+{triggerAnalysis.activeTriggers.length - 2} mais</p>
             )}
           </div>
         )}
 
         {/* Operational daily summary */}
         {operationalSummary && (
-          <div className="mt-2 rounded-lg border border-border/50 bg-muted/10 p-2 space-y-1.5">
-            <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Resumo Operacional</p>
+          <div className="mt-2 rounded-lg border border-border/50 bg-muted/10 p-2.5 space-y-1.5">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Resumo Operacional</p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1">
               {/* BT */}
               <div className="space-y-0.5">
-                <p className="text-[9px] font-semibold text-blue-500 dark:text-blue-400">BT</p>
-                <div className="flex items-center justify-between text-[10px]">
+                <p className="text-[11px] font-semibold text-blue-500 dark:text-blue-400">BT</p>
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Entrada</span>
                   <span className="font-mono font-bold text-foreground">
                     {operationalSummary.totalBtEntry.toFixed(0)}
@@ -496,7 +496,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
                     )}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Ret. Op.</span>
                   <span className="font-mono font-bold text-foreground">
                     {operationalSummary.totalBtOpRemoval.toFixed(0)}
@@ -508,8 +508,8 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
               </div>
               {/* MT */}
               <div className="space-y-0.5">
-                <p className="text-[9px] font-semibold text-orange-500 dark:text-orange-400">MT</p>
-                <div className="flex items-center justify-between text-[10px]">
+                <p className="text-[11px] font-semibold text-orange-500 dark:text-orange-400">MT</p>
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Entrada</span>
                   <span className="font-mono font-bold text-foreground">
                     {operationalSummary.totalMtEntry.toFixed(0)}
@@ -518,7 +518,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
                     )}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Ret. Op.</span>
                   <span className="font-mono font-bold text-foreground">
                     {operationalSummary.totalMtOpRemoval.toFixed(0)}
@@ -532,7 +532,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
           </div>
         )}
 
-        <p className="text-[9px] text-muted-foreground text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <p className="text-[10px] text-muted-foreground text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
           Clique para detalhes hora a hora
         </p>
       </div>
