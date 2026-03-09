@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info } from "lucide-react";
+import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info, Map, LayoutGrid } from "lucide-react";
 import { useBases, Base } from "@/hooks/useBases";
 import { useWeather, WeatherHour } from "@/hooks/useWeather";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
@@ -498,11 +498,34 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
   );
 }
 
+// Windy map centered on the UT
+const UT_CENTERS = {
+  UTN: { lat: -22.0, lon: -41.8, zoom: 8 },
+  UTS: { lat: -22.7, lon: -43.2, zoom: 8 },
+};
+
+function WeatherMapView({ selectedUT }: { selectedUT: "UTN" | "UTS" }) {
+  const center = UT_CENTERS[selectedUT];
+  const windyUrl = `https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=${center.zoom}&overlay=rain&product=ecmwf&level=surface&lat=${center.lat}&lon=${center.lon}&detailLat=${center.lat}&detailLon=${center.lon}&marker=true&message=true`;
+
+  return (
+    <div className="rounded-xl border border-border overflow-hidden bg-card/50" style={{ height: "calc(100vh - 220px)", minHeight: "400px" }}>
+      <iframe
+        src={windyUrl}
+        className="w-full h-full"
+        frameBorder="0"
+        title={`Mapa climático ${selectedUT}`}
+      />
+    </div>
+  );
+}
+
 export default function Clima() {
   const { data: bases, isLoading: basesLoading } = useBases();
   const { provider } = useWeatherProvider();
   const [dayOffset, setDayOffset] = useState(0);
   const [selectedUT, setSelectedUT] = useState<"UTN" | "UTS">("UTN");
+  const [viewMode, setViewMode] = useState<"cards" | "map">("cards");
 
   const today = startOfDay(new Date());
   const selectedDay = addDays(today, dayOffset);
@@ -547,7 +570,7 @@ export default function Clima() {
         </div>
       </div>
 
-      {/* UT Toggle + Day pills row */}
+      {/* UT Toggle + View toggle + Day pills */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex rounded-lg border border-border overflow-hidden">
           <button
@@ -574,20 +597,52 @@ export default function Clima() {
           </button>
         </div>
 
-        <div className="flex gap-2">
-          {Array.from({ length: maxDays + 1 }, (_, i) => {
-            const day = addDays(today, i);
-            const label = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : format(day, "EEE dd", { locale: ptBR });
-            return (
-              <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setDayOffset(i)}>
-                {label}
-              </Button>
-            );
-          })}
+        {/* View mode toggle */}
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          <button
+            onClick={() => setViewMode("cards")}
+            className={cn(
+              "px-3 py-1.5 text-sm transition-colors flex items-center gap-1.5",
+              viewMode === "cards"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+            )}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            Cards
+          </button>
+          <button
+            onClick={() => setViewMode("map")}
+            className={cn(
+              "px-3 py-1.5 text-sm transition-colors flex items-center gap-1.5",
+              viewMode === "map"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+            )}
+          >
+            <Map className="w-3.5 h-3.5" />
+            Mapa
+          </button>
         </div>
+
+        {viewMode === "cards" && (
+          <div className="flex gap-2">
+            {Array.from({ length: maxDays + 1 }, (_, i) => {
+              const day = addDays(today, i);
+              const label = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : format(day, "EEE dd", { locale: ptBR });
+              return (
+                <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setDayOffset(i)}>
+                  {label}
+                </Button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {basesLoading ? (
+      {viewMode === "map" ? (
+        <WeatherMapView selectedUT={selectedUT} />
+      ) : basesLoading ? (
         <div className="flex flex-wrap gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-border bg-card/50 p-4 animate-pulse h-48 w-[220px]" />
