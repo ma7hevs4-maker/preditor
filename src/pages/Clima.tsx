@@ -272,10 +272,8 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
 
   const dayHours = useMemo(() => {
     if (!data?.forecast) return [];
-    return data.forecast.filter(h => {
-      const dt = new Date(h.datetime);
-      return isSameDay(dt, selectedDay);
-    });
+    const selectedDayKey = format(selectedDay, "yyyy-MM-dd");
+    return data.forecast.filter((h) => h.datetime.slice(0, 10) === selectedDayKey);
   }, [data?.forecast, selectedDay]);
 
   const triggerAnalysis = useMemo(() => {
