@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info } from "lucide-react";
+import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info, Map, LayoutGrid } from "lucide-react";
 import { useBases, Base } from "@/hooks/useBases";
 import { useWeather, WeatherHour } from "@/hooks/useWeather";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
