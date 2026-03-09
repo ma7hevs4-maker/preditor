@@ -267,7 +267,8 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 // Component that fetches weather for a single base and renders its card
 function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider: "openmeteo" | "openweathermap"; selectedDay: Date }) {
   const [detailOpen, setDetailOpen] = useState(false);
-  const { data, isLoading } = useWeather(base.lat, base.lon, 96, provider);
+  const maxHours = provider === "openweathermap" ? 120 : 168;
+  const { data, isLoading } = useWeather(base.lat, base.lon, maxHours, provider);
   const { data: triggers } = useWeatherTriggers(base.id);
 
   const dayHours = useMemo(() => {
