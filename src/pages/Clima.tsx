@@ -4,12 +4,15 @@ import { useBases, Base } from "@/hooks/useBases";
 import { useWeather, WeatherHour } from "@/hooks/useWeather";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherTriggers, isTriggerActive, WeatherTrigger } from "@/hooks/useWeatherTriggers";
+import { useHistoricalData } from "@/hooks/useHistoricalData";
 import { REGIONAIS } from "@/data/basesConfig";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { WeatherHourDetailDialog } from "@/components/clima/WeatherHourDetailDialog";
+import { translateWeatherDescription } from "@/utils/weatherTranslations";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
