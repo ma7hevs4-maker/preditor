@@ -404,10 +404,7 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
     <>
       <div
         onClick={() => setDetailOpen(true)}
-        className={cn(
-          "glass-card p-4 transition-all cursor-pointer hover:ring-2 hover:ring-primary/30 group",
-          hasActiveTriggers && "ring-1 ring-warning/40"
-        )}
+        className="glass-card p-4 transition-all cursor-pointer hover:ring-2 hover:ring-primary/30 group"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
