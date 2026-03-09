@@ -620,7 +620,7 @@ export default function Clima() {
                 : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
             )}
           >
-            <Map className="w-3.5 h-3.5" />
+            <MapIcon className="w-3.5 h-3.5" />
             Mapa
           </button>
         </div>
