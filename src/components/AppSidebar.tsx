@@ -1,9 +1,10 @@
-import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun } from "lucide-react";
+import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun, HelpCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
+import { HelpDialog } from "@/components/HelpDialog";
 import {
   Sidebar,
   SidebarContent,
@@ -88,6 +89,22 @@ export function AppSidebar() {
 
       {/* Footer: theme toggle + collapse button */}
       <SidebarFooter className="border-t border-border p-2 flex flex-col gap-1">
+        <HelpDialog
+          trigger={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full flex items-center justify-center gap-2 h-9 hover:bg-muted/50"
+              title="Ajuda"
+            >
+              <HelpCircle className="w-4 h-4 shrink-0" />
+              {!collapsed && (
+                <span className="text-xs text-muted-foreground truncate">Ajuda</span>
+              )}
+            </Button>
+          }
+        />
+
         <Button
           variant="ghost"
           size="sm"
