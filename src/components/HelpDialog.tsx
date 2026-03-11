@@ -171,7 +171,11 @@ const EstruturaHelp = () => (
         </div>
         <div>
           <p className="font-medium text-foreground">BT Only (exclusivas para BT):</p>
-          <p>Corte e Religa, Perdas, Reguladas — contribuem apenas para a resolução de incidentes BT.</p>
+          <p>Corte e Religa, Perdas — contribuem apenas para a resolução de incidentes BT.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Excluídas dos cálculos:</p>
+          <p>LV Manutenção, LV Obras, MK Manutenção, MK Obras, Reguladas — exibidas para planejamento, mas não impactam a capacidade de resolução.</p>
         </div>
         <div>
           <p className="font-medium text-foreground">Excluídas do cálculo:</p>
