@@ -244,7 +244,7 @@ export const ConfigurationForm = ({
   // Team types that count as "general" teams (equipes gerais)
   const GENERAL_TEAM_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras", "Apoio UTS", "Apoio UTN"];
   // Team types that count as "BT loss" teams (equipes BT)
-  const BT_TEAM_TYPES = ["Corte e Religa", "Perdas", "Reguladas"];
+  const BT_TEAM_TYPES = ["Corte e Religa", "Perdas"];
 
   // Load declared structure from daily plans for a specific date
   const handleLoadDeclaredStructure = async (day: number) => {
