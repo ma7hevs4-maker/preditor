@@ -1,9 +1,10 @@
-import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun } from "lucide-react";
+import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun, HelpCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { AdminConfigDialog } from "@/components/AdminConfigDialog";
+import { HelpDialog } from "@/components/HelpDialog";
 import {
   Sidebar,
   SidebarContent,
