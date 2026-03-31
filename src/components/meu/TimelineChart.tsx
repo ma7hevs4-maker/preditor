@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, Maximize, MoveHorizontal, Crosshair, Clock } from "lucide-react";
 
@@ -41,7 +41,6 @@ interface TeamTimelineData {
   shifts?: ShiftData[];
   turno?: string;
   shiftStartHour?: number;
-  // Keep old fields for backward compatibility during migration
   shiftStart?: number;
   shiftEnd?: number;
   platformDuration?: number;
@@ -60,13 +59,34 @@ interface TimelineChartProps {
   shiftStartHour?: number;
 }
 
+// Theme-aware color tokens for the SVG chart
+const COLORS = {
+  tmd: "hsl(var(--primary))",
+  tme: "hsl(var(--success))",
+  error: "hsl(var(--destructive))",
+  warning: "hsl(var(--warning))",
+  highlight: "hsl(var(--warning))",
+  purple: "hsl(270 60% 60%)",
+  interval: "hsl(var(--destructive))",
+  platform: "hsl(var(--primary))",
+  foreground: "hsl(var(--foreground))",
+  mutedForeground: "hsl(var(--muted-foreground))",
+  border: "hsl(var(--border))",
+  gridLine: "hsl(var(--muted-foreground) / 0.15)",
+  gridLineHalf: "hsl(var(--muted-foreground) / 0.08)",
+  zeroEvent: "hsl(var(--primary) / 0.6)",
+  overflow: "hsl(var(--muted-foreground))",
+  loginDot: "hsl(var(--success))",
+  logoffDot: "hsl(var(--destructive))",
+  improdutivoBorder: "hsl(var(--warning))",
+};
+
 export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemoveTeam, shiftStartHour = 0 }: TimelineChartProps) {
   const [currentScale, setCurrentScale] = useState(1);
   const [horizontalScale, setHorizontalScale] = useState(1);
   const [containerWidth, setContainerWidth] = useState(1200);
   const [toggledEvents, setToggledEvents] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
-
   const transformRef = useRef<any>(null);
 
   const formatDecimalTime = (decimal: number) => {
@@ -103,28 +123,24 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
     return () => clearTimeout(timer);
   }, []);
 
-  // Chart dimensions
-  const baseWidth = Math.max(containerWidth || 1200, 800); 
+  const baseWidth = Math.max(containerWidth || 1200, 800);
   const width = baseWidth * (horizontalScale || 1);
   const margin = { top: 60, right: 60, bottom: 60, left: 120 };
   const innerWidth = Math.max(0, width - margin.left - margin.right);
   const laneHeight = 40;
   const teamPadding = 30;
 
-  // Process data to assign lanes
   let currentY = 0;
   const processedData = (data || []).map((teamData) => {
     if (!teamData) return null;
-    // Sort events by start time
     const sortedEvents = [...(teamData.events || [])].sort(
       (a, b) => (a.inicio_decimal || 0) - (b.inicio_decimal || 0)
     );
-    const lanes: number[] = []; 
+    const lanes: number[] = [];
 
     const eventsWithLanes = sortedEvents.map((ev) => {
       const start = ev.inicio_decimal || 0;
       const end = start + (ev.TMD || 0) / 60 + (ev.TME || 0) / 60;
-
       let laneIdx = lanes.findIndex((laneEnd) => laneEnd <= start);
       if (laneIdx === -1) {
         laneIdx = lanes.length;
@@ -132,34 +148,25 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
       } else {
         lanes[laneIdx] = end;
       }
-
       return { ...ev, lane: laneIdx };
     });
 
     const numLanes = Math.max(1, lanes.length);
-    const rowHeight = numLanes * laneHeight + teamPadding + 20; 
+    const rowHeight = numLanes * laneHeight + teamPadding + 20;
     const yOffset = currentY;
     currentY += rowHeight;
 
-    return {
-      ...teamData,
-      events: eventsWithLanes,
-      numLanes,
-      yOffset,
-      rowHeight,
-    };
+    return { ...teamData, events: eventsWithLanes, numLanes, yOffset, rowHeight };
   }).filter(Boolean) as any[];
 
   const innerHeight = Math.max(currentY, 100);
   const height = innerHeight + margin.top + margin.bottom;
 
-  // Per-team X scale: 26 hours window starting 1h before teamShiftStartHour
   const getXScale = (val: number, teamShiftStartHour: number) => {
     const safeInnerWidth = innerWidth || 1;
     return ((val - (teamShiftStartHour - 1)) / 26) * safeInnerWidth;
   };
 
-  // Default X scale (for grid lines and global axis)
   const xScale = (val: number) => getXScale(val, shiftStartHour);
 
   return (
@@ -185,82 +192,42 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
         {({ zoomIn, zoomOut, resetTransform, setTransform }) => {
           return (
           <>
-            {/* Title Bar with Controls */}
-            <div className="flex items-center justify-between bg-secondary text-secondary-foreground p-3 shrink-0">
+            {/* Title Bar */}
+            <div className="flex items-center justify-between bg-secondary/50 backdrop-blur-sm text-foreground p-3 shrink-0 border-b border-border">
               <div className="flex items-center">
                 <Clock className="h-5 w-5 mr-2 text-primary" />
-                <h3 className="text-lg font-bold tracking-tight">
-                  Linha do Tempo
-                </h3>
+                <h3 className="text-lg font-bold tracking-tight">Linha do Tempo</h3>
               </div>
 
               <div className="flex items-center space-x-2">
-                <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border">
-                  <button
-                    onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))}
-                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
-                    title="Diminuir Escala Horizontal"
-                  >
+                <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-md border border-border">
+                  <button onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Diminuir Escala Horizontal">
                     <MoveHorizontal className="w-3.5 h-3.5 rotate-90" />
                   </button>
-                  <div className="text-[10px] font-bold text-primary min-w-[2.8rem] text-center">
-                    {Math.round(horizontalScale * 100)}%
-                  </div>
-                  <button
-                    onClick={() => setHorizontalScale(prev => Math.min(10, prev + 0.25))}
-                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
-                    title="Aumentar Escala Horizontal"
-                  >
+                  <div className="text-[10px] font-bold text-primary min-w-[2.8rem] text-center font-mono">{Math.round(horizontalScale * 100)}%</div>
+                  <button onClick={() => setHorizontalScale(prev => Math.min(10, prev + 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Aumentar Escala Horizontal">
                     <MoveHorizontal className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => {
-                      setHorizontalScale(1);
-                      resetTransform();
-                    }}
-                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors ml-1 border-l border-border pl-2"
-                    title="Resetar Escala"
-                  >
+                  <button onClick={() => { setHorizontalScale(1); resetTransform(); }} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors ml-1 border-l border-border pl-2" title="Resetar Escala">
                     <Maximize className="w-3.5 h-3.5 rotate-90" />
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border">
-                  <button
-                    onClick={() => zoomIn()}
-                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
-                    title="Aumentar Zoom"
-                  >
+                <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-md border border-border">
+                  <button onClick={() => zoomIn()} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Aumentar Zoom">
                     <ZoomIn className="w-3.5 h-3.5" />
                   </button>
-                  <div className="text-[10px] font-bold text-muted-foreground min-w-[2.2rem] text-center">
-                    {Math.round(currentScale * 100)}%
-                  </div>
-                  <button
-                    onClick={() => zoomOut()}
-                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
-                    title="Diminuir Zoom"
-                  >
+                  <div className="text-[10px] font-bold text-muted-foreground min-w-[2.2rem] text-center font-mono">{Math.round(currentScale * 100)}%</div>
+                  <button onClick={() => zoomOut()} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Diminuir Zoom">
                     <ZoomOut className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      const scale = containerWidth / width;
-                      setTransform(0, 0, scale);
-                    }}
-                    className="p-1 hover:bg-primary/30 hover:text-primary rounded text-secondary-foreground transition-colors"
-                    title="Ajustar à Largura"
-                  >
+                  <button onClick={() => { const scale = containerWidth / width; setTransform(0, 0, scale); }} className="p-1 hover:bg-primary/20 hover:text-primary rounded text-muted-foreground transition-colors" title="Ajustar à Largura">
                     <Maximize className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => transformRef.current?.centerView()}
-                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
-                    title="Centralizar"
-                  >
+                  <button onClick={() => transformRef.current?.centerView()} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Centralizar">
                     <Crosshair className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -268,94 +235,91 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 bg-card border-b border-border text-xs text-foreground/80 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-[#12A8E0] border border-black"></div>
-          <span>TMD</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-[#39B54A] border border-black"></div>
-          <span>TME</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-[#ef4444] border border-black"></div>
-          <span>TMDE &gt; 90m</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 border-2 border-red-500 bg-muted"></div>
-          <span>TMD &gt; 30m / TME &gt; Padrão</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-[#39B54A] border border-black"></div>
-          <span>Login</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-[#ef4444] border border-black"></div>
-          <span>Log Off</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-black bg-white border-2 border-black px-0.5 leading-none">IT/FT</span>
-          <span>Início/Fim Turno</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-1 bg-[#12A8E0]"></div>
-          <span>Plataforma / Volta Base</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-1 bg-[#8B0000]"></div>
-          <span>Intervalo</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 border-2 border-orange-400 bg-muted"></div>
-          <span>Improdutivo</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-muted border border-black relative">
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-[#FFD700] border-y border-black"></div>
-            <div className="absolute inset-x-0 top-0.5 h-0.5 bg-black"></div>
-          </div>
-          <span>Atribuída O2</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-muted border border-black relative">
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-[#FFD700] border-y border-black"></div>
-            <div className="absolute inset-x-0 bottom-0.5 h-0.5 bg-black"></div>
-          </div>
-          <span>Deslocada O2</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-muted border border-black relative">
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-[#A855F7] border-y border-black"></div>
-          </div>
-          <span>Possível O2</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-muted border-2 border-[#A855F7]"></div>
-          <span>Possível Anomalia</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-[#FFD700] border-2 border-black"></div>
-          <span>Selecionado</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-[#38bdf8] border border-black"></div>
-          <span>TMDE = 0</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mr-0.5"></div>
-            <div className="w-4 h-4 bg-[#12A8E0] border border-black"></div>
-            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground ml-0.5"></div>
-          </div>
-          <span>Fora do período visível</span>
-        </div>
-      </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 bg-card/80 backdrop-blur-sm border-b border-border text-[11px] text-muted-foreground shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.tmd }}></div>
+                <span>TMD</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.tme }}></div>
+                <span>TME</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.error }}></div>
+                <span>TMDE &gt; 90m</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border-2" style={{ borderColor: COLORS.error, backgroundColor: 'transparent' }}></div>
+                <span>TMD &gt; 30m / TME &gt; Padrão</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full border border-border" style={{ backgroundColor: COLORS.loginDot }}></div>
+                <span>Login</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full border border-border" style={{ backgroundColor: COLORS.logoffDot }}></div>
+                <span>Log Off</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-bold px-1 py-0.5 rounded border-2 border-foreground/60 text-foreground leading-none">IT/FT</span>
+                <span>Início/Fim Turno</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-1 rounded-full" style={{ backgroundColor: COLORS.platform }}></div>
+                <span>Plataforma / Volta Base</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-1 rounded-full" style={{ backgroundColor: COLORS.interval }}></div>
+                <span>Intervalo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border-2" style={{ borderColor: COLORS.improdutivoBorder, backgroundColor: 'transparent' }}></div>
+                <span>Improdutivo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm bg-muted border border-foreground/30 relative">
+                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1" style={{ backgroundColor: COLORS.warning }}></div>
+                  <div className="absolute inset-x-0 top-0.5 h-0.5" style={{ backgroundColor: COLORS.foreground }}></div>
+                </div>
+                <span>Atribuída O2</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm bg-muted border border-foreground/30 relative">
+                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1" style={{ backgroundColor: COLORS.warning }}></div>
+                  <div className="absolute inset-x-0 bottom-0.5 h-0.5" style={{ backgroundColor: COLORS.foreground }}></div>
+                </div>
+                <span>Deslocada O2</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm bg-muted border border-foreground/30 relative">
+                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1" style={{ backgroundColor: COLORS.purple }}></div>
+                </div>
+                <span>Possível O2</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border-2" style={{ borderColor: COLORS.purple, backgroundColor: 'transparent' }}></div>
+                <span>Possível Anomalia</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.highlight }}></div>
+                <span>Selecionado</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3.5 h-3.5 rounded-full border border-border" style={{ backgroundColor: COLORS.zeroEvent }}></div>
+                <span>TMDE = 0</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS.overflow }}></div>
+                  <div className="w-3 h-3 rounded-sm mx-0.5 border border-border" style={{ backgroundColor: COLORS.tmd }}></div>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS.overflow }}></div>
+                </div>
+                <span>Fora do período</span>
+              </div>
+            </div>
 
             <div className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden">
-              <TransformComponent 
-                wrapperClass="!w-full !h-full" 
-                contentClass="w-max h-max"
-              >
+              <TransformComponent wrapperClass="!w-full !h-full" contentClass="w-max h-max">
                 <svg
                   width={width}
                   height={height}
@@ -369,89 +333,72 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                       const time = (shiftStartHour - 1) + i / 2;
                       const isHalfHour = i % 2 !== 0;
                       return (
-                      <line
-                        key={i}
-                        x1={xScale(time)}
-                        y1={0}
-                        x2={xScale(time)}
-                        y2={innerHeight}
-                        stroke={isHalfHour ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.15)"}
-                        strokeWidth="1"
-                        strokeDasharray={isHalfHour ? "4 4" : undefined}
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    )})}
+                        <line
+                          key={i}
+                          x1={xScale(time)} y1={0} x2={xScale(time)} y2={innerHeight}
+                          stroke={isHalfHour ? COLORS.gridLineHalf : COLORS.gridLine}
+                          strokeWidth="1"
+                          strokeDasharray={isHalfHour ? "4 4" : undefined}
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      );
+                    })}
 
-                    {/* Shift Dividers (Start, Mid, End) */}
+                    {/* Shift Dividers */}
                     {[shiftStartHour, shiftStartHour + 8, shiftStartHour + 16, shiftStartHour + 24].map((hour) => (
                       <line
                         key={`shift-${hour}`}
-                        x1={xScale(hour)}
-                        y1={-20}
-                        x2={xScale(hour)}
-                        y2={innerHeight + 10}
-                        stroke={hour === shiftStartHour + 8 || hour === shiftStartHour + 16 ? "#ef4444" : "black"}
+                        x1={xScale(hour)} y1={-20} x2={xScale(hour)} y2={innerHeight + 10}
+                        stroke={hour === shiftStartHour + 8 || hour === shiftStartHour + 16 ? COLORS.error : COLORS.foreground}
                         strokeWidth="2"
                         strokeDasharray="4 2"
                         vectorEffect="non-scaling-stroke"
                       />
                     ))}
 
-                    {/* Render each team's timeline */}
+                    {/* Teams */}
                     {processedData.map((teamData) => {
-                      const yCenter = teamData.yOffset + teamPadding / 2 + laneHeight / 2 + 15; // Shifted down for X-axis
+                      const yCenter = teamData.yOffset + teamPadding / 2 + laneHeight / 2 + 15;
 
                       return (
                         <g key={teamData.equipe}>
-                          {/* X-Axis Labels for this team */}
+                          {/* X-Axis Labels per team */}
                           {Array.from({ length: 27 }).map((_, i) => {
                             const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                             const hour = teamShiftStartHour - 1 + i;
                             const displayHour = ((hour % 24) + 24) % 24;
-                            
                             return (
                               <text
                                 key={`axis-${teamData.equipe}-${i}`}
                                 transform={`translate(${getXScale(hour, teamShiftStartHour)}, ${teamData.yOffset + 15}) scale(${1 / currentScale})`}
-                                x={0}
-                                y={0}
-                                textAnchor="middle"
-                                fontSize="9"
-                                fill="#6b7280"
-                                fontWeight="600"
+                                x={0} y={0} textAnchor="middle" fontSize="9" fontWeight="600"
+                                fill={COLORS.mutedForeground}
                               >
                                 {displayHour}h
                               </text>
                             );
                           })}
 
-                          {/* Team Name Label */}
+                          {/* Team Name */}
                           <text
                             transform={`translate(-10, ${yCenter}) scale(${1 / currentScale})`}
-                            x={0}
-                            y={0}
-                            textAnchor="end"
-                            dominantBaseline="middle"
-                            fontSize="12"
-                            fontWeight="bold"
-                            fill="black"
+                            x={0} y={0} textAnchor="end" dominantBaseline="middle"
+                            fontSize="12" fontWeight="bold"
+                            fill={COLORS.foreground}
                           >
                             {teamData.equipe}
                           </text>
 
-                          {/* Main horizontal line for the team */}
+                          {/* Center line */}
                           <line
-                            x1={0}
-                            y1={yCenter}
-                            x2={innerWidth}
-                            y2={yCenter}
-                            stroke="black"
-                            strokeWidth="1"
-                            strokeDasharray="2 2"
+                            x1={0} y1={yCenter} x2={innerWidth} y2={yCenter}
+                            stroke={COLORS.border}
+                            strokeWidth="1" strokeDasharray="2 2"
                             vectorEffect="non-scaling-stroke"
                           />
-                                                 {/* Events */}
-                          {teamData.events.map((ev, idx) => {
+
+                          {/* Events */}
+                          {teamData.events.map((ev: any, idx: number) => {
                             const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                             const isToggled = ev.id && toggledEvents.has(ev.id);
                             const currentTMD = isToggled && ev.origTMD !== undefined ? ev.origTMD : ev.TMD;
@@ -475,16 +422,14 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                             const isHighlighted = ev.id && highlightedIds.includes(ev.id);
                             const isTmdeHigh = currentTMDE > 90 && !ev.improdutivo;
 
-                            const tmdFill = isHighlighted ? "#FFD700" : (isTmdeHigh ? "#ef4444" : "#12A8E0");
-                            const tmeFill = isHighlighted ? "#FFD700" : (isTmdeHigh ? "#ef4444" : "#39B54A");
-                            
-                            const rectStroke = isHighlighted ? "#000" : "black";
-                            const rectStrokeWidth = isHighlighted ? "2" : "1";
+                            const tmdFill = isHighlighted ? COLORS.highlight : (isTmdeHigh ? COLORS.error : COLORS.tmd);
+                            const tmeFill = isHighlighted ? COLORS.highlight : (isTmdeHigh ? COLORS.error : COLORS.tme);
+
+                            const rectStroke = isHighlighted ? COLORS.foreground : COLORS.foreground;
+                            const rectStrokeWidth = isHighlighted ? "2" : "0.5";
 
                             const handleEventClick = (e: React.MouseEvent) => {
                               if (!ev.id) return;
-                              
-                              // If it's a possible O2 or Anomaly, toggle the view
                               if (ev.possivelO2 || ev.possivelAnomalia) {
                                 setToggledEvents(prev => {
                                   const next = new Set(prev);
@@ -493,16 +438,11 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   return next;
                                 });
                               }
-                              
                               onEventClick?.(ev.id, e.ctrlKey || e.metaKey);
                             };
 
                             return (
-                              <g 
-                                key={idx} 
-                                className={ev.id ? "cursor-pointer" : ""}
-                                onClick={handleEventClick}
-                              >
+                              <g key={idx} className={ev.id ? "cursor-pointer" : ""} onClick={handleEventClick}>
                                 <title>
                                   {`Incidente: ${ev.id || 'N/A'}\n`}
                                   {`Data: ${ev.dataAcao || 'N/A'}\n`}
@@ -513,103 +453,57 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   {ev.possivelAnomalia ? "POSSÍVEL ANOMALIA (M300)" : ""}
                                   {isToggled ? "\n(Exibindo valores originais da base de incidentes)" : ""}
                                 </title>
-                                {/* Fallback for 0 duration events */}
+
+                                {/* Zero duration */}
                                 {xFimTotal === xInicio && (
                                   <circle
-                                    cx={xInicio}
-                                    cy={yRect + rectHeight / 2}
-                                    r={5}
-                                    fill={isHighlighted ? "#FFD700" : "#38bdf8"}
-                                    stroke={isHighlighted ? "#000" : "black"}
-                                    strokeWidth={isHighlighted ? "2" : "1"}
+                                    cx={xInicio} cy={yRect + rectHeight / 2} r={5}
+                                    fill={isHighlighted ? COLORS.highlight : COLORS.zeroEvent}
+                                    stroke={COLORS.foreground}
+                                    strokeWidth={isHighlighted ? "2" : "0.5"}
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
 
-                                {/* TMD Rect */}
+                                {/* TMD */}
                                 {xFimTmd > xInicio && (
                                   <rect
-                                    x={xInicio}
-                                    y={yRect}
-                                    width={xFimTmd - xInicio}
-                                    height={rectHeight}
-                                    fill={tmdFill}
-                                    stroke={rectStroke}
-                                    strokeWidth={rectStrokeWidth}
+                                    x={xInicio} y={yRect} width={xFimTmd - xInicio} height={rectHeight}
+                                    fill={tmdFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
+                                    rx="2" ry="2"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
 
-                                {/* TME Rect */}
+                                {/* TME */}
                                 {xFimTotal > xFimTmd && (
                                   <rect
-                                    x={xFimTmd}
-                                    y={yRect}
-                                    width={xFimTotal - xFimTmd}
-                                    height={rectHeight}
-                                    fill={tmeFill}
-                                    stroke={rectStroke}
-                                    strokeWidth={rectStrokeWidth}
+                                    x={xFimTmd} y={yRect} width={xFimTotal - xFimTmd} height={rectHeight}
+                                    fill={tmeFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
+                                    rx="2" ry="2"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
 
-                                {/* Left Overflow Indicator */}
+                                {/* Left Overflow */}
                                 {hasLeftOverflow && (
-                                  <circle
-                                    cx={xInicio - 4}
-                                    cy={yRect + rectHeight / 2}
-                                    r={3}
-                                    fill="#6b7280"
-                                    vectorEffect="non-scaling-stroke"
-                                  />
+                                  <circle cx={xInicio - 4} cy={yRect + rectHeight / 2} r={3} fill={COLORS.overflow} vectorEffect="non-scaling-stroke" />
                                 )}
 
-                                {/* Right Overflow Indicator */}
+                                {/* Right Overflow */}
                                 {hasRightOverflow && (
-                                  <circle
-                                    cx={xFimTotal + 4}
-                                    cy={yRect + rectHeight / 2}
-                                    r={3}
-                                    fill="#6b7280"
-                                    vectorEffect="non-scaling-stroke"
-                                  />
+                                  <circle cx={xFimTotal + 4} cy={yRect + rectHeight / 2} r={3} fill={COLORS.overflow} vectorEffect="non-scaling-stroke" />
                                 )}
 
                                 {/* Ordem 2 Yellow Stripe */}
                                 {ev.ordem2 && xFimTotal > xInicio && (
                                   <g>
-                                    <rect
-                                      x={xInicio}
-                                      y={yRect + rectHeight / 2 - 2}
-                                      width={xFimTotal - xInicio}
-                                      height={4}
-                                      fill="#FFD700"
-                                      stroke="black"
-                                      strokeWidth="0.5"
-                                      vectorEffect="non-scaling-stroke"
-                                    />
-                                    {/* Atribuída O2 Line (Above) */}
+                                    <rect x={xInicio} y={yRect + rectHeight / 2 - 2} width={xFimTotal - xInicio} height={4} fill={COLORS.warning} stroke={COLORS.foreground} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
                                     {ev.isAtribuidaO2 && (
-                                      <rect
-                                        x={xInicio}
-                                        y={yRect + rectHeight / 2 - 6}
-                                        width={xFimTotal - xInicio}
-                                        height={2}
-                                        fill="black"
-                                        vectorEffect="non-scaling-stroke"
-                                      />
+                                      <rect x={xInicio} y={yRect + rectHeight / 2 - 6} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
-                                    {/* Deslocada O2 Line (Below) */}
                                     {ev.isDeslocadaO2 && (
-                                      <rect
-                                        x={xInicio}
-                                        y={yRect + rectHeight / 2 + 4}
-                                        width={xFimTotal - xInicio}
-                                        height={2}
-                                        fill="black"
-                                        vectorEffect="non-scaling-stroke"
-                                      />
+                                      <rect x={xInicio} y={yRect + rectHeight / 2 + 4} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
                                   </g>
                                 )}
@@ -617,93 +511,52 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                 {/* Possível O2 Purple Stripe */}
                                 {ev.possivelO2 && xFimTotal > xInicio && (
                                   <g>
-                                    <rect
-                                      x={xInicio}
-                                      y={yRect + rectHeight / 2 - 2}
-                                      width={xFimTotal - xInicio}
-                                      height={4}
-                                      fill="#A855F7"
-                                      stroke="black"
-                                      strokeWidth="0.5"
-                                      vectorEffect="non-scaling-stroke"
-                                    />
-                                    {/* Atribuída O2 Line (Above) */}
+                                    <rect x={xInicio} y={yRect + rectHeight / 2 - 2} width={xFimTotal - xInicio} height={4} fill={COLORS.purple} stroke={COLORS.foreground} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
                                     {ev.isAtribuidaO2 && (
-                                      <rect
-                                        x={xInicio}
-                                        y={yRect + rectHeight / 2 - 6}
-                                        width={xFimTotal - xInicio}
-                                        height={2}
-                                        fill="black"
-                                        vectorEffect="non-scaling-stroke"
-                                      />
+                                      <rect x={xInicio} y={yRect + rectHeight / 2 - 6} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
-                                    {/* Deslocada O2 Line (Below) */}
                                     {ev.isDeslocadaO2 && (
-                                      <rect
-                                        x={xInicio}
-                                        y={yRect + rectHeight / 2 + 4}
-                                        width={xFimTotal - xInicio}
-                                        height={2}
-                                        fill="black"
-                                        vectorEffect="non-scaling-stroke"
-                                      />
+                                      <rect x={xInicio} y={yRect + rectHeight / 2 + 4} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
                                   </g>
                                 )}
 
-                                {/* Possível Anomalia Purple Border */}
+                                {/* Possível Anomalia */}
                                 {ev.possivelAnomalia && xFimTotal > xInicio && (
                                   <rect
-                                    x={xInicio - 2}
-                                    y={yRect - 2}
-                                    width={xFimTotal - xInicio + 4}
-                                    height={rectHeight + 4}
-                                    fill="none"
-                                    stroke="#A855F7"
-                                    strokeWidth="2.5"
+                                    x={xInicio - 2} y={yRect - 2}
+                                    width={xFimTotal - xInicio + 4} height={rectHeight + 4}
+                                    fill="none" stroke={COLORS.purple} strokeWidth="2.5"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
 
-                                {/* Improdutivo Orange Border */}
+                                {/* Improdutivo Border */}
                                 {ev.improdutivo && xFimTotal > xInicio && (
                                   <rect
-                                    x={xInicio}
-                                    y={yRect - 4}
-                                    width={xFimTotal - xInicio}
-                                    height={rectHeight + 8}
-                                    fill="none"
-                                    stroke="orange"
-                                    strokeWidth="1.5"
+                                    x={xInicio} y={yRect - 4}
+                                    width={xFimTotal - xInicio} height={rectHeight + 8}
+                                    fill="none" stroke={COLORS.improdutivoBorder} strokeWidth="1.5"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
 
-                                {/* TMD > 30 min Red Border */}
+                                {/* TMD > 30 Border */}
                                 {ev.TMD > 30 && !isTmdeHigh && xFimTmd > xInicio && (
                                   <rect
-                                    x={xInicio}
-                                    y={yRect - 4}
-                                    width={xFimTmd - xInicio}
-                                    height={rectHeight + 8}
-                                    fill="none"
-                                    stroke="red"
-                                    strokeWidth="1.5"
+                                    x={xInicio} y={yRect - 4}
+                                    width={xFimTmd - xInicio} height={rectHeight + 8}
+                                    fill="none" stroke={COLORS.error} strokeWidth="1.5"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
 
-                                {/* TME > tempoPadrao Red Border */}
+                                {/* TME > tempoPadrao Border */}
                                 {ev.TME > (ev.tempoPadrao || 60) && !isTmdeHigh && xFimTotal > xFimTmd && (
                                   <rect
-                                    x={xFimTmd}
-                                    y={yRect - 4}
-                                    width={xFimTotal - xFimTmd}
-                                    height={rectHeight + 8}
-                                    fill="none"
-                                    stroke="red"
-                                    strokeWidth="1.5"
+                                    x={xFimTmd} y={yRect - 4}
+                                    width={xFimTotal - xFimTmd} height={rectHeight + 8}
+                                    fill="none" stroke={COLORS.error} strokeWidth="1.5"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -712,12 +565,9 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                 {currentTMD > 0 && (xFimTmd - xInicio) * currentScale > 25 && (
                                   <text
                                     transform={`translate(${(xInicio + xFimTmd) / 2}, ${yRect + rectHeight / 2}) scale(${1 / currentScale})`}
-                                    x={0}
-                                    y={0}
-                                    textAnchor="middle"
-                                    alignmentBaseline="middle"
-                                    fontSize="10"
-                                    fill="black"
+                                    x={0} y={0} textAnchor="middle" alignmentBaseline="middle"
+                                    fontSize="10" fontWeight="600"
+                                    fill={COLORS.foreground}
                                   >
                                     {Math.round(currentTMD)}m
                                   </text>
@@ -726,12 +576,9 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                 {currentTME > 0 && (xFimTotal - xFimTmd) * currentScale > 25 && (
                                   <text
                                     transform={`translate(${(xFimTmd + xFimTotal) / 2}, ${yRect + rectHeight / 2}) scale(${1 / currentScale})`}
-                                    x={0}
-                                    y={0}
-                                    textAnchor="middle"
-                                    alignmentBaseline="middle"
-                                    fontSize="10"
-                                    fill="black"
+                                    x={0} y={0} textAnchor="middle" alignmentBaseline="middle"
+                                    fontSize="10" fontWeight="600"
+                                    fill={COLORS.foreground}
                                   >
                                     {Math.round(currentTME)}m
                                   </text>
@@ -740,94 +587,66 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                             );
                           })}
 
-                          {/* Shift Lines (In Front of Events) */}
+                          {/* Shift Lines */}
                           {(() => {
                             const shiftsToRender: ShiftData[] = teamData.shifts || [{
-                              shiftStart: teamData.shiftStart,
-                              shiftEnd: teamData.shiftEnd,
-                              platformDuration: teamData.platformDuration,
-                              firstLogin: teamData.firstLogin,
-                              lastLogOff: teamData.lastLogOff,
-                              intervalStart: teamData.intervalStart,
-                              intervalEnd: teamData.intervalEnd,
-                              returnToBaseDuration: teamData.returnToBaseDuration
+                              shiftStart: teamData.shiftStart, shiftEnd: teamData.shiftEnd,
+                              platformDuration: teamData.platformDuration, firstLogin: teamData.firstLogin,
+                              lastLogOff: teamData.lastLogOff, intervalStart: teamData.intervalStart,
+                              intervalEnd: teamData.intervalEnd, returnToBaseDuration: teamData.returnToBaseDuration
                             }];
 
                             return shiftsToRender.map((shift, sIdx) => {
                               const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                               return (
                                 <g key={`shift-lines-${sIdx}`}>
-                                  {/* Platform Time (Blue Line) */}
+                                  {/* Platform */}
                                   {shift.platformDuration !== undefined && (shift.firstLogin !== undefined || shift.shiftStart !== undefined) && (
                                     <g>
                                       <line
-                                        x1={getXScale(shift.firstLogin ?? shift.shiftStart!, teamShiftStartHour)}
-                                        y1={yCenter - 15}
-                                        x2={getXScale((shift.firstLogin ?? shift.shiftStart!) + shift.platformDuration, teamShiftStartHour)}
-                                        y2={yCenter - 15}
-                                        stroke="#12A8E0"
-                                        strokeWidth="3"
-                                        vectorEffect="non-scaling-stroke"
+                                        x1={getXScale(shift.firstLogin ?? shift.shiftStart!, teamShiftStartHour)} y1={yCenter - 15}
+                                        x2={getXScale((shift.firstLogin ?? shift.shiftStart!) + shift.platformDuration, teamShiftStartHour)} y2={yCenter - 15}
+                                        stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.firstLogin ?? shift.shiftStart!, teamShiftStartHour)}
-                                        y1={yCenter - 20}
-                                        x2={getXScale(shift.firstLogin ?? shift.shiftStart!, teamShiftStartHour)}
-                                        y2={yCenter - 10}
-                                        stroke="#12A8E0"
-                                        strokeWidth="3"
-                                        vectorEffect="non-scaling-stroke"
+                                        x1={getXScale(shift.firstLogin ?? shift.shiftStart!, teamShiftStartHour)} y1={yCenter - 20}
+                                        x2={getXScale(shift.firstLogin ?? shift.shiftStart!, teamShiftStartHour)} y2={yCenter - 10}
+                                        stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale((shift.firstLogin ?? shift.shiftStart!) + shift.platformDuration, teamShiftStartHour)}
-                                        y1={yCenter - 20}
-                                        x2={getXScale((shift.firstLogin ?? shift.shiftStart!) + shift.platformDuration, teamShiftStartHour)}
-                                        y2={yCenter - 10}
-                                        stroke="#12A8E0"
-                                        strokeWidth="3"
-                                        vectorEffect="non-scaling-stroke"
+                                        x1={getXScale((shift.firstLogin ?? shift.shiftStart!) + shift.platformDuration, teamShiftStartHour)} y1={yCenter - 20}
+                                        x2={getXScale((shift.firstLogin ?? shift.shiftStart!) + shift.platformDuration, teamShiftStartHour)} y2={yCenter - 10}
+                                        stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <title>Tempo de Plataforma: {Math.round(shift.platformDuration * 60)} min</title>
                                     </g>
                                   )}
 
-                                  {/* Interval (Red Line) */}
+                                  {/* Interval */}
                                   {shift.intervalStart !== undefined && shift.intervalEnd !== undefined && (
                                     <g>
                                       <line
-                                        x1={getXScale(shift.intervalStart, teamShiftStartHour)}
-                                        y1={yCenter + 15}
-                                        x2={getXScale(shift.intervalEnd, teamShiftStartHour)}
-                                        y2={yCenter + 15}
-                                        stroke="#8B0000"
-                                        strokeWidth="3"
-                                        vectorEffect="non-scaling-stroke"
+                                        x1={getXScale(shift.intervalStart, teamShiftStartHour)} y1={yCenter + 15}
+                                        x2={getXScale(shift.intervalEnd, teamShiftStartHour)} y2={yCenter + 15}
+                                        stroke={COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.intervalStart, teamShiftStartHour)}
-                                        y1={yCenter + 10}
-                                        x2={getXScale(shift.intervalStart, teamShiftStartHour)}
-                                        y2={yCenter + 20}
-                                        stroke="#8B0000"
-                                        strokeWidth="3"
-                                        vectorEffect="non-scaling-stroke"
+                                        x1={getXScale(shift.intervalStart, teamShiftStartHour)} y1={yCenter + 10}
+                                        x2={getXScale(shift.intervalStart, teamShiftStartHour)} y2={yCenter + 20}
+                                        stroke={COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.intervalEnd, teamShiftStartHour)}
-                                        y1={yCenter + 10}
-                                        x2={getXScale(shift.intervalEnd, teamShiftStartHour)}
-                                        y2={yCenter + 20}
-                                        stroke="#8B0000"
-                                        strokeWidth="3"
-                                        vectorEffect="non-scaling-stroke"
+                                        x1={getXScale(shift.intervalEnd, teamShiftStartHour)} y1={yCenter + 10}
+                                        x2={getXScale(shift.intervalEnd, teamShiftStartHour)} y2={yCenter + 20}
+                                        stroke={COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <title>Intervalo: {formatDecimalTime(shift.intervalStart)} - {formatDecimalTime(shift.intervalEnd)} ({Math.round((shift.intervalEnd - shift.intervalStart) * 60)} min)</title>
                                     </g>
                                   )}
 
-                                  {/* Volta a Base (Blue Line) */}
+                                  {/* Return to Base */}
                                   {(() => {
-                                    const shiftEvents = teamData.events.filter(ev => {
+                                    const shiftEvents = teamData.events.filter((ev: any) => {
                                       if (shift.shiftStart === undefined) return true;
                                       const nextShift = shiftsToRender[sIdx + 1];
                                       if (nextShift && nextShift.shiftStart !== undefined) {
@@ -836,41 +655,17 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                       return ev.inicio_decimal >= shift.shiftStart;
                                     });
 
-                                    const lastEventEnd = shiftEvents.length > 0 
-                                      ? Math.max(...shiftEvents.map(ev => ev.inicio_decimal + ev.TMD/60 + ev.TME/60))
+                                    const lastEventEnd = shiftEvents.length > 0
+                                      ? Math.max(...shiftEvents.map((ev: any) => ev.inicio_decimal + ev.TMD / 60 + ev.TME / 60))
                                       : undefined;
-                                    
+
                                     if (lastEventEnd !== undefined && shift.returnToBaseDuration !== undefined) {
                                       const returnToBaseEnd = lastEventEnd + shift.returnToBaseDuration;
                                       return (
                                         <g>
-                                          <line
-                                            x1={getXScale(lastEventEnd, teamShiftStartHour)}
-                                            y1={yCenter - 15}
-                                            x2={getXScale(returnToBaseEnd, teamShiftStartHour)}
-                                            y2={yCenter - 15}
-                                            stroke="#12A8E0"
-                                            strokeWidth="3"
-                                            vectorEffect="non-scaling-stroke"
-                                          />
-                                          <line
-                                            x1={getXScale(lastEventEnd, teamShiftStartHour)}
-                                            y1={yCenter - 20}
-                                            x2={getXScale(lastEventEnd, teamShiftStartHour)}
-                                            y2={yCenter - 10}
-                                            stroke="#12A8E0"
-                                            strokeWidth="3"
-                                            vectorEffect="non-scaling-stroke"
-                                          />
-                                          <line
-                                            x1={getXScale(returnToBaseEnd, teamShiftStartHour)}
-                                            y1={yCenter - 20}
-                                            x2={getXScale(returnToBaseEnd, teamShiftStartHour)}
-                                            y2={yCenter - 10}
-                                            stroke="#12A8E0"
-                                            strokeWidth="3"
-                                            vectorEffect="non-scaling-stroke"
-                                          />
+                                          <line x1={getXScale(lastEventEnd, teamShiftStartHour)} y1={yCenter - 15} x2={getXScale(returnToBaseEnd, teamShiftStartHour)} y2={yCenter - 15} stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                                          <line x1={getXScale(lastEventEnd, teamShiftStartHour)} y1={yCenter - 20} x2={getXScale(lastEventEnd, teamShiftStartHour)} y2={yCenter - 10} stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                                          <line x1={getXScale(returnToBaseEnd, teamShiftStartHour)} y1={yCenter - 20} x2={getXScale(returnToBaseEnd, teamShiftStartHour)} y2={yCenter - 10} stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke" />
                                           <title>Volta a Base: {Math.round(shift.returnToBaseDuration * 60)} min</title>
                                         </g>
                                       );
@@ -882,35 +677,26 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                             });
                           })()}
 
-                          {/* Shift Icons (In Front of Events) */}
+                          {/* Shift Icons */}
                           {(() => {
                             const shiftsToRender: ShiftData[] = teamData.shifts || [{
-                              shiftStart: teamData.shiftStart,
-                              shiftEnd: teamData.shiftEnd,
-                              platformDuration: teamData.platformDuration,
-                              firstLogin: teamData.firstLogin,
-                              lastLogOff: teamData.lastLogOff,
-                              intervalStart: teamData.intervalStart,
-                              intervalEnd: teamData.intervalEnd,
-                              returnToBaseDuration: teamData.returnToBaseDuration
+                              shiftStart: teamData.shiftStart, shiftEnd: teamData.shiftEnd,
+                              platformDuration: teamData.platformDuration, firstLogin: teamData.firstLogin,
+                              lastLogOff: teamData.lastLogOff, intervalStart: teamData.intervalStart,
+                              intervalEnd: teamData.intervalEnd, returnToBaseDuration: teamData.returnToBaseDuration
                             }];
 
                             return shiftsToRender.map((shift, sIdx) => {
                               const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                               return (
                                 <g key={`shift-icons-${sIdx}`}>
-                                  {/* Shift Start/End (IT/FT Text) */}
                                   {shift.shiftStart !== undefined && (
                                     <text
-                                      x={getXScale(shift.shiftStart, teamShiftStartHour)}
-                                      y={yCenter}
-                                      textAnchor="middle"
-                                      dominantBaseline="middle"
-                                      fill="white"
-                                      stroke="black"
-                                      strokeWidth="2"
-                                      fontSize="10"
-                                      fontWeight="bold"
+                                      x={getXScale(shift.shiftStart, teamShiftStartHour)} y={yCenter}
+                                      textAnchor="middle" dominantBaseline="middle"
+                                      fill={COLORS.foreground}
+                                      stroke={COLORS.foreground} strokeWidth="0.3"
+                                      fontSize="10" fontWeight="bold"
                                       style={{ paintOrder: 'stroke' }}
                                       vectorEffect="non-scaling-stroke"
                                     >
@@ -919,15 +705,11 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   )}
                                   {shift.shiftEnd !== undefined && (
                                     <text
-                                      x={getXScale(shift.shiftEnd, teamShiftStartHour)}
-                                      y={yCenter}
-                                      textAnchor="middle"
-                                      dominantBaseline="middle"
-                                      fill="white"
-                                      stroke="black"
-                                      strokeWidth="2"
-                                      fontSize="10"
-                                      fontWeight="bold"
+                                      x={getXScale(shift.shiftEnd, teamShiftStartHour)} y={yCenter}
+                                      textAnchor="middle" dominantBaseline="middle"
+                                      fill={COLORS.foreground}
+                                      stroke={COLORS.foreground} strokeWidth="0.3"
+                                      fontSize="10" fontWeight="bold"
                                       style={{ paintOrder: 'stroke' }}
                                       vectorEffect="non-scaling-stroke"
                                     >
@@ -935,24 +717,20 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     </text>
                                   )}
 
-                                  {/* Login (Green Dot) */}
+                                  {/* Login dot */}
                                   {shift.firstLogin !== undefined && (
                                     <circle
-                                      cx={getXScale(shift.firstLogin, teamShiftStartHour)}
-                                      cy={yCenter}
-                                      r={4}
-                                      fill="#39B54A"
-                                      stroke="black"
-                                      strokeWidth="1"
+                                      cx={getXScale(shift.firstLogin, teamShiftStartHour)} cy={yCenter}
+                                      r={4} fill={COLORS.loginDot} stroke={COLORS.foreground} strokeWidth="0.5"
                                       vectorEffect="non-scaling-stroke"
                                     >
                                       <title>Login: {formatDecimalTime(shift.firstLogin)}</title>
                                     </circle>
                                   )}
 
-                                  {/* Log Off (Red Dot) */}
+                                  {/* Log Off dot */}
                                   {(() => {
-                                    const shiftEvents = teamData.events.filter(ev => {
+                                    const shiftEvents = teamData.events.filter((ev: any) => {
                                       if (shift.shiftStart === undefined) return true;
                                       const nextShift = shiftsToRender[sIdx + 1];
                                       if (nextShift && nextShift.shiftStart !== undefined) {
@@ -961,21 +739,17 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                       return ev.inicio_decimal >= shift.shiftStart;
                                     });
 
-                                    const lastEventEnd = shiftEvents.length > 0 
-                                      ? Math.max(...shiftEvents.map(ev => ev.inicio_decimal + ev.TMD/60 + ev.TME/60))
+                                    const lastEventEnd = shiftEvents.length > 0
+                                      ? Math.max(...shiftEvents.map((ev: any) => ev.inicio_decimal + ev.TMD / 60 + ev.TME / 60))
                                       : undefined;
-                                    
+
                                     const logOffPos = shift.lastLogOff ?? (lastEventEnd !== undefined && shift.returnToBaseDuration !== undefined ? lastEventEnd + shift.returnToBaseDuration : undefined);
-                                    
+
                                     if (logOffPos !== undefined) {
                                       return (
                                         <circle
-                                          cx={getXScale(logOffPos, teamShiftStartHour)}
-                                          cy={yCenter}
-                                          r={4}
-                                          fill="#ef4444"
-                                          stroke="black"
-                                          strokeWidth="1"
+                                          cx={getXScale(logOffPos, teamShiftStartHour)} cy={yCenter}
+                                          r={4} fill={COLORS.logoffDot} stroke={COLORS.foreground} strokeWidth="0.5"
                                           vectorEffect="non-scaling-stroke"
                                         >
                                           <title>Log Off: {formatDecimalTime(logOffPos)}</title>
@@ -991,32 +765,14 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
 
                           {/* Remove Team Button */}
                           {onRemoveTeam && (
-                            <g 
+                            <g
                               className="cursor-pointer group"
                               onClick={() => onRemoveTeam(teamData.equipe)}
                               transform={`translate(-15, ${yCenter - 7}) scale(${1 / currentScale})`}
                             >
-                              <rect 
-                                width="14" 
-                                height="14" 
-                                rx="3" 
-                                fill="#ef4444" 
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              />
-                              <path 
-                                d="M4 4L10 10M10 4L4 10" 
-                                stroke="white" 
-                                strokeWidth="2" 
-                                strokeLinecap="round"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              />
-                              <path 
-                                d="M4 4L10 10M10 4L4 10" 
-                                stroke="#ef4444" 
-                                strokeWidth="1.5" 
-                                strokeLinecap="round"
-                                className="group-hover:opacity-0 transition-opacity"
-                              />
+                              <rect width="14" height="14" rx="3" fill={COLORS.error} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <path d="M4 4L10 10M10 4L4 10" stroke="white" strokeWidth="2" strokeLinecap="round" className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <path d="M4 4L10 10M10 4L4 10" stroke={COLORS.error} strokeWidth="1.5" strokeLinecap="round" className="group-hover:opacity-0 transition-opacity" />
                               <title>Remover {teamData.equipe}</title>
                             </g>
                           )}
@@ -1024,24 +780,21 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                       );
                     })}
 
-                    {/* X Axis Labels */}
+                    {/* Bottom X Axis */}
                     {Array.from({ length: 27 }).map((_, i) => {
                       const hour = shiftStartHour - 1 + i;
                       const displayHour = ((hour % 24) + 24) % 24;
-                      
                       return (
-                      <text
-                        key={i}
-                        transform={`translate(${xScale(hour)}, ${innerHeight + 20}) scale(${1 / currentScale})`}
-                        x={0}
-                        y={0}
-                        textAnchor="middle"
-                        fontSize="12"
-                        fill="black"
-                      >
-                        {displayHour}h
-                      </text>
-                    )})}
+                        <text
+                          key={i}
+                          transform={`translate(${xScale(hour)}, ${innerHeight + 20}) scale(${1 / currentScale})`}
+                          x={0} y={0} textAnchor="middle" fontSize="12" fontWeight="600"
+                          fill={COLORS.foreground}
+                        >
+                          {displayHour}h
+                        </text>
+                      );
+                    })}
                   </g>
                 </svg>
               </TransformComponent>
