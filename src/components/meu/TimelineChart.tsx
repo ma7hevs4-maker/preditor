@@ -163,7 +163,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
   const xScale = (val: number) => getXScale(val, shiftStartHour);
 
   return (
-    <div ref={containerRef} className="w-full bg-[#efefef] rounded-lg border border-gray-200 relative overflow-hidden flex flex-col h-[800px]">
+    <div ref={containerRef} className="w-full bg-card rounded-lg border border-border relative overflow-hidden flex flex-col h-[800px]">
       <TransformWrapper
         ref={transformRef}
         key={`${data?.length}-${horizontalScale}-${containerWidth}`}
@@ -186,29 +186,29 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
           return (
           <>
             {/* Title Bar with Controls */}
-            <div className="flex items-center justify-between bg-[#141414] text-white p-3 shrink-0">
+            <div className="flex items-center justify-between bg-secondary text-white p-3 shrink-0">
               <div className="flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-blue-400" />
+                <Clock className="h-5 w-5 mr-2 text-primary" />
                 <h3 className="text-lg font-bold tracking-tight">
                   Linha do Tempo
                 </h3>
               </div>
 
               <div className="flex items-center space-x-2">
-                <div className="flex items-center gap-1 bg-white/10 p-1 rounded-md border border-white/10">
+                <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border">
                   <button
                     onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))}
-                    className="p-1 hover:bg-white/20 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
                     title="Diminuir Escala Horizontal"
                   >
                     <MoveHorizontal className="w-3.5 h-3.5 rotate-90" />
                   </button>
-                  <div className="text-[10px] font-bold text-blue-300 min-w-[2.8rem] text-center">
+                  <div className="text-[10px] font-bold text-primary min-w-[2.8rem] text-center">
                     {Math.round(horizontalScale * 100)}%
                   </div>
                   <button
                     onClick={() => setHorizontalScale(prev => Math.min(10, prev + 0.25))}
-                    className="p-1 hover:bg-white/20 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
                     title="Aumentar Escala Horizontal"
                   >
                     <MoveHorizontal className="w-3.5 h-3.5" />
@@ -218,27 +218,27 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                       setHorizontalScale(1);
                       resetTransform();
                     }}
-                    className="p-1 hover:bg-white/20 rounded text-white transition-colors ml-1 border-l border-white/10 pl-2"
+                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors ml-1 border-l border-border pl-2"
                     title="Resetar Escala"
                   >
                     <Maximize className="w-3.5 h-3.5 rotate-90" />
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-1 bg-white/10 p-1 rounded-md border border-white/10">
+                <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border">
                   <button
                     onClick={() => zoomIn()}
-                    className="p-1 hover:bg-white/20 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
                     title="Aumentar Zoom"
                   >
                     <ZoomIn className="w-3.5 h-3.5" />
                   </button>
-                  <div className="text-[10px] font-bold text-gray-300 min-w-[2.2rem] text-center">
+                  <div className="text-[10px] font-bold text-muted-foreground min-w-[2.2rem] text-center">
                     {Math.round(currentScale * 100)}%
                   </div>
                   <button
                     onClick={() => zoomOut()}
-                    className="p-1 hover:bg-white/20 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
                     title="Diminuir Zoom"
                   >
                     <ZoomOut className="w-3.5 h-3.5" />
@@ -251,14 +251,14 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                       const scale = containerWidth / width;
                       setTransform(0, 0, scale);
                     }}
-                    className="p-1 hover:bg-blue-500/30 hover:text-blue-300 rounded text-white transition-colors"
+                    className="p-1 hover:bg-primary/30 hover:text-primary rounded text-white transition-colors"
                     title="Ajustar à Largura"
                   >
                     <Maximize className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => transformRef.current?.centerView()}
-                    className="p-1 hover:bg-white/20 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
                     title="Centralizar"
                   >
                     <Crosshair className="w-3.5 h-3.5" />
@@ -268,7 +268,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 bg-white border-b border-gray-200 text-xs text-gray-700 shrink-0">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 bg-white border-b border-border text-xs text-foreground/80 shrink-0">
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 bg-[#12A8E0] border border-black"></div>
           <span>TMD</span>
@@ -282,7 +282,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
           <span>TMDE &gt; 90m</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 border-2 border-red-500 bg-gray-100"></div>
+          <div className="w-4 h-4 border-2 border-red-500 bg-muted"></div>
           <span>TMD &gt; 30m / TME &gt; Padrão</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -306,31 +306,31 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
           <span>Intervalo</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 border-2 border-orange-400 bg-gray-100"></div>
+          <div className="w-4 h-4 border-2 border-orange-400 bg-muted"></div>
           <span>Improdutivo</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-gray-100 border border-black relative">
+          <div className="w-4 h-4 bg-muted border border-black relative">
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-[#FFD700] border-y border-black"></div>
             <div className="absolute inset-x-0 top-0.5 h-0.5 bg-black"></div>
           </div>
           <span>Atribuída O2</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-gray-100 border border-black relative">
+          <div className="w-4 h-4 bg-muted border border-black relative">
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-[#FFD700] border-y border-black"></div>
             <div className="absolute inset-x-0 bottom-0.5 h-0.5 bg-black"></div>
           </div>
           <span>Deslocada O2</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-gray-100 border border-black relative">
+          <div className="w-4 h-4 bg-muted border border-black relative">
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-[#A855F7] border-y border-black"></div>
           </div>
           <span>Possível O2</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 bg-gray-100 border-2 border-[#A855F7]"></div>
+          <div className="w-4 h-4 bg-muted border-2 border-[#A855F7]"></div>
           <span>Possível Anomalia</span>
         </div>
         <div className="flex items-center gap-1.5">
