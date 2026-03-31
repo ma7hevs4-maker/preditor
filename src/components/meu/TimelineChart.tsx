@@ -21,7 +21,7 @@ interface TimelineEvent {
   isIdentificadorO2?: boolean;
   tempoPadrao?: number;
   dataAcao?: string;
-  lane: number;
+  lane?: number;
 }
 
 interface ShiftData {

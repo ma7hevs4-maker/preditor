@@ -22,6 +22,7 @@ const navItems = [
   { title: "Simulação", url: "/", icon: Zap },
   { title: "Estrutura", url: "/estrutura", icon: Users },
   { title: "Visão", url: "/visao", icon: Eye },
+  { title: "Operacional", url: "/meu", icon: BarChart3 },
 ];
 
 export function AppSidebar() {
