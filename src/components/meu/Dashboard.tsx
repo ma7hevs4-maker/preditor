@@ -1,0 +1,1472 @@
+import React, { useState, useMemo } from "react";
+import {
+  ArrowLeft,
+  BarChart3,
+  Clock,
+  AlertTriangle,
+  XCircle,
+  X,
+  Menu,
+} from "lucide-react";
+import { TimelineChart } from "./TimelineChart";
+import { getShiftStartHour } from "../utils/dataProcessing";
+
+const MultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
+  const [search, setSearch] = useState("");
+  const filteredOptions = searchable 
+    ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+          {label}
+        </label>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onChange(filteredOptions)}
+            className="text-[10px] text-blue-600 hover:text-blue-800 underline"
+            title="Selecionar todos"
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => onChange([])}
+            className="text-[10px] text-gray-500 hover:text-gray-700 underline"
+            title="Limpar seleção"
+          >
+            Nenhum
+          </button>
+        </div>
+      </div>
+      {searchable && (
+        <input
+          type="text"
+          placeholder="Pesquisar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mb-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-xs p-1.5 border"
+        />
+      )}
+      <select
+        multiple
+        value={selected}
+        onChange={(e) => {
+          const values = Array.from(
+            e.target.selectedOptions,
+            (option: HTMLOptionElement) => option.value,
+          );
+          onChange(values);
+        }}
+        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm h-32 p-2 border"
+      >
+        {filteredOptions.map((opt: string) => (
+          <option key={opt} value={opt}>
+            {opt}
+          </option>
+        ))}
+      </select>
+      <p className="text-xs text-gray-400 mt-1">
+        Segure Ctrl/Cmd para selecionar vários
+      </p>
+    </div>
+  );
+};
+
+interface DashboardProps {
+  data: any[];
+  onBack: () => void;
+}
+
+export function Dashboard({ data, onBack }: DashboardProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  if (!data || !Array.isArray(data)) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center p-8 bg-white rounded-xl shadow-md">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Erro de Dados</h2>
+          <p className="text-gray-600">Os dados fornecidos são inválidos ou estão vazios.</p>
+          <button onClick={onBack} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg">Voltar</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract unique values for filters
+  const datas = useMemo(() => {
+    const allDates = new Set<string>();
+    data.forEach(d => {
+      if (d["Data Turno"]) allDates.add(d["Data Turno"]);
+      else if (d["Data Ação"]) allDates.add(d["Data Ação"]);
+    });
+    return Array.from(allDates).sort();
+  }, [data]);
+  const polos = useMemo(
+    () => Array.from(new Set(data.map((d) => d.Polo).filter(Boolean))).sort(),
+    [data],
+  );
+  const processos = useMemo(
+    () =>
+      Array.from(new Set(data.map((d) => d.Processo).filter(Boolean))).sort(),
+    [data],
+  );
+  const tiposEquipe = useMemo(
+    () =>
+      Array.from(
+        new Set(data.map((d) => d["Enel / Parceira DESLOC"]).filter(Boolean)),
+      ).sort(),
+    [data],
+  );
+  const turnos = useMemo(() => {
+    const allTurnos = Array.from(new Set(data.map((d) => d.Turno).filter(Boolean))).sort();
+    return allTurnos;
+  }, [data]);
+  const equipes = useMemo(
+    () =>
+      Array.from(
+        new Set(data.map((d) => d["Equipe Desl."]).filter(Boolean)),
+      ).sort(),
+    [data],
+  );
+  const incidents = useMemo(
+    () =>
+      Array.from(
+        new Set(data.map((d) => d.Número).filter(Boolean)),
+      ).sort(),
+    [data],
+  );
+
+  // Filter states
+  const [isPeriodMode, setIsPeriodMode] = useState<boolean>(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<"7d" | "mes">("7d");
+  const [selectedData, setSelectedData] = useState<string>(datas[datas.length - 1] || "");
+  const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
+  const [selectedProcessos, setSelectedProcessos] = useState<string[]>([]);
+  const [selectedTiposEquipe, setSelectedTiposEquipe] = useState<string[]>([]);
+  const [selectedTurnos, setSelectedTurnos] = useState<string[]>([]);
+  const [selectedEquipes, setSelectedEquipes] = useState<string[]>([]);
+  const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
+  const [tmdeAbove150Filter, setTmdeAbove150Filter] = useState<string>("todos");
+  const [o2AnomaliaFilter, setO2AnomaliaFilter] = useState<string>("todos");
+
+  // Apply filters
+  const dataFilteredByBasics = useMemo(() => {
+    return data.filter((d) => {
+      if (d["Equipe Desl."] === "---") return false;
+      
+      const rowDateStr = d["Data Turno"] || d["Data Ação"];
+      if (!rowDateStr) return false;
+
+      if (!isPeriodMode) {
+        if (selectedData && rowDateStr !== selectedData) return false;
+      } else {
+        if (selectedData) {
+          const [ySel, mSel, dSel] = selectedData.split('-').map(Number);
+          const selDate = new Date(ySel, mSel - 1, dSel);
+          
+          const [yRow, mRow, dRow] = rowDateStr.split('-').map(Number);
+          const rowDate = new Date(yRow, mRow - 1, dRow);
+
+          if (selectedPeriod === "7d") {
+            const diffTime = selDate.getTime() - rowDate.getTime();
+            const diffDays = diffTime / (1000 * 3600 * 24);
+            if (diffDays < 0 || diffDays >= 7) return false;
+          } else if (selectedPeriod === "mes") {
+            if (ySel !== yRow || mSel !== mRow) return false;
+          }
+        }
+      }
+
+      if (selectedPolos.length > 0 && !selectedPolos.includes(d.Polo))
+        return false;
+      if (
+        selectedProcessos.length > 0 &&
+        !selectedProcessos.includes(d.Processo)
+      )
+        return false;
+      if (
+        selectedTiposEquipe.length > 0 &&
+        !selectedTiposEquipe.includes(d["Enel / Parceira DESLOC"])
+      )
+        return false;
+      if (selectedTurnos.length > 0) {
+        const equipe = String(d["Equipe Desl."] || "");
+        const firstEquipe = equipe.split(/[/;+]| e /)[0].trim();
+        const parts = firstEquipe.split("-");
+        let rowTurno = "Outros";
+        if (parts.length >= 2) {
+          const letter = parts[1].charAt(0).toUpperCase();
+          if (["A", "B", "C"].includes(letter)) rowTurno = letter;
+        }
+        if (!selectedTurnos.includes(rowTurno)) return false;
+      }
+      if (
+        selectedEquipes.length > 0 &&
+        !selectedEquipes.includes(d["Equipe Desl."])
+      )
+        return false;
+      if (
+        selectedIncidents.length > 0 &&
+        !selectedIncidents.includes(d.Número)
+      )
+        return false;
+      return true;
+    });
+  }, [
+    data,
+    selectedData,
+    isPeriodMode,
+    selectedPeriod,
+    selectedPolos,
+    selectedProcessos,
+    selectedTiposEquipe,
+    selectedTurnos,
+    selectedEquipes,
+    selectedIncidents,
+  ]);
+
+  const teamsWithAbove150 = useMemo(() => {
+    const teams = new Set<string>();
+    dataFilteredByBasics.forEach(d => {
+      if ((Number(d.TMDE) || 0) > 150) {
+        teams.add(d["Equipe Desl."]);
+      }
+    });
+    return teams;
+  }, [dataFilteredByBasics]);
+
+  const filteredData = useMemo(() => {
+    let result = dataFilteredByBasics;
+    
+    if (tmdeAbove150Filter !== "todos") {
+      result = result.filter(d => {
+        const hasAbove150 = teamsWithAbove150.has(d["Equipe Desl."]);
+        return tmdeAbove150Filter === "sim" ? hasAbove150 : !hasAbove150;
+      });
+    }
+
+    if (o2AnomaliaFilter !== "todos") {
+      result = result.filter(d => {
+        if (o2AnomaliaFilter === "o2") return d.possivelO2;
+        if (o2AnomaliaFilter === "anomalia") return d.possivelAnomalia;
+        return true;
+      });
+    }
+    
+    return result;
+  }, [dataFilteredByBasics, tmdeAbove150Filter, o2AnomaliaFilter, teamsWithAbove150]);
+
+  // Helper to convert various formats to minutes
+  const getValMinutes = (val: any): number | null => {
+    if (val == null || val === "" || val === "-") return null;
+    
+    if (typeof val === "number") {
+      if (val > 10000) return (val - Math.floor(val)) * 1440;
+      if (val > 0 && val < 1) return val * 1440;
+      return val;
+    }
+    
+    if (val instanceof Date) {
+      return val.getUTCHours() * 60 + val.getUTCMinutes();
+    }
+    
+    if (typeof val === "string") {
+      const parts = val.split(":");
+      if (parts.length >= 2) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m)) return h * 60 + m;
+      }
+      const num = Number(val);
+      if (!isNaN(num)) return num;
+    }
+    return null;
+  };
+
+  const calculateOccupancy = (eqData: any[]) => {
+    if (eqData.length === 0) return 0;
+    
+    // Group by date to handle multiple days if selected
+    const dataByDate: Record<string, any[]> = {};
+    eqData.forEach(d => {
+      const date = d["Data Turno"] || d["Data Ação"];
+      if (!dataByDate[date]) dataByDate[date] = [];
+      dataByDate[date].push(d);
+    });
+    
+    let totalNumerator = 0;
+    let totalDenominator = 0;
+    
+    Object.values(dataByDate).forEach(dayData => {
+      // soma de todo tmd e tme da equipe no dia, desconsiderando tmde > 150 (exceto se for possível o2 ou anomalia)
+      const incidentsToCount = dayData.filter(d => (Number(d.TMDE) || 0) <= 150 || d.possivelO2 || d.possivelAnomalia);
+      const sumTmdTme = incidentsToCount.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
+      
+      const firstRow = dayData[0] || {};
+      
+      // tempo de plataforma (caso n tenha o valor será considerado 40 min)
+      const tempoPlataforma = getValMinutes(firstRow["1º Desloc"]) ?? 40;
+      
+      // retorno a base (caso n tenha o valor será considerado 30 min)
+      const retornoBase = getValMinutes(firstRow["Retorno a base"]) ?? 30;
+      
+      // Fim Calendario pelo Inicio Calendario (caso n tenha o valor será considerado 480 min)
+      const inicioTurno = getValMinutes(firstRow["Inicio Calendario"]);
+      const fimTurno = getValMinutes(firstRow["Fim Calendario"]);
+      let duracaoTurno = 480;
+      if (inicioTurno !== null && fimTurno !== null) {
+        duracaoTurno = fimTurno - inicioTurno;
+        if (duracaoTurno <= 0) duracaoTurno += 1440;
+      }
+      
+      // intervalo (caso n tenha o valor será considerado 60 min)
+      const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
+      const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
+      let duracaoIntervalo = 60;
+      if (inicioIntervalo !== null && fimIntervalo !== null) {
+        duracaoIntervalo = fimIntervalo - inicioIntervalo;
+        if (duracaoIntervalo <= 0) duracaoIntervalo += 1440;
+      }
+      
+      totalNumerator += (sumTmdTme + tempoPlataforma + duracaoIntervalo + retornoBase);
+      totalDenominator += duracaoTurno;
+    });
+    
+    return totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+  };
+
+  // KPIs
+  const numDays = useMemo(() => {
+    return new Set(filteredData.map(d => d["Data Turno"] || d["Data Ação"])).size || 1;
+  }, [filteredData]);
+
+  const totalInc = new Set(filteredData.map((d) => d.Número)).size;
+  const displayInc = isPeriodMode ? totalInc / numDays : totalInc;
+
+  const tmdeMedio =
+    filteredData.length > 0
+      ? filteredData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) /
+        filteredData.length
+      : 0;
+  const reincTotal = filteredData.filter(
+    (d) => d["Reincidente Causado"],
+  ).length;
+  const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
+  const improdTotal = filteredData.filter((d) => d.Improdutivo).length;
+  const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
+
+  // Resultado por Processo
+  const processosOrdem = [
+    "Emergência",
+    "Comercial",
+    "Perdas",
+    "Poda",
+    "Linha Viva",
+  ];
+  const resumoProcessos = processosOrdem.map((proc) => {
+    const procData = filteredData.filter((d) => d.Processo === proc);
+    const inc = new Set(procData.map((d) => d.Número)).size;
+    const displayIncProc = isPeriodMode ? inc / numDays : inc;
+
+    const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
+    const imp = procData.filter((d) => d.Improdutivo).length;
+    const ord2 = procData.filter((d) => d.ordem2).length;
+    const reinc = procData.filter((d) => d["Reincidente Causado"]).length;
+    const tmde =
+      procData.length > 0
+        ? procData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / procData.length
+        : 0;
+    
+    const totalTmde = procData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0);
+    
+    const uniqueTeamsInProc = new Set<string>();
+    procData.forEach((d) => {
+      const equipeStr = String(d["Equipe Desl."] || "");
+      if (!equipeStr || equipeStr === "Não informado") return;
+      const teams = equipeStr
+        .split(/[/;+]| e /)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0 && t !== "---");
+      teams.forEach((t) => uniqueTeamsInProc.add(t));
+    });
+
+    const equipesCount = uniqueTeamsInProc.size;
+
+    let somaOcupacao = 0;
+    const equipesPresentesNoProcesso = Array.from(
+      new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
+    );
+    
+    equipesPresentesNoProcesso.forEach(eq => {
+      const eqData = procData.filter(d => d["Equipe Desl."] === eq);
+      const ocupacaoEquipe = calculateOccupancy(eqData);
+      somaOcupacao += ocupacaoEquipe;
+    });
+
+    const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
+    const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
+    const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
+
+    return {
+      Processos: proc,
+      Incidentes: displayIncProc,
+      Equipes: equipesCount,
+      Improdutivos: isPeriodMode ? imp / numDays : imp,
+      "Ordem 2": isPeriodMode ? ord2 / numDays : ord2,
+      "Reincidentes causados": isPeriodMode ? reinc / numDays : reinc,
+      TMDE: tmde,
+      Ocupação: ocupacao,
+      Produtividade: displayProdutividade,
+    };
+  });
+
+  const totalIncProdutivos = new Set(filteredData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
+
+  const uniqueTeamsGeral = new Set<string>();
+  filteredData.forEach((d) => {
+    const equipeStr = String(d["Equipe Desl."] || "");
+    if (!equipeStr || equipeStr === "Não informado") return;
+    const teams = equipeStr
+      .split(/[/;+]| e /)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0 && t !== "---");
+    teams.forEach((t) => uniqueTeamsGeral.add(t));
+  });
+  const totalEquipesGeralCount = uniqueTeamsGeral.size;
+
+  let somaOcupacaoGeral = 0;
+  const equipesPresentesGeral = Array.from(
+    new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean))
+  );
+  equipesPresentesGeral.forEach(eq => {
+    const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
+    const ocupacaoEquipe = calculateOccupancy(eqData);
+    somaOcupacaoGeral += ocupacaoEquipe;
+  });
+  const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
+
+  const totalRowProcessos = {
+    Processos: "Total",
+    Incidentes: resumoProcessos.reduce((acc, curr) => acc + curr.Incidentes, 0),
+    Equipes: totalEquipesGeralCount,
+    Improdutivos: resumoProcessos.reduce(
+      (acc, curr) => acc + curr.Improdutivos,
+      0,
+    ),
+    "Ordem 2": resumoProcessos.reduce((acc, curr) => acc + curr["Ordem 2"], 0),
+    "Reincidentes causados": resumoProcessos.reduce(
+      (acc, curr) => acc + curr["Reincidentes causados"],
+      0,
+    ),
+    TMDE: tmdeMedio,
+    Ocupação: ocupacaoMediaGeral,
+    Produtividade: isPeriodMode ? (totalIncProdutivos / totalEquipesGeralCount) / numDays : totalIncProdutivos / totalEquipesGeralCount,
+  };
+
+  // Helper to convert various formats to decimal hours
+  const convertToDecimalHours = (val: any, baseDateStr?: string): number | undefined => {
+    if (val == null || val === "" || val === "-") return undefined;
+    
+    let date: Date | null = null;
+    if (val instanceof Date) {
+      date = val;
+    } else if (typeof val === "string" && val.includes("-") && val.includes(":")) {
+      date = new Date(val);
+      if (!val.includes('Z') && !val.includes('+')) {
+        date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()));
+      }
+    }
+    
+    if (date && !isNaN(date.getTime())) {
+      if (baseDateStr) {
+        try {
+          const [y, m, d] = baseDateStr.split('-').map(Number);
+          const baseDate = new Date(Date.UTC(y, m - 1, d));
+          if (!isNaN(baseDate.getTime())) {
+            // If the date is just a time (Excel serial < 1, or year < 1970), assume it's on the baseDate
+            const year = date.getUTCFullYear() < 1970 ? y : date.getUTCFullYear();
+            const month = date.getUTCFullYear() < 1970 ? m - 1 : date.getUTCMonth();
+            const day = date.getUTCFullYear() < 1970 ? d : date.getUTCDate();
+            
+            const rowDate = new Date(Date.UTC(
+              year, 
+              month, 
+              day, 
+              date.getUTCHours(), 
+              date.getUTCMinutes(), 
+              date.getUTCSeconds()
+            ));
+            const diffMs = rowDate.getTime() - baseDate.getTime();
+            return diffMs / (1000 * 60 * 60);
+          }
+        } catch (e) {}
+      }
+      return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    }
+    
+    if (typeof val === "number") {
+      // If it's a large number, it might be an Excel serial with date
+      if (val > 40000) {
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        return convertToDecimalHours(d, baseDateStr);
+      }
+      // If it's a small number (0-1), it's a time of day
+      if (val > 0 && val < 1) {
+        return val * 24;
+      }
+      // Otherwise assume it's minutes (duration)
+      return val / 60;
+    }
+    
+    if (typeof val === "string") {
+      const parts = val.split(":");
+      if (parts.length >= 2) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m)) {
+          return h + m / 60;
+        }
+      }
+      const num = Number(val);
+      if (!isNaN(num)) return num / 60;
+    }
+    
+    return undefined;
+  };
+
+  // Helper to format values from Excel to minutes (duration)
+  const formatToMinutes = (val: any): string => {
+    if (val == null || val === "" || val === "-") return "-";
+    
+    if (typeof val === "number") {
+      // If it's a small number (0-1), it's an Excel time serial
+      if (val > 0 && val < 1) {
+        return String(Math.round(val * 1440));
+      }
+      // If it's a large number, it might be an Excel date serial
+      if (val > 40000) {
+        const minutes = Math.round((val - Math.floor(val)) * 1440);
+        return String(minutes);
+      }
+      return Number.isInteger(val) ? String(val) : val.toFixed(1);
+    }
+    
+    if (val instanceof Date) {
+      // If it's a Date object, we assume it's a time of day and we want minutes from midnight
+      const minutes = val.getUTCHours() * 60 + val.getUTCMinutes();
+      return String(minutes);
+    }
+    
+    if (typeof val === "string") {
+      const parts = val.split(":");
+      if (parts.length >= 2) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m)) {
+          return String(h * 60 + m);
+        }
+      }
+      const num = Number(val);
+      if (!isNaN(num)) return String(Math.round(num));
+    }
+    
+    return String(val);
+  };
+
+  // Helper to format values to HH:MM
+  const formatToHHMM = (val: any): string => {
+    if (val == null || val === "" || val === "-") return "-";
+    
+    let date: Date | null = null;
+    if (val instanceof Date) {
+      date = val;
+    } else if (typeof val === "number") {
+      if (val > 0 && val < 1) {
+        const totalMinutes = Math.round(val * 1440);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      }
+      if (val > 40000) {
+        date = new Date(Math.round((val - 25569) * 86400 * 1000));
+      }
+    } else if (typeof val === "string" && val.includes(':')) {
+      return val.split(':').slice(0, 2).join(':');
+    }
+
+    if (date && !isNaN(date.getTime())) {
+      const h = date.getUTCHours();
+      const m = date.getUTCMinutes();
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    return String(val);
+  };
+
+  // Ranking das Equipes
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({ key: "Incidentes", direction: "desc" });
+
+  const rankingEquipes = React.useMemo(() => {
+    const equipesPresentes = Array.from(
+      new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean)),
+    ).filter(eq => eq !== "Não informado" && eq !== "---").sort();
+
+    const baseRanking = equipesPresentes.map((eq) => {
+      const eqData = filteredData.filter((d) => d["Equipe Desl."] === eq);
+      const eqDays = new Set(eqData.map(d => d["Data Turno"] || d["Data Ação"])).size || 1;
+      
+      const inc = new Set(eqData.map((d) => d.Número)).size;
+      const imp = eqData.filter((d) => d.Improdutivo).length;
+      const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const tmde =
+        eqData.length > 0
+          ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
+          : 0;
+
+      // Ordem 2
+      const ord2 = eqData.filter((d) => d.ordem2).length;
+
+      // Ocupação
+      const ocupacao = calculateOccupancy(eqData);
+
+      // Find first non-null values for login and desloc
+      const firstLoginRaw = eqData
+        .map((d) => d["1º Login Corrigido"] || d["Log In"])
+        .find((v) => v != null && v !== "");
+      const primeiroLogin = formatToHHMM(firstLoginRaw);
+
+      // Calculate Tempo de plataforma: (First Incident Displacement Start) - (Login)
+      // We group by day to calculate it correctly for each day in a period
+      const dataByDay = new Map<string, typeof eqData>();
+      eqData.forEach(d => {
+        const day = d["Data Turno"] || d["Data Ação"];
+        if (day) {
+          if (!dataByDay.has(day)) dataByDay.set(day, []);
+          dataByDay.get(day)!.push(d);
+        }
+      });
+
+      let totalTempoPlataforma = 0;
+      let daysWithPlataforma = 0;
+
+      dataByDay.forEach((dayData, day) => {
+        const loginRaw = dayData
+          .map((d) => d["1º Login Corrigido"] || d["Log In"])
+          .find((v) => v != null && v !== "");
+        const loginDec = convertToDecimalHours(loginRaw, day);
+        
+        const firstInc = dayData
+          .filter(d => d.hora_aux_ordenacao != null)
+          .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0))[0];
+        
+        if (loginDec != null && firstInc && firstInc.hora_aux_ordenacao != null) {
+          const diff = (firstInc.hora_aux_ordenacao - loginDec) * 60;
+          if (diff > 0) {
+            totalTempoPlataforma += diff;
+            daysWithPlataforma++;
+          }
+        }
+      });
+
+      const tempoPlataforma = daysWithPlataforma > 0 
+        ? (totalTempoPlataforma / (isPeriodMode ? eqDays : 1)).toFixed(1) 
+        : "-";
+
+      const turno = eqData[0]?.Turno || "Outros";
+
+      return {
+        Equipe: eq,
+        Turno: turno,
+        Incidentes: isPeriodMode ? inc / eqDays : inc,
+        Improdutivos: isPeriodMode ? imp / eqDays : imp,
+        "Reincidentes causados": isPeriodMode ? reinc / eqDays : reinc,
+        TMDE: tmde,
+        "Ordem 2": isPeriodMode ? ord2 / eqDays : ord2,
+        Ocupação: ocupacao,
+        Login: primeiroLogin,
+        "Tempo de plataforma": tempoPlataforma,
+      };
+    });
+
+    baseRanking.sort((a, b) => {
+      let aValue: any = a[sortConfig.key as keyof typeof a];
+      let bValue: any = b[sortConfig.key as keyof typeof b];
+
+      if (sortConfig.key === 'Login') {
+        const parseHHMM = (s: string) => {
+          if (s === '-') return -1;
+          const [h, m] = s.split(':').map(Number);
+          return h * 60 + m;
+        };
+        aValue = parseHHMM(aValue);
+        bValue = parseHHMM(bValue);
+      } else if (sortConfig.key === 'Tempo de plataforma') {
+        aValue = aValue === '-' ? -1 : Number(aValue);
+        bValue = bValue === '-' ? -1 : Number(bValue);
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return baseRanking;
+  }, [filteredData, sortConfig]);
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key, direction: "desc" };
+    });
+  };
+
+  // Seleção de Equipe
+  const [selectedEquipesDetalhe, setSelectedEquipesDetalhe] = useState<string[]>([]);
+  const [highlightedIncidents, setHighlightedIncidents] = useState<string[]>([]);
+  const [selectedObservation, setSelectedObservation] = useState<{
+    numero: string;
+    texto: string;
+  } | null>(null);
+
+  // Update selected equipe if ranking changes and current is not in it
+  React.useEffect(() => {
+    if (rankingEquipes.length > 0) {
+      // Se um incidente específico foi selecionado, selecionamos todas as equipes relacionadas a ele
+      if (selectedIncidents.length > 0) {
+        const allTeamsForIncident = rankingEquipes.map(r => r.Equipe);
+        setSelectedEquipesDetalhe(allTeamsForIncident);
+        return;
+      }
+
+      const validSelected = selectedEquipesDetalhe.filter(eq => rankingEquipes.some(r => r.Equipe === eq));
+      if (validSelected.length === 0) {
+        setSelectedEquipesDetalhe([rankingEquipes[0].Equipe]);
+      } else if (validSelected.length !== selectedEquipesDetalhe.length) {
+        setSelectedEquipesDetalhe(validSelected);
+      }
+    } else {
+      setSelectedEquipesDetalhe([]);
+    }
+  }, [rankingEquipes, selectedIncidents]);
+
+  const equipeDetalheData = useMemo(() => {
+    return filteredData
+      .filter((d) => selectedEquipesDetalhe.includes(d["Equipe Desl."]))
+      .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0));
+  }, [filteredData, selectedEquipesDetalhe]);
+
+  const timelineData = selectedEquipesDetalhe.map(equipe => {
+    const equipeData = filteredData.filter((d) => d["Equipe Desl."] === equipe);
+    
+    if (equipeData.length === 0) return { equipe, events: [] };
+
+    const firstRow = equipeData[0] || {};
+    const teamTurno = firstRow.Turno || "B";
+    
+    const events = equipeData
+      .filter((d) => d.hora_aux_ordenacao != null)
+      .map((d) => {
+        let inicio_decimal = Number(d.hora_aux_ordenacao) || 0;
+        if (selectedData && d["Data Ação"]) {
+          try {
+            const [ySel, mSel, daySel] = selectedData.split('-').map(Number);
+            const [yAcao, mAcao, dayAcao] = d["Data Ação"].split('-').map(Number);
+            
+            const dSel = new Date(Date.UTC(ySel, mSel - 1, daySel));
+            const dAcao = new Date(Date.UTC(yAcao, mAcao - 1, dayAcao));
+            
+            if (!isNaN(dSel.getTime()) && !isNaN(dAcao.getTime())) {
+              const diffDays = Math.round((dAcao.getTime() - dSel.getTime()) / (1000 * 60 * 60 * 24));
+              inicio_decimal += diffDays * 24;
+            }
+          } catch (e) {
+            console.error("Erro ao calcular diff de dias", e);
+          }
+        }
+
+        const isAtribuida = d.ordem2 && d.isIdentificadorO2;
+        const isDeslocada = d.ordem2 && d.isExecutorO2;
+        const isExecutorO2 = !!d.isExecutorO2;
+        const isIdentificadorO2 = !!d.isIdentificadorO2;
+
+        return {
+          id: d.Número,
+          inicio_decimal,
+          TMD: Number(d.TMD) || 0,
+          TME: Number(d.TME) || 0,
+          TMDE: Number(d.TMDE) || 0,
+          origTMD: d.origTMD,
+          origTME: d.origTME,
+          origTMDE: d.origTMDE,
+          improdutivo: !!d.Improdutivo,
+          ordem2: !!d.ordem2,
+          possivelO2: !!d.possivelO2,
+          possivelAnomalia: !!d.possivelAnomalia,
+          isAtribuidaO2: isAtribuida || (!!d.possivelO2 && !!d.isAtribuidaO2),
+          isDeslocadaO2: isDeslocada || (!!d.possivelO2 && !!d.isDeslocadaO2),
+          isExecutorO2,
+          isIdentificadorO2,
+          tempoPadrao: Number(d.tempo_padrao) || 60,
+          dataAcao: d["Data Ação"],
+          horaAcao: d["Hora da ação equipe"],
+        };
+      });
+
+    const firstLoginRaw = equipeData
+      .map((d) => d["1º Login Corrigido"] || d["Log In"])
+      .find((v) => v != null && v !== "");
+    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
+
+    const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
+    
+    let platformDuration = undefined;
+    if (firstLoginDecimal != null && firstIncident) {
+      platformDuration = firstIncident.inicio_decimal - firstLoginDecimal;
+      if (platformDuration < 0) platformDuration = 0;
+    }
+
+    return { 
+      equipe, 
+      events,
+      turno: teamTurno,
+      shiftStartHour: getShiftStartHour(teamTurno),
+      shiftStart: convertToDecimalHours(firstRow["Inicio Calendario"], selectedData),
+      shiftEnd: convertToDecimalHours(firstRow["Fim Calendario"], selectedData),
+      platformDuration,
+      firstLogin: firstLoginDecimal,
+      intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
+      intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
+      returnToBaseDuration: convertToDecimalHours(firstRow["Retorno a base"]), // This is a duration
+      lastLogOff: convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
+    };
+  });
+
+  const currentShiftStartHour = useMemo(() => {
+    if (selectedTurnos.length === 1) {
+      if (selectedTurnos[0] === "A") return 16;
+      if (selectedTurnos[0] === "B") return 0;
+      if (selectedTurnos[0] === "C") return 12;
+    }
+    // If multiple or none, check if all teams in timelineData have same shift
+    const distinctShifts = new Set(timelineData.map(t => t.turno));
+    if (distinctShifts.size === 1) {
+      const s = Array.from(distinctShifts)[0];
+      if (s === "A") return 16;
+      if (s === "B") return 0;
+      if (s === "C") return 12;
+    }
+    return 0; // Default
+  }, [selectedTurnos, timelineData]);
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex overflow-hidden">
+      {/* Sidebar */}
+      <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-white shadow-lg flex flex-col h-screen sticky top-0 z-20 overflow-hidden shrink-0`}>
+        <div className="p-4 border-b flex items-center justify-between bg-blue-600 text-white min-w-[16rem]">
+          <h2 className="text-lg font-bold flex items-center">
+            <BarChart3 className="mr-2 h-5 w-5" />
+            Filtros
+          </h2>
+          <button
+            onClick={onBack}
+            className="p-1 hover:bg-blue-700 rounded"
+            title="Voltar"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-4 flex-1 overflow-y-auto min-w-[16rem]">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Modo de Análise
+              </label>
+              <button
+                onClick={() => setIsPeriodMode(!isPeriodMode)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isPeriodMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPeriodMode ? 'translate-x-6' : 'translate-x-1'}`}
+                />
+              </button>
+            </div>
+            {isPeriodMode && (
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => setSelectedPeriod("7d")}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${selectedPeriod === "7d" ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                >
+                  7 DIAS
+                </button>
+                <button
+                  onClick={() => setSelectedPeriod("mes")}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${selectedPeriod === "mes" ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                >
+                  MÊS
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              {isPeriodMode ? 'Data de Referência' : 'Dia'}
+            </label>
+            <select
+              value={selectedData}
+              onChange={(e) => setSelectedData(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+            >
+              <option value="">Todos</option>
+              {datas.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              TMDE &gt; 150
+            </label>
+            <select
+              value={tmdeAbove150Filter}
+              onChange={(e) => setTmdeAbove150Filter(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+            >
+              <option value="todos">Todos</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              Possível O2 / Anomalia
+            </label>
+            <select
+              value={o2AnomaliaFilter}
+              onChange={(e) => setO2AnomaliaFilter(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
+            >
+              <option value="todos">Todos</option>
+              <option value="o2">Possível O2</option>
+              <option value="anomalia">Possível Anomalia</option>
+            </select>
+          </div>
+
+          <MultiSelect
+            label="Polo"
+            options={polos}
+            selected={selectedPolos}
+            onChange={setSelectedPolos}
+          />
+          <MultiSelect
+            label="Processo"
+            options={processos}
+            selected={selectedProcessos}
+            onChange={setSelectedProcessos}
+          />
+          <MultiSelect
+            label="Insourcing / Outsourcing"
+            options={tiposEquipe}
+            selected={selectedTiposEquipe}
+            onChange={setSelectedTiposEquipe}
+          />
+          <MultiSelect
+            label="Turno"
+            options={turnos}
+            selected={selectedTurnos}
+            onChange={setSelectedTurnos}
+          />
+          <MultiSelect
+            label="Equipe"
+            options={equipes}
+            selected={selectedEquipes}
+            onChange={setSelectedEquipes}
+            searchable={true}
+          />
+          <MultiSelect
+            label="Incidente"
+            options={incidents}
+            selected={selectedIncidents}
+            onChange={setSelectedIncidents}
+            searchable={true}
+          />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-8 overflow-y-auto h-screen relative">
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="mr-4 p-2 bg-white rounded-md shadow-sm border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors"
+              title={isSidebarOpen ? "Recolher Filtros" : "Expandir Filtros"}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+              <BarChart3 className="mr-3 h-8 w-8 text-blue-600" />
+              Dashboard Operacional
+            </h1>
+          </div>
+          {selectedEquipesDetalhe.length > 0 && (
+            <button
+              onClick={() => setSelectedEquipesDetalhe([])}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-colors"
+            >
+              Limpar Seleção de Equipes
+            </button>
+          )}
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center text-gray-500 mb-2">
+              <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
+              <h3 className="text-sm font-medium">Incidentes</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">
+              {isPeriodMode ? displayInc.toFixed(1) : displayInc}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center text-gray-500 mb-2">
+              <Clock className="h-5 w-5 mr-2 text-blue-500" />
+              <h3 className="text-sm font-medium">TMDE Médio</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">
+              {tmdeMedio.toFixed(1)}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center text-gray-500 mb-2">
+              <BarChart3 className="h-5 w-5 mr-2 text-purple-500" />
+              <h3 className="text-sm font-medium">Taxa Reincidência</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">
+              {(taxaReinc * 100).toFixed(1)}%
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center text-gray-500 mb-2">
+              <XCircle className="h-5 w-5 mr-2 text-red-500" />
+              <h3 className="text-sm font-medium">% Improdutivo</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">
+              {(taxaImprod * 100).toFixed(1)}%
+            </p>
+          </div>
+        </div>
+
+        {/* Resultado por Processo */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h2 className="text-lg font-semibold text-gray-900">
+              📋 Resultado por Processo
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    "Processos",
+                    "Incidentes",
+                    "Equipes",
+                    "Improdutivos",
+                    "Ordem 2",
+                    "Reincidentes causados",
+                    "TMDE",
+                    "Ocupação",
+                    "Produção",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {[...resumoProcessos, totalRowProcessos].map((row, idx) => (
+                  <tr
+                    key={row.Processos}
+                    className={
+                      idx === resumoProcessos.length
+                        ? "bg-gray-50 font-semibold"
+                        : ""
+                    }
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {row.Processos}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.Equipes}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.TMDE.toFixed(1)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.Ocupação.toFixed(1)}%
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.Produtividade.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Ranking das Equipes */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              🏆 Ranking das Equipes
+              <span className="ml-3 text-xs font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+                {selectedEquipesDetalhe.length} selecionada(s)
+              </span>
+            </h2>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setSelectedEquipesDetalhe(rankingEquipes.map(r => r.Equipe))}
+                className="px-3 py-1 text-sm bg-white border border-gray-300 hover:bg-gray-50 text-blue-600 rounded-md shadow-sm transition-colors"
+              >
+                Selecionar Todos
+              </button>
+              {selectedEquipesDetalhe.length > 0 && (
+                <button
+                  onClick={() => setSelectedEquipesDetalhe([])}
+                  className="px-3 py-1 text-sm bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-md shadow-sm transition-colors"
+                >
+                  Limpar Seleção
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="overflow-x-auto max-h-96">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  {[
+                    "Equipe",
+                    "Turno",
+                    "Incidentes",
+                    "Improdutivos",
+                    "Ordem 2",
+                    "Reincidentes causados",
+                    "TMDE",
+                    "Ocupação",
+                    "Login",
+                    "Tempo de plataforma",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      onClick={() => handleSort(h)}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>{h}</span>
+                        {sortConfig.key === h && (
+                          <span className="text-gray-400">
+                            {sortConfig.direction === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {rankingEquipes.map((row) => {
+                  const isSelected = selectedEquipesDetalhe.includes(row.Equipe);
+                  return (
+                    <tr 
+                      key={row.Equipe} 
+                      className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
+                      onClick={() => {
+                        setSelectedEquipesDetalhe(prev => 
+                          prev.includes(row.Equipe) 
+                            ? prev.filter(e => e !== row.Equipe)
+                            : [...prev, row.Equipe]
+                        );
+                      }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 flex items-center">
+                        <input 
+                          type="checkbox" 
+                          className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                          checked={isSelected}
+                          readOnly
+                        />
+                        {row.Equipe}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row.Turno}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row.TMDE.toFixed(1)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row.Ocupação.toFixed(1)}%
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row.Login}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row["Tempo de plataforma"]}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Detalhes das Equipes Selecionadas */}
+        {selectedEquipesDetalhe.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  🔎 Detalhes das Equipes Selecionadas
+                </h2>
+                <button
+                  onClick={() => setSelectedEquipesDetalhe([])}
+                  className="px-3 py-1 text-sm bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-md shadow-sm transition-colors"
+                >
+                  Limpar Seleção
+                </button>
+              </div>
+              <span className="text-sm text-gray-500">
+                {selectedEquipesDetalhe.length} equipe(s) selecionada(s)
+              </span>
+            </div>
+
+            <div className="p-6">
+              {/* Timeline */}
+              <div className="mb-8">
+                <TimelineChart
+                  data={timelineData}
+                  onEventClick={(id, isMulti) => {
+                    setHighlightedIncidents(prev => {
+                      if (isMulti) {
+                        if (prev.includes(id)) {
+                          return prev.filter(i => i !== id);
+                        } else {
+                          return [...prev, id];
+                        }
+                      } else {
+                        return [id];
+                      }
+                    });
+                  }}
+                  highlightedIds={highlightedIncidents}
+                  onRemoveTeam={(equipe) => {
+                    setSelectedEquipesDetalhe(prev => prev.filter(e => e !== equipe));
+                  }}
+                  shiftStartHour={currentShiftStartHour}
+                />
+              </div>
+
+              {/* Tabela de Incidentes da Equipe */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  📑 Incidentes das Equipes Selecionadas
+                </h3>
+                <div className="overflow-x-auto max-h-96 border rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        {[
+                          "Número",
+                          "Data início",
+                          "Data fim",
+                          "Hora da ação equipe",
+                          "Causa",
+                          "Observação",
+                          "Grupo Processos DESLOC",
+                          "Enel / Parceira DESLOC",
+                          "Polo",
+                          "Improdutivo",
+                          "Ordem 2 da equipe",
+                          "Reincidente Causado",
+                          "TMDE",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {equipeDetalheData.map((row, idx) => {
+                        const ord2Equipe = row.ordem2;
+                        const isHighlighted = highlightedIncidents.includes(row.Número);
+                        return (
+                          <tr 
+                            key={idx} 
+                            id={`incident-${row.Número}`}
+                            className={`hover:bg-gray-50 transition-colors cursor-pointer ${isHighlighted ? 'bg-yellow-100 ring-2 ring-yellow-400 ring-inset' : ''}`}
+                            onClick={(e) => {
+                              setHighlightedIncidents(prev => {
+                                if (e.ctrlKey || e.metaKey) {
+                                  return prev.includes(row.Número) ? prev.filter(i => i !== row.Número) : [...prev, row.Número];
+                                }
+                                return [row.Número];
+                              });
+                            }}
+                          >
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                              {row.Número}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row["Data Início"] ? row["Data Início"].split('-').reverse().join('/') : ""}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row["Data Fim"] ? row["Data Fim"].split('-').reverse().join('/') : ""}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {typeof row["Hora da ação equipe"] === "number"
+                                ? new Date(
+                                    row["Hora da ação equipe"] * 86400000,
+                                  )
+                                    .toISOString()
+                                    .substr(11, 8)
+                                : String(row["Hora da ação equipe"] || "")}
+                            </td>
+                            <td
+                              className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate"
+                              title={row.Causa}
+                            >
+                              {row.Causa}
+                            </td>
+                            <td
+                              className="px-4 py-2 whitespace-nowrap text-sm text-blue-600 max-w-xs truncate cursor-pointer hover:underline"
+                              title="Clique para ver a observação completa"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedObservation({
+                                  numero: row.Número,
+                                  texto: row.Observação,
+                                });
+                              }}
+                            >
+                              {row.Observação}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row["Grupo Processos DESLOC"]}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row["Enel / Parceira DESLOC"]}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row.Polo}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row.Improdutivo ? "Sim" : "Não"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {ord2Equipe ? "Sim" : "Não"}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {row["Reincidente Causado"] ? "Sim" : "Não"}
+                            </td>
+                            <td className={`px-4 py-2 whitespace-nowrap text-sm ${row.TME > (row.tempo_padrao || 60) ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
+                              {row.TME != null ? (row.TME > (row.tempo_padrao || 60) ? `>${row.tempo_padrao || 60}min` : `<=${row.tempo_padrao || 60}min`) : row.TMDE}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Observação */}
+      {selectedObservation && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedObservation(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[80vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-2 text-blue-600" />
+                Observação do Incidente: {selectedObservation.numero}
+              </h3>
+              <button 
+                onClick={() => setSelectedObservation(null)}
+                className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                <X className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {selectedObservation.texto || "Nenhuma observação registrada."}
+            </div>
+            <div className="p-4 border-t bg-gray-50 flex justify-end">
+              <button 
+                onClick={() => setSelectedObservation(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
