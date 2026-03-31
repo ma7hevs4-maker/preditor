@@ -26,7 +26,7 @@ const MultiSelect = ({ label, options, selected, onChange, searchable }: any) =>
         <div className="flex space-x-2">
           <button
             onClick={() => onChange(filteredOptions)}
-            className="text-[10px] text-primary hover:text-blue-800 underline"
+            className="text-[10px] text-primary hover:text-primary/80 underline"
             title="Selecionar todos"
           >
             Todos
@@ -46,7 +46,7 @@ const MultiSelect = ({ label, options, selected, onChange, searchable }: any) =>
           placeholder="Pesquisar..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="mb-2 block w-full rounded-md border-border shadow-sm focus:border-ring focus:ring-ring sm:text-xs p-1.5 border"
+          className="mb-2 block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-xs p-1.5 border"
         />
       )}
       <select
@@ -59,7 +59,7 @@ const MultiSelect = ({ label, options, selected, onChange, searchable }: any) =>
           );
           onChange(values);
         }}
-        className="block w-full rounded-md border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm h-32 p-2 border"
+        className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm h-32 p-2 border"
       >
         {filteredOptions.map((opt: string) => (
           <option key={opt} value={opt}>
@@ -923,7 +923,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             <select
               value={selectedData}
               onChange={(e) => setSelectedData(e.target.value)}
-              className="block w-full rounded-md border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
+              className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
             >
               <option value="">Todos</option>
               {datas.map((d) => (
@@ -941,7 +941,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             <select
               value={tmdeAbove150Filter}
               onChange={(e) => setTmdeAbove150Filter(e.target.value)}
-              className="block w-full rounded-md border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
+              className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
             >
               <option value="todos">Todos</option>
               <option value="sim">Sim</option>
@@ -956,7 +956,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             <select
               value={o2AnomaliaFilter}
               onChange={(e) => setO2AnomaliaFilter(e.target.value)}
-              className="block w-full rounded-md border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
+              className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
             >
               <option value="todos">Todos</option>
               <option value="o2">Possível O2</option>
@@ -1016,7 +1016,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h1 className="text-3xl font-bold text-foreground flex items-center">
+            <h1 className="kpi-value text-foreground flex items-center">
               <BarChart3 className="mr-3 h-8 w-8 text-primary" />
               Dashboard Operacional
             </h1>
@@ -1033,46 +1033,46 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="glass-card p-6">
             <div className="flex items-center text-muted-foreground mb-2">
               <AlertTriangle className="h-5 w-5 mr-2 text-warning" />
               <h3 className="text-sm font-medium">Incidentes</h3>
             </div>
-            <p className="text-3xl font-bold text-foreground">
+            <p className="kpi-value text-foreground">
               {isPeriodMode ? displayInc.toFixed(1) : displayInc}
             </p>
           </div>
-          <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="glass-card p-6">
             <div className="flex items-center text-muted-foreground mb-2">
               <Clock className="h-5 w-5 mr-2 text-primary" />
               <h3 className="text-sm font-medium">TMDE Médio</h3>
             </div>
-            <p className="text-3xl font-bold text-foreground">
+            <p className="kpi-value text-foreground">
               {tmdeMedio.toFixed(1)}
             </p>
           </div>
-          <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="glass-card p-6">
             <div className="flex items-center text-muted-foreground mb-2">
               <BarChart3 className="h-5 w-5 mr-2 text-accent" />
               <h3 className="text-sm font-medium">Taxa Reincidência</h3>
             </div>
-            <p className="text-3xl font-bold text-foreground">
+            <p className="kpi-value text-foreground">
               {(taxaReinc * 100).toFixed(1)}%
             </p>
           </div>
-          <div className="bg-card rounded-xl shadow-sm p-6 border border-border">
+          <div className="glass-card p-6">
             <div className="flex items-center text-muted-foreground mb-2">
               <XCircle className="h-5 w-5 mr-2 text-destructive" />
               <h3 className="text-sm font-medium">% Improdutivo</h3>
             </div>
-            <p className="text-3xl font-bold text-foreground">
+            <p className="kpi-value text-foreground">
               {(taxaImprod * 100).toFixed(1)}%
             </p>
           </div>
         </div>
 
         {/* Resultado por Processo */}
-        <div className="bg-card rounded-xl shadow-sm border border-border mb-8 overflow-hidden">
+        <div className="glass-card mb-8 overflow-hidden">
           <div className="px-6 py-4 border-b border-border bg-secondary/30">
             <h2 className="text-lg font-semibold text-foreground">
               📋 Resultado por Processo
@@ -1147,7 +1147,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         </div>
 
         {/* Ranking das Equipes */}
-        <div className="bg-card rounded-xl shadow-sm border border-border mb-8 overflow-hidden">
+        <div className="glass-card mb-8 overflow-hidden">
           <div className="px-6 py-4 border-b border-border bg-secondary/30 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground flex items-center">
               🏆 Ranking das Equipes
@@ -1266,7 +1266,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
         {/* Detalhes das Equipes Selecionadas */}
         {selectedEquipesDetalhe.length > 0 && (
-          <div className="bg-card rounded-xl shadow-sm border border-border mb-8 overflow-hidden">
+          <div className="glass-card mb-8 overflow-hidden">
             <div className="px-6 py-4 border-b border-border bg-secondary/30 flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <h2 className="text-lg font-semibold text-foreground">
@@ -1438,7 +1438,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
           onClick={() => setSelectedObservation(null)}
         >
           <div 
-            className="bg-card rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[80vh]"
+            className="bg-card rounded-xl border border-border shadow-2xl max-w-2xl w-full overflow-hidden flex flex-col max-h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b bg-secondary/30 flex items-center justify-between">
