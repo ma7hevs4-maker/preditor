@@ -1,4 +1,4 @@
-import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun, HelpCircle } from "lucide-react";
+import { Zap, Users, Settings, Eye, Sun, Moon, ChevronLeft, ChevronRight, CloudSun, HelpCircle, BarChart3 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useTheme } from "@/hooks/useTheme";
