@@ -186,7 +186,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
           return (
           <>
             {/* Title Bar with Controls */}
-            <div className="flex items-center justify-between bg-secondary text-white p-3 shrink-0">
+            <div className="flex items-center justify-between bg-secondary text-secondary-foreground p-3 shrink-0">
               <div className="flex items-center">
                 <Clock className="h-5 w-5 mr-2 text-primary" />
                 <h3 className="text-lg font-bold tracking-tight">
@@ -198,7 +198,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                 <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border">
                   <button
                     onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))}
-                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
                     title="Diminuir Escala Horizontal"
                   >
                     <MoveHorizontal className="w-3.5 h-3.5 rotate-90" />
@@ -208,7 +208,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                   </div>
                   <button
                     onClick={() => setHorizontalScale(prev => Math.min(10, prev + 0.25))}
-                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
                     title="Aumentar Escala Horizontal"
                   >
                     <MoveHorizontal className="w-3.5 h-3.5" />
@@ -218,7 +218,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                       setHorizontalScale(1);
                       resetTransform();
                     }}
-                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors ml-1 border-l border-border pl-2"
+                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors ml-1 border-l border-border pl-2"
                     title="Resetar Escala"
                   >
                     <Maximize className="w-3.5 h-3.5 rotate-90" />
@@ -228,7 +228,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                 <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-md border border-border">
                   <button
                     onClick={() => zoomIn()}
-                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
                     title="Aumentar Zoom"
                   >
                     <ZoomIn className="w-3.5 h-3.5" />
@@ -238,7 +238,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                   </div>
                   <button
                     onClick={() => zoomOut()}
-                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
                     title="Diminuir Zoom"
                   >
                     <ZoomOut className="w-3.5 h-3.5" />
@@ -251,14 +251,14 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                       const scale = containerWidth / width;
                       setTransform(0, 0, scale);
                     }}
-                    className="p-1 hover:bg-primary/30 hover:text-primary rounded text-white transition-colors"
+                    className="p-1 hover:bg-primary/30 hover:text-primary rounded text-secondary-foreground transition-colors"
                     title="Ajustar à Largura"
                   >
                     <Maximize className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => transformRef.current?.centerView()}
-                    className="p-1 hover:bg-muted/50 rounded text-white transition-colors"
+                    className="p-1 hover:bg-muted/50 rounded text-secondary-foreground transition-colors"
                     title="Centralizar"
                   >
                     <Crosshair className="w-3.5 h-3.5" />
@@ -268,7 +268,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 bg-white border-b border-border text-xs text-foreground/80 shrink-0">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3 bg-card border-b border-border text-xs text-foreground/80 shrink-0">
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 bg-[#12A8E0] border border-black"></div>
           <span>TMD</span>
@@ -343,9 +343,9 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
         </div>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mr-0.5"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mr-0.5"></div>
             <div className="w-4 h-4 bg-[#12A8E0] border border-black"></div>
-            <div className="w-1.5 h-1.5 rounded-full bg-gray-500 ml-0.5"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground ml-0.5"></div>
           </div>
           <span>Fora do período visível</span>
         </div>
