@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Clima from "./pages/Clima";
 import Estrutura from "./pages/Estrutura";
 import Visao from "./pages/Visao";
+import Meu from "./pages/Meu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
