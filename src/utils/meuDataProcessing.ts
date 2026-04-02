@@ -844,6 +844,15 @@ export async function processFiles(incFile: File, m300File: File | null) {
       return;
     }
 
+    // Calculate Data Turno from the actual incident time (A_Caminho/No_Local), not Inicio Calendario
+    const dtACaminhoM300 = parseFullDateTime(m["A_Caminho"]);
+    const dtNoLocalM300 = parseFullDateTime(m["No_Local"]);
+    const dtActualIncident = dtACaminhoM300 || dtNoLocalM300;
+    let dataTurnoM300Only = date; // fallback to M300's Data Turno from Inicio Calendario
+    if (dtActualIncident) {
+      dataTurnoM300Only = calculateShiftDate(dtActualIncident, horaAux, m.shiftStartHour);
+    }
+
     const causa = String(m["CAUSA"] || m["Causa"] || "");
     const causasImprodutivas = [
       "CASA FECHADA", "DEFEITO INTERNO CLIENTE", "ENDEREÇO NÃO LOCALIZADO",
@@ -858,8 +867,8 @@ export async function processFiles(incFile: File, m300File: File | null) {
       ...m,
       "Equipe Desl.": equipe,
       "Número": m["Incidente_M300"] || incNum,
-      "Data Turno": date,
-      "Data Ação": m["Data Ação Real"] || date,
+      "Data Turno": dataTurnoM300Only,
+      "Data Ação": m["Data Ação Real"] || dataTurnoM300Only,
       "Processo": normalizarProcesso(m["Grupo Processos DESLOC"] || "Outros"),
       "Grupo Processos DESLOC": m["Grupo Processos DESLOC"] || "Não informado",
       "Enel / Parceira DESLOC": m["Enel / Parceira DESLOC"] || "Não informado",
