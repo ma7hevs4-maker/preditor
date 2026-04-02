@@ -1213,7 +1213,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative">
+      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative w-full">
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="glass-card p-5">
