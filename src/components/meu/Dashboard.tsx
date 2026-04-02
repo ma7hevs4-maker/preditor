@@ -560,21 +560,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     });
     if (maxDespacho !== null) allDespachoVals.push(maxDespacho);
 
-    let maxPlat: number | null = null;
-    eqData.forEach(d => {
-      const raw = d["1º Desloc"];
-      const val = getValMinutes(raw);
-      if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
-    });
-    if (maxPlat !== null) allPlatVals.push(maxPlat);
+    const plat = calcTempoPlataforma(eqData);
+    if (plat !== null) allPlatVals.push(plat);
 
-    let maxRetorno: number | null = null;
-    eqData.forEach(d => {
-      const raw = d["Retorno a base"];
-      const val = getValMinutes(raw);
-      if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
-    });
-    if (maxRetorno !== null) allRetornoVals.push(maxRetorno);
+    const ret = calcRetornoBase(eqData);
+    if (ret !== null) allRetornoVals.push(ret);
   });
 
   const totalRowProcessos = {
