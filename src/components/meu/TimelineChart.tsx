@@ -487,7 +487,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <rect
                                     x={xInicio} y={yRect} width={xFimTmd - xInicio} height={rectHeight}
                                     fill={tmdFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
-                                    rx="6" ry="6"
+                                    rx="2" ry="2"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -497,7 +497,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <rect
                                     x={xFimTmd} y={yRect} width={xFimTotal - xFimTmd} height={rectHeight}
                                     fill={tmeFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
-                                    rx="6" ry="6"
+                                    rx="2" ry="2"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -544,6 +544,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     x={xInicio - 2} y={yRect - 2}
                                     width={xFimTotal - xInicio + 4} height={rectHeight + 4}
                                     fill="none" stroke={COLORS.purple} strokeWidth="2.5"
+                                    rx="4" ry="4"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -554,6 +555,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     x={xInicio} y={yRect - 4}
                                     width={xFimTotal - xInicio} height={rectHeight + 8}
                                     fill="none" stroke={COLORS.improdutivoBorder} strokeWidth="1.5"
+                                    rx="4" ry="4"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -564,6 +566,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     x={xInicio} y={yRect - 4}
                                     width={xFimTmd - xInicio} height={rectHeight + 8}
                                     fill="none" stroke={COLORS.error} strokeWidth="1.5"
+                                    rx="4" ry="4"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -574,6 +577,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     x={xFimTmd} y={yRect - 4}
                                     width={xFimTotal - xFimTmd} height={rectHeight + 8}
                                     fill="none" stroke={COLORS.error} strokeWidth="1.5"
+                                    rx="4" ry="4"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
