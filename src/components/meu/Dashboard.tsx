@@ -1412,8 +1412,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Login}
                       </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                        {row.Despacho}
+                      </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground truncate">
                         {row["Tempo de plataforma"]}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                        {row["Retorno Base"]}
                       </td>
                     </tr>
                   );
