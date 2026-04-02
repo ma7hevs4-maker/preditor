@@ -174,7 +174,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
   const xScale = (val: number) => getXScale(val, shiftStartHour);
 
   return (
-    <div ref={containerRef} className="w-full bg-card rounded-lg border border-border relative overflow-hidden flex flex-col h-[800px]">
+    <div ref={containerRef} className="w-full bg-card rounded-lg border border-border relative overflow-hidden flex flex-col h-[800px] max-w-full">
       <TransformWrapper
         ref={transformRef}
         key={`${data?.length}-${horizontalScale}-${containerWidth}`}
@@ -205,11 +205,11 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
 
               <div className="flex items-center space-x-2">
                 <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-md border border-border">
-                  <button onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Diminuir Escala Horizontal">
+                  <button onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Diminuir Escala Horizontal" disabled={horizontalScale <= 0.5}>
                     <MoveHorizontal className="w-3.5 h-3.5 rotate-90" />
                   </button>
                   <div className="text-[10px] font-bold text-primary min-w-[2.8rem] text-center font-mono">{Math.round(horizontalScale * 100)}%</div>
-                  <button onClick={() => setHorizontalScale(prev => Math.min(10, prev + 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Aumentar Escala Horizontal">
+                  <button onClick={() => setHorizontalScale(prev => Math.min(3, prev + 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Aumentar Escala Horizontal" disabled={horizontalScale >= 3}>
                     <MoveHorizontal className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => { setHorizontalScale(1); resetTransform(); }} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors ml-1 border-l border-border pl-2" title="Resetar Escala">
@@ -487,7 +487,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <rect
                                     x={xInicio} y={yRect} width={xFimTmd - xInicio} height={rectHeight}
                                     fill={tmdFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
-                                    rx="2" ry="2"
+                                    rx="6" ry="6"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -497,7 +497,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <rect
                                     x={xFimTmd} y={yRect} width={xFimTotal - xFimTmd} height={rectHeight}
                                     fill={tmeFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
-                                    rx="2" ry="2"
+                                    rx="6" ry="6"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}

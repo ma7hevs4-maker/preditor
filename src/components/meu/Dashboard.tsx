@@ -149,7 +149,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   // Filter states
   const [isPeriodMode, setIsPeriodMode] = useState<boolean>(false);
   const [selectedPeriod, setSelectedPeriod] = useState<"7d" | "mes">("7d");
-  const [selectedData, setSelectedData] = useState<string>(datas[datas.length - 1] || "");
+  const [selectedData, setSelectedData] = useState<string>(() => {
+    // Default to D-1 (second-to-last date) if available
+    if (datas.length >= 2) return datas[datas.length - 2];
+    return datas[datas.length - 1] || "";
+  });
   const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<string[]>([]);
   const [selectedTiposEquipe, setSelectedTiposEquipe] = useState<string[]>([]);
@@ -1043,7 +1047,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   ].filter(Boolean).length;
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden max-w-[100vw]">
       {/* Top Bar */}
       <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-6 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
@@ -1209,7 +1213,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative">
+      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative w-full">
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="glass-card p-5">
@@ -1526,7 +1530,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
             <div className="p-6">
               {/* Timeline */}
-              <div className="mb-8">
+              <div className="mb-8 w-full min-w-0 overflow-hidden">
                 <TimelineChart
                   data={timelineData}
                   onEventClick={(id, isMulti) => {
