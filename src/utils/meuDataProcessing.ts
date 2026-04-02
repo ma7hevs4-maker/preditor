@@ -418,11 +418,21 @@ export async function processFiles(incFile: File, m300File: File | null) {
       row["Data Ação Real"] = row["Data Turno"];
     }
 
-    // Keep corrected login as raw minutes, separate from actual login time used in timeline
-    const loginMinutesKey = rowKeys.find(k => {
-      const lower = k.toLowerCase().trim();
-      return lower === 'log in corrigido' || lower === '1º login corrigido' || lower === '1o login corrigido';
+    // Keep corrected login as raw minutes, using the exact M300 column "1º Login Corrigido" (col 53)
+    const normalizeHeader = (key: string) => key
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+    const exactLoginMinutesKey = rowKeys.find(k => {
+      const lower = normalizeHeader(k);
+      return lower === '1o login corrigido' || /^1o login corrigido_\d+$/.test(lower);
     });
+
+    const column53Key = rowKeys[52];
+    const loginMinutesKey = exactLoginMinutesKey || column53Key;
 
     if (loginMinutesKey) {
       const loginMinutesVal = row[loginMinutesKey];
@@ -431,8 +441,8 @@ export async function processFiles(incFile: File, m300File: File | null) {
     }
 
     const loginTimeKey = rowKeys.find(k => {
-      const lower = k.toLowerCase().trim();
-      return lower === 'log in' || lower === '1º login' || lower === '1o login' || lower === '1º despacho' || lower === '1o despacho';
+      const lower = normalizeHeader(k);
+      return lower === 'log in' || lower === '1o login' || lower === '1o despacho';
     });
 
     if (loginTimeKey) {
