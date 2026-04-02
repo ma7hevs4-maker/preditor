@@ -480,6 +480,28 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   });
   const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
 
+  // Averages for Login and Tempo Plataforma in total row
+  const allLoginVals: number[] = [];
+  const allPlatVals: number[] = [];
+  equipesPresentesGeral.forEach(eq => {
+    const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
+    let maxLogin: number | null = null;
+    eqData.forEach(d => {
+      const raw = d["1º Login Corrigido"] || d["Log In"];
+      const val = convertToDecimalHours(raw);
+      if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
+    });
+    if (maxLogin !== null) allLoginVals.push(maxLogin);
+
+    let maxPlat: number | null = null;
+    eqData.forEach(d => {
+      const raw = d["1º Desloc"];
+      const val = getValMinutes(raw);
+      if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
+    });
+    if (maxPlat !== null) allPlatVals.push(maxPlat);
+  });
+
   const totalRowProcessos = {
     Processos: "Total",
     Incidentes: resumoProcessos.reduce((acc, curr) => acc + curr.Incidentes, 0),
@@ -496,6 +518,8 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     TMDE: tmdeMedio,
     Ocupação: ocupacaoMediaGeral,
     Produtividade: isPeriodMode ? (totalIncProdutivos / totalEquipesGeralCount) / numDays : totalIncProdutivos / totalEquipesGeralCount,
+    Login: allLoginVals.length > 0 ? allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length : null,
+    "Tempo Plataforma": allPlatVals.length > 0 ? allPlatVals.reduce((a, b) => a + b, 0) / allPlatVals.length : null,
   };
 
   // Helper to convert various formats to decimal hours
