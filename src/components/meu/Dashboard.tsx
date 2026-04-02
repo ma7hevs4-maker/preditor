@@ -159,33 +159,43 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   const [tmdeAbove150Filter, setTmdeAbove150Filter] = useState<string>("todos");
   const [o2AnomaliaFilter, setO2AnomaliaFilter] = useState<string>("todos");
 
+  const normalizeIncidentNumber = (value: any) => {
+    const s = String(value ?? "").trim();
+    return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
+  };
+
+  const matchesSelectedDateFilter = (rowDateStr?: string | null) => {
+    if (!rowDateStr) return false;
+
+    if (!isPeriodMode) {
+      return !selectedData || rowDateStr === selectedData;
+    }
+
+    if (!selectedData) return true;
+
+    const [ySel, mSel, dSel] = selectedData.split('-').map(Number);
+    const selDate = new Date(ySel, mSel - 1, dSel);
+
+    const [yRow, mRow, dRow] = rowDateStr.split('-').map(Number);
+    const rowDate = new Date(yRow, mRow - 1, dRow);
+
+    if (selectedPeriod === "7d") {
+      const diffTime = selDate.getTime() - rowDate.getTime();
+      const diffDays = diffTime / (1000 * 3600 * 24);
+      return diffDays >= 0 && diffDays < 7;
+    }
+
+    return ySel === yRow && mSel === mRow;
+  };
+
   // Apply filters
   const dataFilteredByBasics = useMemo(() => {
     return data.filter((d) => {
+      if (d.isM300Only) return false;
       if (d["Equipe Desl."] === "---") return false;
       
       const rowDateStr = d["Data Turno"] || d["Data Ação"];
-      if (!rowDateStr) return false;
-
-      if (!isPeriodMode) {
-        if (selectedData && rowDateStr !== selectedData) return false;
-      } else {
-        if (selectedData) {
-          const [ySel, mSel, dSel] = selectedData.split('-').map(Number);
-          const selDate = new Date(ySel, mSel - 1, dSel);
-          
-          const [yRow, mRow, dRow] = rowDateStr.split('-').map(Number);
-          const rowDate = new Date(yRow, mRow - 1, dRow);
-
-          if (selectedPeriod === "7d") {
-            const diffTime = selDate.getTime() - rowDate.getTime();
-            const diffDays = diffTime / (1000 * 3600 * 24);
-            if (diffDays < 0 || diffDays >= 7) return false;
-          } else if (selectedPeriod === "mes") {
-            if (ySel !== yRow || mSel !== mRow) return false;
-          }
-        }
-      }
+      if (!matchesSelectedDateFilter(rowDateStr)) return false;
 
       if (selectedPolos.length > 0 && !selectedPolos.includes(d.Polo))
         return false;
@@ -263,25 +273,8 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
     }
     
-    const m300OnlyInResult = result.filter(d => d.isM300Only);
-    console.log("[filteredData] total:", result.length, "| M300Only:", m300OnlyInResult.length);
-    if (m300OnlyInResult.length > 0) {
-      const teamSet = new Set(m300OnlyInResult.map(d => d["Equipe Desl."]));
-      console.log("[filteredData] M300Only teams:", Array.from(teamSet).slice(0, 20));
-      console.log("[filteredData] M300Only sample:", m300OnlyInResult[0]["Equipe Desl."], m300OnlyInResult[0]["Data Turno"], m300OnlyInResult[0]["Número"]);
-    }
-    
-    // Also check all data for M300Only
-    const m300OnlyInAll = data.filter(d => d.isM300Only);
-    console.log("[allData] M300Only total:", m300OnlyInAll.length);
-    if (m300OnlyInAll.length > 0 && m300OnlyInResult.length === 0) {
-      const sampleTeam = m300OnlyInAll[0]["Equipe Desl."];
-      const sampleDate = m300OnlyInAll[0]["Data Turno"];
-      console.log("[allData] M300Only sample NOT in filtered:", sampleTeam, sampleDate, "selectedData:", selectedData);
-    }
-    
     return result;
-  }, [dataFilteredByBasics, tmdeAbove150Filter, o2AnomaliaFilter, teamsWithAbove150, data, selectedData]);
+  }, [dataFilteredByBasics, tmdeAbove150Filter, o2AnomaliaFilter, teamsWithAbove150]);
 
   // Helper to convert various formats to minutes
   const getValMinutes = (val: any): number | null => {
@@ -890,18 +883,29 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   }, [filteredData, selectedEquipesDetalhe]);
 
   const timelineData = selectedEquipesDetalhe.map(equipe => {
-    const equipeData = filteredData.filter((d) => d["Equipe Desl."] === equipe);
+    const incidentesPlotados = filteredData.filter((d) => d["Equipe Desl."] === equipe);
+    const incidentesBaseKeys = new Set(
+      incidentesPlotados.map((d) => normalizeIncidentNumber(d["Número"]))
+    );
+    const incidentesM300Only = data.filter((d) => {
+      if (!d.isM300Only) return false;
+      if (d["Equipe Desl."] !== equipe) return false;
+
+      const dataM300 = d["Data Referência"] || d["Data M300"] || d["Data Turno"] || d["Data Ação"];
+      if (!matchesSelectedDateFilter(dataM300)) return false;
+
+      const numeroNormalizado = normalizeIncidentNumber(d["Número"] || d["Incidente_M300"]);
+      return !!numeroNormalizado && !incidentesBaseKeys.has(numeroNormalizado);
+    });
+
+    const equipeData = [...incidentesPlotados, ...incidentesM300Only].sort(
+      (a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0)
+    );
     
     if (equipeData.length === 0) return { equipe, events: [] };
 
     const firstRow = equipeData[0] || {};
     const teamTurno = firstRow.Turno || "B";
-    
-    const m300OnlyInTeam = equipeData.filter(d => d.isM300Only);
-    console.log(`[Timeline] Equipe ${equipe}: total=${equipeData.length}, M300Only=${m300OnlyInTeam.length}, comHora=${equipeData.filter(d => d.hora_aux_ordenacao != null).length}`);
-    if (m300OnlyInTeam.length > 0) {
-      console.log("[Timeline] M300Only sample:", m300OnlyInTeam[0]["Número"], "hora_aux:", m300OnlyInTeam[0].hora_aux_ordenacao, "TMD:", m300OnlyInTeam[0].TMD, "TME:", m300OnlyInTeam[0].TME);
-    }
 
     const events = equipeData
       .filter((d) => d.hora_aux_ordenacao != null)
