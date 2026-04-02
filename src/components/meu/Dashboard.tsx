@@ -6,70 +6,74 @@ import {
   AlertTriangle,
   XCircle,
   X,
-  Menu,
+  SlidersHorizontal,
+  Filter,
+  Calendar,
+  Search,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour } from "../../utils/meuDataProcessing";
 
-const MultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
+const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
   const filteredOptions = searchable 
     ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
     : options;
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
           {label}
+          {selected.length > 0 && (
+            <span className="ml-1.5 text-primary font-mono">({selected.length})</span>
+          )}
         </label>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => onChange(filteredOptions)}
-            className="text-[10px] text-primary hover:text-primary/80 underline"
-            title="Selecionar todos"
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => onChange([])}
-            className="text-[10px] text-muted-foreground hover:text-foreground/80 underline"
-            title="Limpar seleção"
-          >
-            Nenhum
-          </button>
+        <div className="flex gap-2">
+          <button onClick={() => onChange(filteredOptions)} className="text-[10px] text-primary hover:underline">Todos</button>
+          <button onClick={() => onChange([])} className="text-[10px] text-muted-foreground hover:underline">Limpar</button>
         </div>
       </div>
       {searchable && (
-        <input
-          type="text"
-          placeholder="Pesquisar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-2 block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-xs p-1.5 border"
-        />
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Pesquisar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-1.5 pl-7 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+          />
+        </div>
       )}
-      <select
-        multiple
-        value={selected}
-        onChange={(e) => {
-          const values = Array.from(
-            e.target.selectedOptions,
-            (option: HTMLOptionElement) => option.value,
+      <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+        {filteredOptions.map((opt: string) => {
+          const isSelected = selected.includes(opt);
+          return (
+            <button
+              key={opt}
+              onClick={() => {
+                if (isSelected) {
+                  onChange(selected.filter((s: string) => s !== opt));
+                } else {
+                  onChange([...selected, opt]);
+                }
+              }}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
+                isSelected
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50'
+              }`}
+            >
+              {opt}
+            </button>
           );
-          onChange(values);
-        }}
-        className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm h-32 p-2 border"
-      >
-        {filteredOptions.map((opt: string) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-      <p className="text-xs text-muted-foreground/70 mt-1">
-        Segure Ctrl/Cmd para selecionar vários
-      </p>
+        })}
+      </div>
     </div>
   );
 };
@@ -80,7 +84,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ data, onBack }: DashboardProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   if (!data || !Array.isArray(data)) {
     return (
@@ -866,171 +870,185 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     return 0; // Default
   }, [selectedTurnos, timelineData]);
 
+  const activeFilterCount = [
+    selectedPolos.length > 0,
+    selectedProcessos.length > 0,
+    selectedTiposEquipe.length > 0,
+    selectedTurnos.length > 0,
+    selectedEquipes.length > 0,
+    selectedIncidents.length > 0,
+    tmdeAbove150Filter !== "todos",
+    o2AnomaliaFilter !== "todos",
+  ].filter(Boolean).length;
+
   return (
-    <div className="h-screen bg-background flex overflow-hidden">
-      {/* Sidebar */}
-      <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-card shadow-lg flex flex-col h-screen sticky top-0 z-20 overflow-hidden shrink-0`}>
-        <div className="p-4 border-b flex items-center justify-between bg-primary text-primary-foreground min-w-[16rem]">
-          <h2 className="text-lg font-bold flex items-center">
-            <BarChart3 className="mr-2 h-5 w-5" />
-            Filtros
-          </h2>
-          <button
-            onClick={onBack}
-            className="p-1 hover:bg-primary/90 rounded"
-            title="Voltar"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Top Bar */}
+      <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-6 py-3 flex items-center justify-between z-10">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8" title="Voltar">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Dashboard Operacional
+          </h1>
         </div>
-        <div className="p-4 flex-1 overflow-y-auto min-w-[16rem]">
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Modo de Análise
-              </label>
-              <button
-                onClick={() => setIsPeriodMode(!isPeriodMode)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isPeriodMode ? 'bg-primary' : 'bg-muted'}`}
+
+        <div className="flex items-center gap-2">
+          {/* Active filter badges */}
+          {activeFilterCount > 0 && (
+            <div className="flex items-center gap-1.5 mr-2">
+              <Badge variant="secondary" className="text-[10px] font-mono gap-1">
+                <Filter className="h-3 w-3" />
+                {activeFilterCount} filtro{activeFilterCount > 1 ? 's' : ''} ativo{activeFilterCount > 1 ? 's' : ''}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] text-muted-foreground hover:text-destructive"
+                onClick={() => {
+                  setSelectedPolos([]);
+                  setSelectedProcessos([]);
+                  setSelectedTiposEquipe([]);
+                  setSelectedTurnos([]);
+                  setSelectedEquipes([]);
+                  setSelectedIncidents([]);
+                  setTmdeAbove150Filter("todos");
+                  setO2AnomaliaFilter("todos");
+                }}
               >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${isPeriodMode ? 'translate-x-6' : 'translate-x-1'}`}
-                />
-              </button>
+                Limpar tudo
+              </Button>
             </div>
-            {isPeriodMode && (
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={() => setSelectedPeriod("7d")}
-                  className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${selectedPeriod === "7d" ? 'bg-primary border-primary text-primary-foreground' : 'bg-card border-border text-muted-foreground hover:bg-secondary/30'}`}
-                >
-                  7 DIAS
-                </button>
-                <button
-                  onClick={() => setSelectedPeriod("mes")}
-                  className={`flex-1 py-1 text-[10px] font-bold rounded border transition-colors ${selectedPeriod === "mes" ? 'bg-primary border-primary text-primary-foreground' : 'bg-card border-border text-muted-foreground hover:bg-secondary/30'}`}
-                >
-                  MÊS
-                </button>
-              </div>
-            )}
-          </div>
+          )}
 
-          <div className="mb-4">
-            <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              {isPeriodMode ? 'Data de Referência' : 'Dia'}
-            </label>
-            <select
-              value={selectedData}
-              onChange={(e) => setSelectedData(e.target.value)}
-              className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
+          {selectedEquipesDetalhe.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setSelectedEquipesDetalhe([])}
             >
-              <option value="">Todos</option>
-              {datas.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
+              Limpar Seleção de Equipes
+            </Button>
+          )}
 
-          <div className="mb-4">
-            <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              TMDE &gt; 150
-            </label>
-            <select
-              value={tmdeAbove150Filter}
-              onChange={(e) => setTmdeAbove150Filter(e.target.value)}
-              className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
-            >
-              <option value="todos">Todos</option>
-              <option value="sim">Sim</option>
-              <option value="nao">Não</option>
-            </select>
-          </div>
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-2">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Filtros
+                {activeFilterCount > 0 && (
+                  <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
+              <SheetHeader className="p-4 border-b border-border bg-secondary/30">
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  Filtros
+                </SheetTitle>
+              </SheetHeader>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-5">
+                  {/* Modo de Análise */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                        Modo de Análise
+                      </label>
+                      <button
+                        onClick={() => setIsPeriodMode(!isPeriodMode)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isPeriodMode ? 'bg-primary' : 'bg-muted'}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform ${isPeriodMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                    {isPeriodMode && (
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => setSelectedPeriod("7d")}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "7d" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
+                        >
+                          7 DIAS
+                        </button>
+                        <button
+                          onClick={() => setSelectedPeriod("mes")}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "mes" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
+                        >
+                          MÊS
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-          <div className="mb-4">
-            <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Possível O2 / Anomalia
-            </label>
-            <select
-              value={o2AnomaliaFilter}
-              onChange={(e) => setO2AnomaliaFilter(e.target.value)}
-              className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm p-2 border"
-            >
-              <option value="todos">Todos</option>
-              <option value="o2">Possível O2</option>
-              <option value="anomalia">Possível Anomalia</option>
-            </select>
-          </div>
+                  {/* Data */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      {isPeriodMode ? 'Data de Referência' : 'Dia'}
+                    </label>
+                    <select
+                      value={selectedData}
+                      onChange={(e) => setSelectedData(e.target.value)}
+                      className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                    >
+                      <option value="">Todos</option>
+                      {datas.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
 
-          <MultiSelect
-            label="Polo"
-            options={polos}
-            selected={selectedPolos}
-            onChange={setSelectedPolos}
-          />
-          <MultiSelect
-            label="Processo"
-            options={processos}
-            selected={selectedProcessos}
-            onChange={setSelectedProcessos}
-          />
-          <MultiSelect
-            label="Insourcing / Outsourcing"
-            options={tiposEquipe}
-            selected={selectedTiposEquipe}
-            onChange={setSelectedTiposEquipe}
-          />
-          <MultiSelect
-            label="Turno"
-            options={turnos}
-            selected={selectedTurnos}
-            onChange={setSelectedTurnos}
-          />
-          <MultiSelect
-            label="Equipe"
-            options={equipes}
-            selected={selectedEquipes}
-            onChange={setSelectedEquipes}
-            searchable={true}
-          />
-          <MultiSelect
-            label="Incidente"
-            options={incidents}
-            selected={selectedIncidents}
-            onChange={setSelectedIncidents}
-            searchable={true}
-          />
+                  {/* Quick Filters */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">TMDE &gt; 150</label>
+                      <select
+                        value={tmdeAbove150Filter}
+                        onChange={(e) => setTmdeAbove150Filter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">O2 / Anomalia</label>
+                      <select
+                        value={o2AnomaliaFilter}
+                        onChange={(e) => setO2AnomaliaFilter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="o2">Possível O2</option>
+                        <option value="anomalia">Possível Anomalia</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <FilterMultiSelect label="Polo" options={polos} selected={selectedPolos} onChange={setSelectedPolos} />
+                    <FilterMultiSelect label="Processo" options={processos} selected={selectedProcessos} onChange={setSelectedProcessos} />
+                    <FilterMultiSelect label="Insourcing / Outsourcing" options={tiposEquipe} selected={selectedTiposEquipe} onChange={setSelectedTiposEquipe} />
+                    <FilterMultiSelect label="Turno" options={turnos} selected={selectedTurnos} onChange={setSelectedTurnos} />
+                    <FilterMultiSelect label="Equipe" options={equipes} selected={selectedEquipes} onChange={setSelectedEquipes} searchable={true} />
+                    <FilterMultiSelect label="Incidente" options={incidents} selected={selectedIncidents} onChange={setSelectedIncidents} searchable={true} />
+                  </div>
+                </div>
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden h-screen relative">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center">
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="mr-4 p-2 bg-card rounded-md shadow-sm border border-border hover:bg-secondary/30 text-muted-foreground transition-colors"
-              title={isSidebarOpen ? "Recolher Filtros" : "Expandir Filtros"}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <h1 className="kpi-value text-foreground flex items-center">
-              <BarChart3 className="mr-3 h-8 w-8 text-primary" />
-              Dashboard Operacional
-            </h1>
-          </div>
-          {selectedEquipesDetalhe.length > 0 && (
-            <button
-              onClick={() => setSelectedEquipesDetalhe([])}
-              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-md shadow-sm transition-colors"
-            >
-              Limpar Seleção de Equipes
-            </button>
-          )}
-        </div>
-
+      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative">
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="glass-card p-6">
