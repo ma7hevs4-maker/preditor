@@ -854,6 +854,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   // Seleção de Equipe
   const [selectedEquipesDetalhe, setSelectedEquipesDetalhe] = useState<string[]>([]);
   const [highlightedIncidents, setHighlightedIncidents] = useState<string[]>([]);
+  const [selectedTimelineDay, setSelectedTimelineDay] = useState<string>("");
   const [selectedObservation, setSelectedObservation] = useState<{
     numero: string;
     texto: string;
@@ -886,8 +887,39 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0));
   }, [filteredData, selectedEquipesDetalhe]);
 
+  // Available days for selected teams (used in period mode timeline dropdown)
+  const availableTimelineDays = useMemo(() => {
+    if (!isPeriodMode) return [];
+    const days = new Set<string>();
+    filteredData.forEach(d => {
+      if (selectedEquipesDetalhe.includes(d["Equipe Desl."])) {
+        const dt = d["Data Turno"] || d["Data Ação"];
+        if (dt) days.add(dt);
+      }
+    });
+    return Array.from(days).sort();
+  }, [filteredData, selectedEquipesDetalhe, isPeriodMode]);
+
+  // Auto-select first available day when switching to period mode or changing teams
+  React.useEffect(() => {
+    if (isPeriodMode && availableTimelineDays.length > 0 && !availableTimelineDays.includes(selectedTimelineDay)) {
+      setSelectedTimelineDay(availableTimelineDays[availableTimelineDays.length - 1]);
+    }
+  }, [isPeriodMode, availableTimelineDays]);
+
+  // The effective date for the timeline (in period mode, use the dropdown; otherwise use selectedData)
+  const timelineEffectiveDate = isPeriodMode ? selectedTimelineDay : selectedData;
+
+  const timelineFilteredData = useMemo(() => {
+    if (!isPeriodMode) return filteredData;
+    return filteredData.filter(d => {
+      const dt = d["Data Turno"] || d["Data Ação"];
+      return dt === selectedTimelineDay;
+    });
+  }, [filteredData, isPeriodMode, selectedTimelineDay]);
+
   const timelineData = selectedEquipesDetalhe.map(equipe => {
-    const incidentesPlotados = filteredData.filter((d) => d["Equipe Desl."] === equipe);
+    const incidentesPlotados = timelineFilteredData.filter((d) => d["Equipe Desl."] === equipe);
     const incidentesBaseKeys = new Set(
       incidentesPlotados.map((d) => normalizeIncidentNumber(d["Número"]))
     );
@@ -896,7 +928,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       if (d["Equipe Desl."] !== equipe) return false;
 
       const dataM300 = d["Data Referência"] || d["Data M300"] || d["Data Turno"] || d["Data Ação"];
-      if (!matchesSelectedDateFilter(dataM300)) return false;
+      if (isPeriodMode ? dataM300 !== selectedTimelineDay : !matchesSelectedDateFilter(dataM300)) return false;
 
       const numeroNormalizado = normalizeIncidentNumber(d["Número"] || d["Incidente_M300"]);
       return !!numeroNormalizado && !incidentesBaseKeys.has(numeroNormalizado);
@@ -915,9 +947,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       .filter((d) => d.hora_aux_ordenacao != null)
       .map((d) => {
         let inicio_decimal = Number(d.hora_aux_ordenacao) || 0;
-        if (selectedData && d["Data Ação"]) {
+        if (timelineEffectiveDate && d["Data Ação"]) {
           try {
-            const [ySel, mSel, daySel] = selectedData.split('-').map(Number);
+            const [ySel, mSel, daySel] = timelineEffectiveDate.split('-').map(Number);
             const [yAcao, mAcao, dayAcao] = d["Data Ação"].split('-').map(Number);
             
             const dSel = new Date(Date.UTC(ySel, mSel - 1, daySel));
@@ -964,10 +996,10 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const firstLoginRaw = equipeData
       .map((d) => d["Log In"] || d["1º Login"])
       .find((v) => v != null && v !== "");
-    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
+    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, timelineEffectiveDate);
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
-    const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], selectedData);
+    const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], timelineEffectiveDate);
     
     // Platform duration: shift start (IT) → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
@@ -980,7 +1012,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const lastLogOffRaw = equipeData
       .map((d) => d["Log Off Corrigido"] || d["Log Off"])
       .find((v) => v != null && v !== "");
-    const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, selectedData);
+    const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, timelineEffectiveDate);
     
     let returnToBaseDuration = undefined;
     if (lastLogOffDecimal != null && events.length > 0) {
@@ -992,7 +1024,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       const lastEnd = lastEvent.inicio_decimal + lastEvent.TMD / 60 + lastEvent.TME / 60;
 
       // If interval starts after last incident, use interval start as return-to-base origin
-      const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], selectedData);
+      const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
       let returnStart = lastEnd;
       if (intervalStartDecimal != null && intervalStartDecimal >= lastEnd) {
         returnStart = intervalStartDecimal;
@@ -1007,14 +1039,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       events,
       turno: teamTurno,
       shiftStartHour: getShiftStartHour(teamTurno),
-      shiftStart: convertToDecimalHours(firstRow["Inicio Calendario"], selectedData),
-      shiftEnd: convertToDecimalHours(firstRow["Fim Calendario"], selectedData),
+      shiftStart: convertToDecimalHours(firstRow["Inicio Calendario"], timelineEffectiveDate),
+      shiftEnd: convertToDecimalHours(firstRow["Fim Calendario"], timelineEffectiveDate),
       platformDuration,
       firstLogin: firstLoginDecimal,
-      intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
-      intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
+      intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], timelineEffectiveDate),
+      intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], timelineEffectiveDate),
       returnToBaseDuration,
-      lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
+      lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], timelineEffectiveDate),
     };
   });
 
@@ -1531,6 +1563,21 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             <div className="p-6">
               {/* Timeline */}
               <div className="mb-8 w-full min-w-0 overflow-hidden">
+                {isPeriodMode && availableTimelineDays.length > 1 && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dia da Timeline:</label>
+                    <select
+                      value={selectedTimelineDay}
+                      onChange={(e) => setSelectedTimelineDay(e.target.value)}
+                      className="rounded-md bg-background text-foreground border border-border text-xs p-1.5 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                    >
+                      {availableTimelineDays.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <TimelineChart
                   data={timelineData}
                   onEventClick={(id, isMulti) => {
