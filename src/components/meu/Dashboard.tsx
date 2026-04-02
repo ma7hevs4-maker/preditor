@@ -1006,7 +1006,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8 overflow-y-auto h-screen relative">
+      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden h-screen relative">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center">
             <button
