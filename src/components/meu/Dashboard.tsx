@@ -478,6 +478,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       const tempoPlataforma = calcTempoPlataforma(dayData) ?? 40;
       const retornoBase = calcRetornoBase(dayData) ?? 30;
       
+      const tempoPlataformaAdj = tempoPlataforma > 60 ? 40 : tempoPlataforma;
+      const retornoBaseAdj = retornoBase > 60 ? 30 : retornoBase;
+      
       const inicioTurno = getValMinutes(firstRow["Inicio Calendario"]);
       const fimTurno = getValMinutes(firstRow["Fim Calendario"]);
       let duracaoTurno = 480;
@@ -494,7 +497,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (duracaoIntervalo <= 0) duracaoIntervalo += 1440;
       }
       
-      totalNumerator += (sumTmdTme + tempoPlataforma + duracaoIntervalo + retornoBase);
+      totalNumerator += (sumTmdTme + tempoPlataformaAdj + duracaoIntervalo + retornoBaseAdj);
       totalDenominator += duracaoTurno;
     });
     
