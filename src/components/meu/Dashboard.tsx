@@ -421,7 +421,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Max login for this team
       let maxLogin: number | null = null;
       eqData.forEach(d => {
-        const raw = d["1º Login Corrigido"] || d["Log In"];
+        const raw = d["1º Login Corrigido"];
         const val = getValMinutes(raw);
         if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
       });
@@ -487,7 +487,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
     let maxLogin: number | null = null;
     eqData.forEach(d => {
-      const raw = d["1º Login Corrigido"] || d["Log In"];
+      const raw = d["1º Login Corrigido"];
       const val = getValMinutes(raw);
       if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
     });
@@ -691,8 +691,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Login: max of "1º Login Corrigido" from M300 base (value already in minutes)
       let maxLoginVal: number | null = null;
       eqData.forEach(d => {
-        const raw = d["1º Login Corrigido"] || d["Log In"];
-        console.log("[DEBUG Login raw]", eq, raw, typeof raw);
+        const raw = d["1º Login Corrigido"];
         const val = getValMinutes(raw);
         if (val != null && (maxLoginVal === null || val > maxLoginVal)) maxLoginVal = val;
       });
@@ -843,7 +842,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
 
     const firstLoginRaw = equipeData
-      .map((d) => d["1º Login Corrigido"] || d["Log In"])
+      .map((d) => d["Log In"] || d["1º Login"])
       .find((v) => v != null && v !== "");
     const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
 
@@ -1178,11 +1177,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                       {row.Produtividade.toFixed(2)}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {row.Login != null ? (() => {
-                        const h = Math.floor(row.Login);
-                        const m = Math.round((row.Login - h) * 60);
-                        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                      })() : "-"}
+                      {row.Login != null ? row.Login.toFixed(1) : "-"}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row["Tempo Plataforma"] != null ? row["Tempo Plataforma"].toFixed(1) : "-"}
