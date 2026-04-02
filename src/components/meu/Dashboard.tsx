@@ -920,20 +920,29 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
     
-    // Platform duration from "1º Desloc" column (in minutes → convert to hours)
+    // Platform duration: login → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
-    const platRaw = firstRow["1º Desloc"];
-    const platMinutes = getValMinutes(platRaw);
-    if (platMinutes != null && firstLoginDecimal != null) {
-      platformDuration = platMinutes / 60; // minutes to decimal hours
+    if (firstLoginDecimal != null && firstIncident) {
+      const diff = firstIncident.inicio_decimal - firstLoginDecimal;
+      if (diff > 0) platformDuration = diff;
     }
 
-    // Return to base duration from "Retorno a base" column (in minutes → convert to hours)
+    // Return to base: last incident "Liberada" (end) → logoff (in decimal hours)
+    const lastLogOffRaw = equipeData
+      .map((d) => d["Log Off Corrigido"] || d["Log Off"])
+      .find((v) => v != null && v !== "");
+    const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, selectedData);
+    
     let returnToBaseDuration = undefined;
-    const retRaw = firstRow["Retorno a base"];
-    const retMinutes = getValMinutes(retRaw);
-    if (retMinutes != null) {
-      returnToBaseDuration = retMinutes / 60;
+    if (lastLogOffDecimal != null && events.length > 0) {
+      const lastEvent = [...events].sort((a, b) => {
+        const endA = a.inicio_decimal + a.TMD / 60 + a.TME / 60;
+        const endB = b.inicio_decimal + b.TMD / 60 + b.TME / 60;
+        return endB - endA;
+      })[0];
+      const lastEnd = lastEvent.inicio_decimal + lastEvent.TMD / 60 + lastEvent.TME / 60;
+      const diff = lastLogOffDecimal - lastEnd;
+      if (diff > 0) returnToBaseDuration = diff;
     }
 
     return { 
