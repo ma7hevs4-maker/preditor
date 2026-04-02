@@ -355,16 +355,16 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
   // Helper: calculate platform time (login → first incident dispatch) in minutes
   const calcTempoPlataforma = (eqData: any[]): number | null => {
-    const loginVal = (() => {
+    const shiftStartVal = (() => {
       let best: number | null = null;
       eqData.forEach(d => {
-        const raw = d["Log In"] || d["1º Login"];
+        const raw = d["Inicio Calendario"];
         const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
         if (dec != null && (best === null || dec < best)) best = dec;
       });
       return best;
     })();
-    if (loginVal == null) return null;
+    if (shiftStartVal == null) return null;
 
     // First incident dispatch = earliest inicio_decimal (hora_aux_ordenacao)
     const sorted = eqData
@@ -372,7 +372,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao);
     if (sorted.length === 0) return null;
     const firstDispatch = sorted[0].hora_aux_ordenacao; // decimal hours
-    const diff = (firstDispatch - loginVal) * 60; // minutes
+    const diff = (firstDispatch - shiftStartVal) * 60; // minutes
     return diff > 0 ? diff : null;
   };
 
@@ -910,11 +910,12 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
+    const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], selectedData);
     
-    // Platform duration: login → first incident dispatch (in decimal hours)
+    // Platform duration: shift start (IT) → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
-    if (firstLoginDecimal != null && firstIncident) {
-      const diff = firstIncident.inicio_decimal - firstLoginDecimal;
+    if (shiftStartDecimal != null && firstIncident) {
+      const diff = firstIncident.inicio_decimal - shiftStartDecimal;
       if (diff > 0) platformDuration = diff;
     }
 
