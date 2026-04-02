@@ -1542,7 +1542,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
         {/* Detalhes das Equipes Selecionadas */}
         {selectedEquipesDetalhe.length > 0 && (
-          <div className="glass-card mb-8 overflow-hidden">
+          <div className="glass-card mb-8 overflow-hidden min-w-0 w-full max-w-full">
             <div className="px-6 py-4 border-b border-border bg-secondary/30 flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <h2 className="text-lg font-semibold text-foreground">
@@ -1560,7 +1560,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
               </span>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 min-w-0 w-full max-w-full overflow-hidden">
               {/* Timeline */}
               <div className="mb-8 w-full min-w-0 overflow-hidden">
                 {isPeriodMode && availableTimelineDays.length > 1 && (
