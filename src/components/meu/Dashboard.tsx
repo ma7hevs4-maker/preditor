@@ -867,7 +867,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   }, [selectedTurnos, timelineData]);
 
   return (
-    <div className="min-h-screen bg-background flex overflow-hidden">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-card shadow-lg flex flex-col h-screen sticky top-0 z-20 overflow-hidden shrink-0`}>
         <div className="p-4 border-b flex items-center justify-between bg-primary text-primary-foreground min-w-[16rem]">
@@ -1006,7 +1006,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8 overflow-y-auto h-screen relative">
+      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden h-screen relative">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center">
             <button
@@ -1032,7 +1032,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="glass-card p-6">
             <div className="flex items-center text-muted-foreground mb-2">
               <AlertTriangle className="h-5 w-5 mr-2 text-warning" />
@@ -1079,7 +1079,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             </h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
+            <table className="w-full divide-y divide-border table-fixed">
               <thead className="bg-secondary/30">
                 <tr>
                   {[
@@ -1088,14 +1088,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "Equipes",
                     "Improdutivos",
                     "Ordem 2",
-                    "Reincidentes causados",
+                    "Reinc.",
                     "TMDE",
-                    "Ocupação",
-                    "Produção",
+                    "Ocup.",
+                    "Prod.",
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                      className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider truncate"
                     >
                       {h}
                     </th>
@@ -1112,31 +1112,31 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                         : ""
                     }
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-foreground truncate">
                       {row.Processos}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Equipes}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.TMDE.toFixed(1)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Ocupação.toFixed(1)}%
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Produtividade.toFixed(2)}
                     </td>
                   </tr>
@@ -1173,36 +1173,39 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             </div>
           </div>
           <div className="overflow-x-auto max-h-96">
-            <table className="min-w-full divide-y divide-border">
+            <table className="w-full divide-y divide-border table-fixed">
               <thead className="bg-secondary/30 sticky top-0">
                 <tr>
                   {[
                     "Equipe",
                     "Turno",
-                    "Incidentes",
-                    "Improdutivos",
-                    "Ordem 2",
-                    "Reincidentes causados",
+                    "Inc.",
+                    "Improd.",
+                    "Ord.2",
+                    "Reinc.",
                     "TMDE",
-                    "Ocupação",
+                    "Ocup.",
                     "Login",
-                    "Tempo de plataforma",
-                  ].map((h) => (
+                    "Plataforma",
+                  ].map((h, i) => {
+                    const sortKeys = ["Equipe","Turno","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Tempo de plataforma"];
+                    return (
                     <th
                       key={h}
-                      onClick={() => handleSort(h)}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-background select-none"
+                      onClick={() => handleSort(sortKeys[i])}
+                      className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-background select-none truncate"
                     >
                       <div className="flex items-center space-x-1">
                         <span>{h}</span>
-                        {sortConfig.key === h && (
+                        {sortConfig.key === sortKeys[i] && (
                           <span className="text-muted-foreground/70">
                             {sortConfig.direction === "asc" ? "↑" : "↓"}
                           </span>
                         )}
                       </div>
                     </th>
-                  ))}
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="bg-card divide-y divide-border">
@@ -1220,40 +1223,40 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                         );
                       }}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground flex items-center">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-foreground flex items-center truncate">
                         <input 
                           type="checkbox" 
-                          className="mr-3 h-4 w-4 text-primary focus:ring-ring border-border rounded cursor-pointer"
+                          className="mr-2 h-3.5 w-3.5 text-primary focus:ring-ring border-border rounded cursor-pointer"
                           checked={isSelected}
                           readOnly
                         />
-                        {row.Equipe}
+                        <span className="truncate">{row.Equipe}</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Turno}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.TMDE.toFixed(1)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Ocupação.toFixed(1)}%
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Login}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground truncate">
                         {row["Tempo de plataforma"]}
                       </td>
                     </tr>
