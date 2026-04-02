@@ -148,11 +148,24 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
   // Filter states
   const [isPeriodMode, setIsPeriodMode] = useState<boolean>(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<"7d" | "mes">("7d");
+  const [selectedPeriod, setSelectedPeriod] = useState<"periodo" | "mes">("periodo");
   const [selectedData, setSelectedData] = useState<string>(() => {
     // Default to D-1 (second-to-last date) if available
     if (datas.length >= 2) return datas[datas.length - 2];
     return datas[datas.length - 1] || "";
+  });
+  // Period mode: date range
+  const [periodStart, setPeriodStart] = useState<string>(() => {
+    if (datas.length >= 7) return datas[datas.length - 7];
+    return datas[0] || "";
+  });
+  const [periodEnd, setPeriodEnd] = useState<string>(() => {
+    return datas[datas.length - 1] || "";
+  });
+  // Period mode: month
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const last = datas[datas.length - 1] || "";
+    return last ? last.substring(0, 7) : ""; // YYYY-MM
   });
   const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<string[]>([]);
@@ -168,6 +181,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
   };
 
+  // Available months from data
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    datas.forEach(d => { if (d) months.add(d.substring(0, 7)); });
+    return Array.from(months).sort();
+  }, [datas]);
+
   const matchesSelectedDateFilter = (rowDateStr?: string | null) => {
     if (!rowDateStr) return false;
 
@@ -175,21 +195,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       return !selectedData || rowDateStr === selectedData;
     }
 
-    if (!selectedData) return true;
-
-    const [ySel, mSel, dSel] = selectedData.split('-').map(Number);
-    const selDate = new Date(ySel, mSel - 1, dSel);
-
-    const [yRow, mRow, dRow] = rowDateStr.split('-').map(Number);
-    const rowDate = new Date(yRow, mRow - 1, dRow);
-
-    if (selectedPeriod === "7d") {
-      const diffTime = selDate.getTime() - rowDate.getTime();
-      const diffDays = diffTime / (1000 * 3600 * 24);
-      return diffDays >= 0 && diffDays < 7;
+    if (selectedPeriod === "periodo") {
+      if (!periodStart || !periodEnd) return true;
+      return rowDateStr >= periodStart && rowDateStr <= periodEnd;
     }
 
-    return ySel === yRow && mSel === mRow;
+    // Mês mode
+    if (!selectedMonth) return true;
+    return rowDateStr.startsWith(selectedMonth);
   };
 
   // Apply filters
