@@ -293,10 +293,59 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     return null;
   };
 
+  // Helper: calculate platform time (login → first incident dispatch) in minutes
+  const calcTempoPlataforma = (eqData: any[]): number | null => {
+    const loginVal = (() => {
+      let best: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Log In"] || d["1º Login"];
+        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
+        if (dec != null && (best === null || dec < best)) best = dec;
+      });
+      return best;
+    })();
+    if (loginVal == null) return null;
+
+    // First incident dispatch = earliest inicio_decimal (hora_aux_ordenacao)
+    const sorted = eqData
+      .filter(d => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
+      .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao);
+    if (sorted.length === 0) return null;
+    const firstDispatch = sorted[0].hora_aux_ordenacao; // decimal hours
+    const diff = (firstDispatch - loginVal) * 60; // minutes
+    return diff > 0 ? diff : null;
+  };
+
+  // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
+  const calcRetornoBase = (eqData: any[]): number | null => {
+    const logoffVal = (() => {
+      let best: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Log Off Corrigido"] || d["Log Off"];
+        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
+        if (dec != null && (best === null || dec > best)) best = dec;
+      });
+      return best;
+    })();
+    if (logoffVal == null) return null;
+
+    // Last incident end = latest (inicio_decimal + TMD/60 + TME/60)
+    const sorted = eqData
+      .filter(d => d.hora_aux_ordenacao != null)
+      .sort((a, b) => {
+        const endA = (a.hora_aux_ordenacao || 0) + (Number(a.TMD) || 0) / 60 + (Number(a.TME) || 0) / 60;
+        const endB = (b.hora_aux_ordenacao || 0) + (Number(b.TMD) || 0) / 60 + (Number(b.TME) || 0) / 60;
+        return endB - endA;
+      });
+    if (sorted.length === 0) return null;
+    const lastEnd = sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60;
+    const diff = (logoffVal - lastEnd) * 60; // minutes
+    return diff > 0 ? diff : null;
+  };
+
   const calculateOccupancy = (eqData: any[]) => {
     if (eqData.length === 0) return 0;
     
-    // Group by date to handle multiple days if selected
     const dataByDate: Record<string, any[]> = {};
     eqData.forEach(d => {
       const date = d["Data Turno"] || d["Data Ação"];
@@ -308,19 +357,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     let totalDenominator = 0;
     
     Object.values(dataByDate).forEach(dayData => {
-      // soma de todo tmd e tme da equipe no dia, desconsiderando tmde > 150 (exceto se for possível o2 ou anomalia)
       const incidentsToCount = dayData.filter(d => (Number(d.TMDE) || 0) <= 150 || d.possivelO2 || d.possivelAnomalia);
       const sumTmdTme = incidentsToCount.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
       
       const firstRow = dayData[0] || {};
       
-      // tempo de plataforma (caso n tenha o valor será considerado 40 min)
-      const tempoPlataforma = getValMinutes(firstRow["1º Desloc"]) ?? 40;
+      const tempoPlataforma = calcTempoPlataforma(dayData) ?? 40;
+      const retornoBase = calcRetornoBase(dayData) ?? 30;
       
-      // retorno a base (caso n tenha o valor será considerado 30 min)
-      const retornoBase = getValMinutes(firstRow["Retorno a base"]) ?? 30;
-      
-      // Fim Calendario pelo Inicio Calendario (caso n tenha o valor será considerado 480 min)
       const inicioTurno = getValMinutes(firstRow["Inicio Calendario"]);
       const fimTurno = getValMinutes(firstRow["Fim Calendario"]);
       let duracaoTurno = 480;
@@ -329,7 +373,6 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (duracaoTurno <= 0) duracaoTurno += 1440;
       }
       
-      // intervalo (caso n tenha o valor será considerado 60 min)
       const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
       const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
       let duracaoIntervalo = 60;
@@ -440,21 +483,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       if (maxDespacho !== null) despachoValues.push(maxDespacho);
 
-      let maxPlat: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["1º Desloc"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
-      });
-      if (maxPlat !== null) plataformaValues.push(maxPlat);
+      const plat = calcTempoPlataforma(eqData);
+      if (plat !== null) plataformaValues.push(plat);
 
-      let maxRetorno: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["Retorno a base"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
-      });
-      if (maxRetorno !== null) retornoValues.push(maxRetorno);
+      const ret = calcRetornoBase(eqData);
+      if (ret !== null) retornoValues.push(ret);
     });
 
     const avgLogin = loginValues.length > 0 ? loginValues.reduce((a, b) => a + b, 0) / loginValues.length : null;
@@ -527,21 +560,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     });
     if (maxDespacho !== null) allDespachoVals.push(maxDespacho);
 
-    let maxPlat: number | null = null;
-    eqData.forEach(d => {
-      const raw = d["1º Desloc"];
-      const val = getValMinutes(raw);
-      if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
-    });
-    if (maxPlat !== null) allPlatVals.push(maxPlat);
+    const plat = calcTempoPlataforma(eqData);
+    if (plat !== null) allPlatVals.push(plat);
 
-    let maxRetorno: number | null = null;
-    eqData.forEach(d => {
-      const raw = d["Retorno a base"];
-      const val = getValMinutes(raw);
-      if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
-    });
-    if (maxRetorno !== null) allRetornoVals.push(maxRetorno);
+    const ret = calcRetornoBase(eqData);
+    if (ret !== null) allRetornoVals.push(ret);
   });
 
   const totalRowProcessos = {
@@ -744,23 +767,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       const despacho = maxDespachoVal != null ? maxDespachoVal.toFixed(1) : "-";
 
-      // Tempo de plataforma
-      let maxPlatVal: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["1º Desloc"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxPlatVal === null || val > maxPlatVal)) maxPlatVal = val;
-      });
-      const tempoPlataforma = maxPlatVal != null ? maxPlatVal.toFixed(1) : "-";
+      // Tempo de plataforma (login → first dispatch)
+      const platVal = calcTempoPlataforma(eqData);
+      const tempoPlataforma = platVal != null ? platVal.toFixed(1) : "-";
 
-      // Retorno a base
-      let maxRetornoVal: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["Retorno a base"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxRetornoVal === null || val > maxRetornoVal)) maxRetornoVal = val;
-      });
-      const retornoBase = maxRetornoVal != null ? maxRetornoVal.toFixed(1) : "-";
+      // Retorno a base (last liberada → logoff)
+      const retVal = calcRetornoBase(eqData);
+      const retornoBase = retVal != null ? retVal.toFixed(1) : "-";
 
       return {
         Equipe: eq,
@@ -907,20 +920,29 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
     
-    // Platform duration from "1º Desloc" column (in minutes → convert to hours)
+    // Platform duration: login → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
-    const platRaw = firstRow["1º Desloc"];
-    const platMinutes = getValMinutes(platRaw);
-    if (platMinutes != null && firstLoginDecimal != null) {
-      platformDuration = platMinutes / 60; // minutes to decimal hours
+    if (firstLoginDecimal != null && firstIncident) {
+      const diff = firstIncident.inicio_decimal - firstLoginDecimal;
+      if (diff > 0) platformDuration = diff;
     }
 
-    // Return to base duration from "Retorno a base" column (in minutes → convert to hours)
+    // Return to base: last incident "Liberada" (end) → logoff (in decimal hours)
+    const lastLogOffRaw = equipeData
+      .map((d) => d["Log Off Corrigido"] || d["Log Off"])
+      .find((v) => v != null && v !== "");
+    const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, selectedData);
+    
     let returnToBaseDuration = undefined;
-    const retRaw = firstRow["Retorno a base"];
-    const retMinutes = getValMinutes(retRaw);
-    if (retMinutes != null) {
-      returnToBaseDuration = retMinutes / 60;
+    if (lastLogOffDecimal != null && events.length > 0) {
+      const lastEvent = [...events].sort((a, b) => {
+        const endA = a.inicio_decimal + a.TMD / 60 + a.TME / 60;
+        const endB = b.inicio_decimal + b.TMD / 60 + b.TME / 60;
+        return endB - endA;
+      })[0];
+      const lastEnd = lastEvent.inicio_decimal + lastEvent.TMD / 60 + lastEvent.TME / 60;
+      const diff = lastLogOffDecimal - lastEnd;
+      if (diff > 0) returnToBaseDuration = diff;
     }
 
     return { 
@@ -935,7 +957,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
       intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
       returnToBaseDuration,
-      lastLogOff: convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
+      lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
     };
   });
 
