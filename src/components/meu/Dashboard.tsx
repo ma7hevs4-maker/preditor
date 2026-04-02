@@ -722,7 +722,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Ocupação
       const ocupacao = calculateOccupancy(eqData);
 
-      // Login: max of "1º Login Corrigido" from M300 base (value already in minutes)
+      // Login
       let maxLoginVal: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"];
@@ -731,7 +731,16 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       const primeiroLogin = maxLoginVal != null ? maxLoginVal.toFixed(1) : "-";
 
-      // Tempo de plataforma: max of "1º Desloc" from M300 base
+      // Despacho
+      let maxDespachoVal: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Despacho"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxDespachoVal === null || val > maxDespachoVal)) maxDespachoVal = val;
+      });
+      const despacho = maxDespachoVal != null ? maxDespachoVal.toFixed(1) : "-";
+
+      // Tempo de plataforma
       let maxPlatVal: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Desloc"];
@@ -739,6 +748,15 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (val != null && (maxPlatVal === null || val > maxPlatVal)) maxPlatVal = val;
       });
       const tempoPlataforma = maxPlatVal != null ? maxPlatVal.toFixed(1) : "-";
+
+      // Retorno a base
+      let maxRetornoVal: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Retorno a base"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxRetornoVal === null || val > maxRetornoVal)) maxRetornoVal = val;
+      });
+      const retornoBase = maxRetornoVal != null ? maxRetornoVal.toFixed(1) : "-";
 
       return {
         Equipe: eq,
@@ -749,7 +767,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         "Ordem 2": isPeriodMode ? ord2 / eqDays : ord2,
         Ocupação: ocupacao,
         Login: primeiroLogin,
+        Despacho: despacho,
         "Tempo de plataforma": tempoPlataforma,
+        "Retorno Base": retornoBase,
       };
     });
 
