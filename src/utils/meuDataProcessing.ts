@@ -443,14 +443,22 @@ export async function processFiles(incFile: File, m300File: File | null) {
 
     const loginTimeKey = rowKeys.find(k => {
       const lower = normalizeHeader(k);
-      return lower === 'log in' || lower === '1o login' || lower === '1o despacho';
+      return lower === 'log in' || lower === '1o login';
     });
 
     if (loginTimeKey) {
       const loginTimeVal = parseFullDateTime(row[loginTimeKey]);
       row["Log In"] = loginTimeVal;
       row["1º Login"] = loginTimeVal;
-      row["1º Despacho"] = loginTimeVal;
+    }
+
+    // 1º Despacho - separate column
+    const despachoKey = rowKeys.find(k => {
+      const lower = normalizeHeader(k);
+      return lower === '1o despacho' || lower === '1º despacho';
+    });
+    if (despachoKey) {
+      row["1º Despacho"] = row[despachoKey];
     }
 
     const deslocKey = rowKeys.find(k => {
