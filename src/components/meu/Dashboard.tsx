@@ -1112,31 +1112,31 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                         : ""
                     }
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-foreground truncate">
                       {row.Processos}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Equipes}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.TMDE.toFixed(1)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Ocupação.toFixed(1)}%
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Produtividade.toFixed(2)}
                     </td>
                   </tr>
