@@ -334,8 +334,8 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
               </div>
             </div>
 
-            <div className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden">
-              <TransformComponent wrapperClass="!w-full !h-full" contentClass="w-max h-max">
+            <div className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden" style={{ contain: 'strict' }}>
+              <TransformComponent wrapperClass="!w-full !h-full !overflow-hidden" contentClass="w-max h-max">
                 <svg
                   width={width}
                   height={height}
