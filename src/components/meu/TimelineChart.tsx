@@ -465,6 +465,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   {`Início: ${formatDecimalTime(ev.inicio_decimal)}\n`}
                                   {`TMD: ${Math.round(currentTMD)}m | TME: ${Math.round(currentTME)}m | TMDE: ${Math.round(currentTMDE)}m\n`}
                                   {ev.improdutivo ? "IMPRODUTIVO" : ""}
+                                  {ev.isM300Only ? "APENAS M300 (não encontrado na base de incidentes)" : ""}
                                   {ev.possivelO2 ? "POSSÍVEL O2 (M300)" : ""}
                                   {ev.possivelAnomalia ? "POSSÍVEL ANOMALIA (M300)" : ""}
                                   {isToggled ? "\n(Exibindo valores originais da base de incidentes)" : ""}
