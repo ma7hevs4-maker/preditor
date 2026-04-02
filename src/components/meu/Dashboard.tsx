@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
-import { getShiftStartHour } from "../../utils/meuDataProcessing";
+import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
