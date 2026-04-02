@@ -443,14 +443,22 @@ export async function processFiles(incFile: File, m300File: File | null) {
 
     const loginTimeKey = rowKeys.find(k => {
       const lower = normalizeHeader(k);
-      return lower === 'log in' || lower === '1o login' || lower === '1o despacho';
+      return lower === 'log in' || lower === '1o login';
     });
 
     if (loginTimeKey) {
       const loginTimeVal = parseFullDateTime(row[loginTimeKey]);
       row["Log In"] = loginTimeVal;
       row["1º Login"] = loginTimeVal;
-      row["1º Despacho"] = loginTimeVal;
+    }
+
+    // 1º Despacho - separate column
+    const despachoKey = rowKeys.find(k => {
+      const lower = normalizeHeader(k);
+      return lower === '1o despacho' || lower === '1º despacho';
+    });
+    if (despachoKey) {
+      row["1º Despacho"] = row[despachoKey];
     }
 
     const deslocKey = rowKeys.find(k => {
@@ -777,7 +785,84 @@ export async function processFiles(incFile: File, m300File: File | null) {
     }
   });
 
-  return finalData;
+  // Add M300-only incidents (in M300 for team/day but not in incidents base)
+  const finalIncKeys = new Set<string>();
+  finalData.forEach(d => {
+    const num = normalizeIncNum(d["Número"] || d["Incidente_M300"]);
+    const equipe = d["Equipe Desl."] || d["Equipe"];
+    if (num && equipe) finalIncKeys.add(`${num}|${equipe}`);
+  });
+
+  m300Processed.forEach((m: any) => {
+    const incNum = normalizeIncNum(m["Incidente_M300"]);
+    const equipe = m["Equipe"];
+    const date = m["Data Turno"];
+    if (!incNum || !equipe || !date) return;
+
+    const key = `${incNum}|${equipe}`;
+    if (finalIncKeys.has(key)) return;
+
+    const getMinutesLocal = (start: any, end: any) => {
+      if (start == null || end == null) return null;
+      const dStart = parseFullDateTime(start);
+      const dEnd = parseFullDateTime(end);
+      if (dStart && dEnd) return Math.round((dEnd.getTime() - dStart.getTime()) / 60000);
+      const hStart = horaParaDecimalSeguro(start);
+      const hEnd = horaParaDecimalSeguro(end);
+      if (hStart !== null && hEnd !== null) {
+        let diff = hEnd - hStart;
+        if (diff < 0) diff += 24;
+        return Math.round(diff * 60);
+      }
+      return null;
+    };
+
+    const tmd = getMinutesLocal(m["A_Caminho"], m["No_Local"]) || 0;
+    const tme = getMinutesLocal(m["No_Local"], m["Liberada"]) || 0;
+
+    const hACaminho = horaParaDecimalSeguro(m["A_Caminho"]);
+    const hNoLocal = horaParaDecimalSeguro(m["No_Local"]);
+    let horaAux = hACaminho;
+    if (horaAux === null && hNoLocal !== null) {
+      horaAux = hNoLocal - (tmd / 60);
+      if (horaAux < 0) horaAux += 24;
+    }
+    if (horaAux === null) return;
+
+    const causa = String(m["CAUSA"] || m["Causa"] || "");
+    const causasImprodutivas = [
+      "CASA FECHADA", "DEFEITO INTERNO CLIENTE", "ENDEREÇO NÃO LOCALIZADO",
+      "ESTAVA NORMAL", "GRANDE CLIENTE DEFEITO INTERNO", "INCIDENCIA SEM AFETAÇÃO",
+      "LUZ CORTADA", "NIVEL DE TENSÃO NORMAL", "OSCILAÇÃO",
+      "OSCILAÇÃO PROVOCADA POR TERCEIROS", "OUTRAS CAUSAS DE TERCEIROS",
+      "REGISTRO INDEVIDO DA RECLAMAÇÃO", "UC FECHADA",
+    ];
+
+    finalData.push({
+      ...m,
+      "Equipe Desl.": equipe,
+      "Número": m["Incidente_M300"] || incNum,
+      "Data Turno": date,
+      "Data Ação": m["Data Ação Real"] || date,
+      "Processo": normalizarProcesso(m["Grupo Processos DESLOC"] || "Outros"),
+      "Grupo Processos DESLOC": m["Grupo Processos DESLOC"] || "Não informado",
+      "Enel / Parceira DESLOC": m["Enel / Parceira DESLOC"] || "Não informado",
+      "Polo": m["Polo"] || "Não informado",
+      "Causa": causa,
+      "Improdutivo": causasImprodutivas.includes(causa.toUpperCase()),
+      "ordem2": false,
+      "Reincidente Causado": false,
+      TMD: tmd,
+      TME: tme,
+      TMDE: tmd + tme,
+      hora_aux_ordenacao: horaAux,
+      isM300Only: true,
+      shiftStartHour: m.shiftStartHour,
+      Turno: m.Turno,
+    });
+
+    finalIncKeys.add(key);
+  });
 
   return finalData;
 }

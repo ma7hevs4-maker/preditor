@@ -10,6 +10,10 @@ import {
   Filter,
   Calendar,
   Search,
+  LogIn,
+  Navigation,
+  Timer,
+  RotateCcw,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -413,12 +417,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
 
-    // Login médio e Tempo de Plataforma médio por processo
+    // Login, Despacho, Tempo de Plataforma, Retorno a Base médios por processo
     const loginValues: number[] = [];
+    const despachoValues: number[] = [];
     const plataformaValues: number[] = [];
+    const retornoValues: number[] = [];
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      // Max login for this team
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"];
@@ -427,7 +432,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       if (maxLogin !== null) loginValues.push(maxLogin);
 
-      // Max tempo plataforma (1º Desloc) for this team
+      let maxDespacho: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Despacho"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+      });
+      if (maxDespacho !== null) despachoValues.push(maxDespacho);
+
       let maxPlat: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Desloc"];
@@ -435,10 +447,20 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
       });
       if (maxPlat !== null) plataformaValues.push(maxPlat);
+
+      let maxRetorno: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Retorno a base"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
+      });
+      if (maxRetorno !== null) retornoValues.push(maxRetorno);
     });
 
     const avgLogin = loginValues.length > 0 ? loginValues.reduce((a, b) => a + b, 0) / loginValues.length : null;
+    const avgDespacho = despachoValues.length > 0 ? despachoValues.reduce((a, b) => a + b, 0) / despachoValues.length : null;
     const avgPlataforma = plataformaValues.length > 0 ? plataformaValues.reduce((a, b) => a + b, 0) / plataformaValues.length : null;
+    const avgRetorno = retornoValues.length > 0 ? retornoValues.reduce((a, b) => a + b, 0) / retornoValues.length : null;
 
     return {
       Processos: proc,
@@ -451,7 +473,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       Ocupação: ocupacao,
       Produtividade: displayProdutividade,
       Login: avgLogin,
+      Despacho: avgDespacho,
       "Tempo Plataforma": avgPlataforma,
+      "Retorno Base": avgRetorno,
     };
   });
 
@@ -482,7 +506,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
   // Averages for Login and Tempo Plataforma in total row
   const allLoginVals: number[] = [];
+  const allDespachoVals: number[] = [];
   const allPlatVals: number[] = [];
+  const allRetornoVals: number[] = [];
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
     let maxLogin: number | null = null;
@@ -493,6 +519,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     });
     if (maxLogin !== null) allLoginVals.push(maxLogin);
 
+    let maxDespacho: number | null = null;
+    eqData.forEach(d => {
+      const raw = d["1º Despacho"];
+      const val = getValMinutes(raw);
+      if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+    });
+    if (maxDespacho !== null) allDespachoVals.push(maxDespacho);
+
     let maxPlat: number | null = null;
     eqData.forEach(d => {
       const raw = d["1º Desloc"];
@@ -500,26 +534,30 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
     });
     if (maxPlat !== null) allPlatVals.push(maxPlat);
+
+    let maxRetorno: number | null = null;
+    eqData.forEach(d => {
+      const raw = d["Retorno a base"];
+      const val = getValMinutes(raw);
+      if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
+    });
+    if (maxRetorno !== null) allRetornoVals.push(maxRetorno);
   });
 
   const totalRowProcessos = {
     Processos: "Total",
     Incidentes: resumoProcessos.reduce((acc, curr) => acc + curr.Incidentes, 0),
     Equipes: totalEquipesGeralCount,
-    Improdutivos: resumoProcessos.reduce(
-      (acc, curr) => acc + curr.Improdutivos,
-      0,
-    ),
+    Improdutivos: resumoProcessos.reduce((acc, curr) => acc + curr.Improdutivos, 0),
     "Ordem 2": resumoProcessos.reduce((acc, curr) => acc + curr["Ordem 2"], 0),
-    "Reincidentes causados": resumoProcessos.reduce(
-      (acc, curr) => acc + curr["Reincidentes causados"],
-      0,
-    ),
+    "Reincidentes causados": resumoProcessos.reduce((acc, curr) => acc + curr["Reincidentes causados"], 0),
     TMDE: tmdeMedio,
     Ocupação: ocupacaoMediaGeral,
     Produtividade: isPeriodMode ? (totalIncProdutivos / totalEquipesGeralCount) / numDays : totalIncProdutivos / totalEquipesGeralCount,
     Login: allLoginVals.length > 0 ? allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length : null,
+    Despacho: allDespachoVals.length > 0 ? allDespachoVals.reduce((a, b) => a + b, 0) / allDespachoVals.length : null,
     "Tempo Plataforma": allPlatVals.length > 0 ? allPlatVals.reduce((a, b) => a + b, 0) / allPlatVals.length : null,
+    "Retorno Base": allRetornoVals.length > 0 ? allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length : null,
   };
 
   // Helper to convert various formats to decimal hours
@@ -688,7 +726,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Ocupação
       const ocupacao = calculateOccupancy(eqData);
 
-      // Login: max of "1º Login Corrigido" from M300 base (value already in minutes)
+      // Login
       let maxLoginVal: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"];
@@ -697,7 +735,16 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       const primeiroLogin = maxLoginVal != null ? maxLoginVal.toFixed(1) : "-";
 
-      // Tempo de plataforma: max of "1º Desloc" from M300 base
+      // Despacho
+      let maxDespachoVal: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Despacho"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxDespachoVal === null || val > maxDespachoVal)) maxDespachoVal = val;
+      });
+      const despacho = maxDespachoVal != null ? maxDespachoVal.toFixed(1) : "-";
+
+      // Tempo de plataforma
       let maxPlatVal: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Desloc"];
@@ -705,6 +752,15 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (val != null && (maxPlatVal === null || val > maxPlatVal)) maxPlatVal = val;
       });
       const tempoPlataforma = maxPlatVal != null ? maxPlatVal.toFixed(1) : "-";
+
+      // Retorno a base
+      let maxRetornoVal: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Retorno a base"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxRetornoVal === null || val > maxRetornoVal)) maxRetornoVal = val;
+      });
+      const retornoBase = maxRetornoVal != null ? maxRetornoVal.toFixed(1) : "-";
 
       return {
         Equipe: eq,
@@ -715,7 +771,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         "Ordem 2": isPeriodMode ? ord2 / eqDays : ord2,
         Ocupação: ocupacao,
         Login: primeiroLogin,
+        Despacho: despacho,
         "Tempo de plataforma": tempoPlataforma,
+        "Retorno Base": retornoBase,
       };
     });
 
@@ -723,7 +781,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let aValue: any = a[sortConfig.key as keyof typeof a];
       let bValue: any = b[sortConfig.key as keyof typeof b];
 
-      if (sortConfig.key === 'Login' || sortConfig.key === 'Tempo de plataforma') {
+      if (sortConfig.key === 'Login' || sortConfig.key === 'Tempo de plataforma' || sortConfig.key === 'Despacho' || sortConfig.key === 'Retorno Base') {
         aValue = aValue === '-' ? -1 : Number(aValue);
         bValue = bValue === '-' ? -1 : Number(bValue);
       }
@@ -829,6 +887,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
           origTMDE: d.origTMDE,
           improdutivo: !!d.Improdutivo,
           ordem2: !!d.ordem2,
+          isM300Only: !!d.isM300Only,
           possivelO2: !!d.possivelO2,
           possivelAnomalia: !!d.possivelAnomalia,
           isAtribuidaO2: isAtribuida || (!!d.possivelO2 && !!d.isAtribuidaO2),
@@ -848,10 +907,20 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
     
+    // Platform duration from "1º Desloc" column (in minutes → convert to hours)
     let platformDuration = undefined;
-    if (firstLoginDecimal != null && firstIncident) {
-      platformDuration = firstIncident.inicio_decimal - firstLoginDecimal;
-      if (platformDuration < 0) platformDuration = 0;
+    const platRaw = firstRow["1º Desloc"];
+    const platMinutes = getValMinutes(platRaw);
+    if (platMinutes != null && firstLoginDecimal != null) {
+      platformDuration = platMinutes / 60; // minutes to decimal hours
+    }
+
+    // Return to base duration from "Retorno a base" column (in minutes → convert to hours)
+    let returnToBaseDuration = undefined;
+    const retRaw = firstRow["Retorno a base"];
+    const retMinutes = getValMinutes(retRaw);
+    if (retMinutes != null) {
+      returnToBaseDuration = retMinutes / 60;
     }
 
     return { 
@@ -865,7 +934,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       firstLogin: firstLoginDecimal,
       intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
       intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
-      returnToBaseDuration: convertToDecimalHours(firstRow["Retorno a base"]), // This is a duration
+      returnToBaseDuration,
       lastLogOff: convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
     };
   });
@@ -1067,41 +1136,79 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       {/* Main Content */}
       <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative">
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="glass-card p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <AlertTriangle className="h-5 w-5 mr-2 text-warning" />
-              <h3 className="text-sm font-medium">Incidentes</h3>
+              <AlertTriangle className="h-4 w-4 mr-2 text-warning" />
+              <h3 className="text-xs font-medium">Incidentes</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {isPeriodMode ? displayInc.toFixed(1) : displayInc}
             </p>
           </div>
-          <div className="glass-card p-6">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <Clock className="h-5 w-5 mr-2 text-primary" />
-              <h3 className="text-sm font-medium">TMDE Médio</h3>
+              <Clock className="h-4 w-4 mr-2 text-primary" />
+              <h3 className="text-xs font-medium">TMDE Médio</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {tmdeMedio.toFixed(1)}
             </p>
           </div>
-          <div className="glass-card p-6">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <BarChart3 className="h-5 w-5 mr-2 text-accent" />
-              <h3 className="text-sm font-medium">Taxa Reincidência</h3>
+              <BarChart3 className="h-4 w-4 mr-2 text-accent" />
+              <h3 className="text-xs font-medium">Taxa Reincidência</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {(taxaReinc * 100).toFixed(1)}%
             </p>
           </div>
-          <div className="glass-card p-6">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <XCircle className="h-5 w-5 mr-2 text-destructive" />
-              <h3 className="text-sm font-medium">% Improdutivo</h3>
+              <XCircle className="h-4 w-4 mr-2 text-destructive" />
+              <h3 className="text-xs font-medium">% Improdutivo</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {(taxaImprod * 100).toFixed(1)}%
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <LogIn className="h-4 w-4 mr-2 text-success" />
+              <h3 className="text-xs font-medium">Login Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allLoginVals.length > 0 ? (allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length).toFixed(1) : "-"}
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <Navigation className="h-4 w-4 mr-2 text-primary" />
+              <h3 className="text-xs font-medium">Despacho Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allDespachoVals.length > 0 ? (allDespachoVals.reduce((a, b) => a + b, 0) / allDespachoVals.length).toFixed(1) : "-"}
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <Timer className="h-4 w-4 mr-2" style={{ color: "hsl(142 71% 45%)" }} />
+              <h3 className="text-xs font-medium">T. Plataforma Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allPlatVals.length > 0 ? (allPlatVals.reduce((a, b) => a + b, 0) / allPlatVals.length).toFixed(1) : "-"}
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <RotateCcw className="h-4 w-4 mr-2" style={{ color: "hsl(0 65% 60%)" }} />
+              <h3 className="text-xs font-medium">Ret. Base Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allRetornoVals.length > 0 ? (allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length).toFixed(1) : "-"}
             </p>
           </div>
         </div>
@@ -1128,7 +1235,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "Ocup.",
                     "Prod.",
                     "Login",
+                    "Desp.",
                     "T. Plat.",
+                    "Ret. Base",
                   ].map((h) => (
                     <th
                       key={h}
@@ -1180,7 +1289,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                       {row.Login != null ? row.Login.toFixed(1) : "-"}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row.Despacho != null ? row.Despacho.toFixed(1) : "-"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row["Tempo Plataforma"] != null ? row["Tempo Plataforma"].toFixed(1) : "-"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row["Retorno Base"] != null ? row["Retorno Base"].toFixed(1) : "-"}
                     </td>
                   </tr>
                 ))}
@@ -1228,9 +1343,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "TMDE",
                     "Ocup.",
                     "Login",
+                    "Desp.",
                     "T. Plat.",
+                    "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Tempo de plataforma"];
+                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
@@ -1295,8 +1412,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Login}
                       </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                        {row.Despacho}
+                      </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground truncate">
                         {row["Tempo de plataforma"]}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                        {row["Retorno Base"]}
                       </td>
                     </tr>
                   );
