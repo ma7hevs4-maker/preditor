@@ -469,7 +469,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       Ocupação: ocupacao,
       Produtividade: displayProdutividade,
       Login: avgLogin,
+      Despacho: avgDespacho,
       "Tempo Plataforma": avgPlataforma,
+      "Retorno Base": avgRetorno,
     };
   });
 
