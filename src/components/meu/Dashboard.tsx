@@ -84,7 +84,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ data, onBack }: DashboardProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   if (!data || !Array.isArray(data)) {
     return (
