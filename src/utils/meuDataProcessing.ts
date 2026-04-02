@@ -366,12 +366,24 @@ export async function processFiles(incFile: File, m300File: File | null) {
   const m300Processed = m300.map((row: any) => {
     if (!row) return {};
     const rowKeys = Object.keys(row);
+    const normalizeHeader = (key: string) => key
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
 
     const equipeKey = rowKeys.find(k => k.toLowerCase() === 'equipe') || "Equipe";
     row["Equipe"] = String(row[equipeKey] || "").trim();
     row["Turno"] = getTurnoFromEquipe(row["Equipe"]);
     const shiftStartHour = getShiftStartHour(row["Turno"]);
     row.shiftStartHour = shiftStartHour;
+
+    const dataReferenciaKey = rowKeys.find(k => {
+      const lower = normalizeHeader(k);
+      return lower === 'data referencia' || /^data referencia_\d+$/.test(lower);
+    });
+    row["Data Referência"] = dataReferenciaKey ? parseDate(row[dataReferenciaKey]) : null;
 
     const inicioKey = rowKeys.find(k => k.toLowerCase().includes('inicio calendario')) || "Inicio Calendario";
     const dtInicioCal = parseFullDateTime(row[inicioKey]);
@@ -381,7 +393,7 @@ export async function processFiles(incFile: File, m300File: File | null) {
     } else {
       row["Data Turno"] = parseDate(row[inicioKey]);
     }
-    row["Data M300"] = row["Data Turno"]; // Keep for backward compatibility
+    row["Data M300"] = row["Data Referência"] || row["Data Turno"];
 
     // Find incident number column in m300
     const incNumKey = rowKeys.find(k => {
@@ -419,13 +431,6 @@ export async function processFiles(incFile: File, m300File: File | null) {
     }
 
     // Keep corrected login as raw minutes, using the exact M300 column "1º Login Corrigido" (col 53)
-    const normalizeHeader = (key: string) => key
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toLowerCase();
-
     const exactLoginMinutesKey = rowKeys.find(k => {
       const lower = normalizeHeader(k);
       return lower === '1o login corrigido' || /^1o login corrigido_\d+$/.test(lower);
@@ -759,7 +764,7 @@ export async function processFiles(incFile: File, m300File: File | null) {
           (mRow: any) =>
             mRow["Equipe"] && mRow["Data M300"] &&
             mRow["Equipe"] === incRow["Equipe Desl."] &&
-            mRow["Data M300"] === incRow["Data Ação"],
+            mRow["Data M300"] === (incRow["Data Turno"] || incRow["Data Ação"]),
         );
       }
 
@@ -787,10 +792,21 @@ export async function processFiles(incFile: File, m300File: File | null) {
 
   // Add M300-only incidents (in M300 for team/day but not in incidents base)
   const finalIncKeys = new Set<string>();
+  const getDateKey = (row: any): string => {
+    return String(
+      row?.["Data Referência"] ||
+      row?.["Data M300"] ||
+      row?.["Data Turno"] ||
+      row?.["Data Ação"] ||
+      "",
+    );
+  };
+
   finalData.forEach(d => {
     const num = normalizeIncNum(d["Número"] || d["Incidente_M300"]);
     const equipe = d["Equipe Desl."] || d["Equipe"];
-    if (num && equipe) finalIncKeys.add(`${num}|${equipe}`);
+    const dateKey = getDateKey(d);
+    if (num && equipe && dateKey) finalIncKeys.add(`${num}|${equipe}|${dateKey}`);
   });
 
   console.log("[M300-only] finalData antes:", finalData.length, "| m300Processed:", m300Processed.length, "| finalIncKeys:", finalIncKeys.size);
@@ -802,13 +818,13 @@ export async function processFiles(incFile: File, m300File: File | null) {
   m300Processed.forEach((m: any) => {
     const incNum = normalizeIncNum(m["Incidente_M300"]);
     const equipe = m["Equipe"];
-    const date = m["Data Turno"];
+    const date = m["Data Referência"] || m["Data M300"] || m["Data Turno"];
     if (!incNum || !equipe || !date) {
       m300SkipNoInc++;
       return;
     }
 
-    const key = `${incNum}|${equipe}`;
+    const key = `${incNum}|${equipe}|${date}`;
     if (finalIncKeys.has(key)) {
       m300SkipDup++;
       return;
@@ -844,14 +860,9 @@ export async function processFiles(incFile: File, m300File: File | null) {
       return;
     }
 
-    // Calculate Data Turno from the actual incident time (A_Caminho/No_Local), not Inicio Calendario
     const dtACaminhoM300 = parseFullDateTime(m["A_Caminho"]);
     const dtNoLocalM300 = parseFullDateTime(m["No_Local"]);
     const dtActualIncident = dtACaminhoM300 || dtNoLocalM300;
-    let dataTurnoM300Only = date; // fallback to M300's Data Turno from Inicio Calendario
-    if (dtActualIncident) {
-      dataTurnoM300Only = calculateShiftDate(dtActualIncident, horaAux, m.shiftStartHour);
-    }
 
     const causa = String(m["CAUSA"] || m["Causa"] || "");
     const causasImprodutivas = [
@@ -867,8 +878,10 @@ export async function processFiles(incFile: File, m300File: File | null) {
       ...m,
       "Equipe Desl.": equipe,
       "Número": m["Incidente_M300"] || incNum,
-      "Data Turno": dataTurnoM300Only,
-      "Data Ação": m["Data Ação Real"] || dataTurnoM300Only,
+      "Data Turno": date,
+      "Data Ação": m["Data Ação Real"] || date,
+      "Data M300": date,
+      "Data Referência": date,
       "Processo": normalizarProcesso(m["Grupo Processos DESLOC"] || "Outros"),
       "Grupo Processos DESLOC": m["Grupo Processos DESLOC"] || "Não informado",
       "Enel / Parceira DESLOC": m["Enel / Parceira DESLOC"] || "Não informado",
