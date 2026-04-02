@@ -13,6 +13,7 @@ interface TimelineEvent {
   origTMDE?: number;
   improdutivo: boolean;
   ordem2: boolean;
+  isM300Only?: boolean;
   possivelO2?: boolean;
   possivelAnomalia?: boolean;
   isAtribuidaO2?: boolean;
