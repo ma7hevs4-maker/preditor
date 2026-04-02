@@ -18,65 +18,62 @@ import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour } from "../../utils/meuDataProcessing";
 
-const MultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
+const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
   const filteredOptions = searchable 
     ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
     : options;
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
           {label}
+          {selected.length > 0 && (
+            <span className="ml-1.5 text-primary font-mono">({selected.length})</span>
+          )}
         </label>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => onChange(filteredOptions)}
-            className="text-[10px] text-primary hover:text-primary/80 underline"
-            title="Selecionar todos"
-          >
-            Todos
-          </button>
-          <button
-            onClick={() => onChange([])}
-            className="text-[10px] text-muted-foreground hover:text-foreground/80 underline"
-            title="Limpar seleção"
-          >
-            Nenhum
-          </button>
+        <div className="flex gap-2">
+          <button onClick={() => onChange(filteredOptions)} className="text-[10px] text-primary hover:underline">Todos</button>
+          <button onClick={() => onChange([])} className="text-[10px] text-muted-foreground hover:underline">Limpar</button>
         </div>
       </div>
       {searchable && (
-        <input
-          type="text"
-          placeholder="Pesquisar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-2 block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-xs p-1.5 border"
-        />
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Pesquisar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-1.5 pl-7 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+          />
+        </div>
       )}
-      <select
-        multiple
-        value={selected}
-        onChange={(e) => {
-          const values = Array.from(
-            e.target.selectedOptions,
-            (option: HTMLOptionElement) => option.value,
+      <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+        {filteredOptions.map((opt: string) => {
+          const isSelected = selected.includes(opt);
+          return (
+            <button
+              key={opt}
+              onClick={() => {
+                if (isSelected) {
+                  onChange(selected.filter((s: string) => s !== opt));
+                } else {
+                  onChange([...selected, opt]);
+                }
+              }}
+              className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all ${
+                isSelected
+                  ? 'bg-primary/15 border-primary/40 text-primary'
+                  : 'bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50'
+              }`}
+            >
+              {opt}
+            </button>
           );
-          onChange(values);
-        }}
-        className="block w-full rounded-md bg-secondary/30 text-foreground border-border shadow-sm focus:border-ring focus:ring-ring sm:text-sm h-32 p-2 border"
-      >
-        {filteredOptions.map((opt: string) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-      <p className="text-xs text-muted-foreground/70 mt-1">
-        Segure Ctrl/Cmd para selecionar vários
-      </p>
+        })}
+      </div>
     </div>
   );
 };
