@@ -688,18 +688,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Ocupação
       const ocupacao = calculateOccupancy(eqData);
 
-      // Login: max of "1º Login Corrigido" from M300 base
+      // Login: max of "1º Login Corrigido" from M300 base (value already in minutes)
       let maxLoginVal: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"] || d["Log In"];
-        const val = convertToDecimalHours(raw);
+        const val = getValMinutes(raw);
         if (val != null && (maxLoginVal === null || val > maxLoginVal)) maxLoginVal = val;
       });
-      const primeiroLogin = maxLoginVal != null ? (() => {
-        const h = Math.floor(maxLoginVal);
-        const m = Math.round((maxLoginVal - h) * 60);
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-      })() : "-";
+      const primeiroLogin = maxLoginVal != null ? maxLoginVal.toFixed(1) : "-";
 
       // Tempo de plataforma: max of "1º Desloc" from M300 base
       let maxPlatVal: number | null = null;
