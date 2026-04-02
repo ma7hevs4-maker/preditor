@@ -793,6 +793,12 @@ export async function processFiles(incFile: File, m300File: File | null) {
     if (num && equipe) finalIncKeys.add(`${num}|${equipe}`);
   });
 
+  console.log("[M300-only] finalData antes:", finalData.length, "| m300Processed:", m300Processed.length, "| finalIncKeys:", finalIncKeys.size);
+  let m300OnlyCount = 0;
+  let m300SkipNoInc = 0;
+  let m300SkipDup = 0;
+  let m300SkipNoHora = 0;
+
   m300Processed.forEach((m: any) => {
     const incNum = normalizeIncNum(m["Incidente_M300"]);
     const equipe = m["Equipe"];
