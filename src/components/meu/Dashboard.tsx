@@ -777,7 +777,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let aValue: any = a[sortConfig.key as keyof typeof a];
       let bValue: any = b[sortConfig.key as keyof typeof b];
 
-      if (sortConfig.key === 'Login' || sortConfig.key === 'Tempo de plataforma') {
+      if (sortConfig.key === 'Login' || sortConfig.key === 'Tempo de plataforma' || sortConfig.key === 'Despacho' || sortConfig.key === 'Retorno Base') {
         aValue = aValue === '-' ? -1 : Number(aValue);
         bValue = bValue === '-' ? -1 : Number(bValue);
       }
