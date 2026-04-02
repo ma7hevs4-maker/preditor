@@ -293,6 +293,66 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     return null;
   };
 
+  // Helper to convert various formats to decimal hours
+  const convertToDecimalHours = (val: any, baseDateStr?: string): number | undefined => {
+    if (val == null || val === "" || val === "-") return undefined;
+    
+    let date: Date | null = null;
+    if (val instanceof Date) {
+      date = val;
+    } else if (typeof val === "string" && val.includes("-") && val.includes(":")) {
+      date = new Date(val);
+      if (!val.includes('Z') && !val.includes('+')) {
+        date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()));
+      }
+    }
+    
+    if (date && !isNaN(date.getTime())) {
+      if (baseDateStr) {
+        try {
+          const [y, m, d] = baseDateStr.split('-').map(Number);
+          const baseDate = new Date(Date.UTC(y, m - 1, d));
+          if (!isNaN(baseDate.getTime())) {
+            const year = date.getUTCFullYear() < 1970 ? y : date.getUTCFullYear();
+            const month = date.getUTCFullYear() < 1970 ? m - 1 : date.getUTCMonth();
+            const day = date.getUTCFullYear() < 1970 ? d : date.getUTCDate();
+            
+            const rowDate = new Date(Date.UTC(year, month, day, date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()));
+            const diffMs = rowDate.getTime() - baseDate.getTime();
+            return diffMs / (1000 * 60 * 60);
+          }
+        } catch (e) {}
+      }
+      return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    }
+    
+    if (typeof val === "number") {
+      if (val > 40000) {
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        return convertToDecimalHours(d, baseDateStr);
+      }
+      if (val > 0 && val < 1) {
+        return val * 24;
+      }
+      return val / 60;
+    }
+    
+    if (typeof val === "string") {
+      const parts = val.split(":");
+      if (parts.length >= 2) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m)) {
+          return h + m / 60;
+        }
+      }
+      const num = Number(val);
+      if (!isNaN(num)) return num / 60;
+    }
+    
+    return undefined;
+  };
+
   // Helper: calculate platform time (login → first incident dispatch) in minutes
   const calcTempoPlataforma = (eqData: any[]): number | null => {
     const loginVal = (() => {
@@ -583,76 +643,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     "Retorno Base": allRetornoVals.length > 0 ? allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length : null,
   };
 
-  // Helper to convert various formats to decimal hours
-  const convertToDecimalHours = (val: any, baseDateStr?: string): number | undefined => {
-    if (val == null || val === "" || val === "-") return undefined;
-    
-    let date: Date | null = null;
-    if (val instanceof Date) {
-      date = val;
-    } else if (typeof val === "string" && val.includes("-") && val.includes(":")) {
-      date = new Date(val);
-      if (!val.includes('Z') && !val.includes('+')) {
-        date = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()));
-      }
-    }
-    
-    if (date && !isNaN(date.getTime())) {
-      if (baseDateStr) {
-        try {
-          const [y, m, d] = baseDateStr.split('-').map(Number);
-          const baseDate = new Date(Date.UTC(y, m - 1, d));
-          if (!isNaN(baseDate.getTime())) {
-            // If the date is just a time (Excel serial < 1, or year < 1970), assume it's on the baseDate
-            const year = date.getUTCFullYear() < 1970 ? y : date.getUTCFullYear();
-            const month = date.getUTCFullYear() < 1970 ? m - 1 : date.getUTCMonth();
-            const day = date.getUTCFullYear() < 1970 ? d : date.getUTCDate();
-            
-            const rowDate = new Date(Date.UTC(
-              year, 
-              month, 
-              day, 
-              date.getUTCHours(), 
-              date.getUTCMinutes(), 
-              date.getUTCSeconds()
-            ));
-            const diffMs = rowDate.getTime() - baseDate.getTime();
-            return diffMs / (1000 * 60 * 60);
-          }
-        } catch (e) {}
-      }
-      return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
-    }
-    
-    if (typeof val === "number") {
-      // If it's a large number, it might be an Excel serial with date
-      if (val > 40000) {
-        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-        return convertToDecimalHours(d, baseDateStr);
-      }
-      // If it's a small number (0-1), it's a time of day
-      if (val > 0 && val < 1) {
-        return val * 24;
-      }
-      // Otherwise assume it's minutes (duration)
-      return val / 60;
-    }
-    
-    if (typeof val === "string") {
-      const parts = val.split(":");
-      if (parts.length >= 2) {
-        const h = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10);
-        if (!isNaN(h) && !isNaN(m)) {
-          return h + m / 60;
-        }
-      }
-      const num = Number(val);
-      if (!isNaN(num)) return num / 60;
-    }
-    
-    return undefined;
-  };
+
 
   // Helper to format values from Excel to minutes (duration)
   const formatToMinutes = (val: any): string => {
