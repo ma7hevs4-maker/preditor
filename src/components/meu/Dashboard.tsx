@@ -483,21 +483,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       if (maxDespacho !== null) despachoValues.push(maxDespacho);
 
-      let maxPlat: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["1º Desloc"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
-      });
-      if (maxPlat !== null) plataformaValues.push(maxPlat);
+      const plat = calcTempoPlataforma(eqData);
+      if (plat !== null) plataformaValues.push(plat);
 
-      let maxRetorno: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["Retorno a base"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
-      });
-      if (maxRetorno !== null) retornoValues.push(maxRetorno);
+      const ret = calcRetornoBase(eqData);
+      if (ret !== null) retornoValues.push(ret);
     });
 
     const avgLogin = loginValues.length > 0 ? loginValues.reduce((a, b) => a + b, 0) / loginValues.length : null;
