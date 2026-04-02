@@ -269,12 +269,24 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                 <span>Início/Fim Turno</span>
               </div>
               <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.tmdM300 }}></div>
+                <span>TMD (M300)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.tmeM300 }}></div>
+                <span>TME (M300)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <div className="w-4 h-1 rounded-full" style={{ backgroundColor: COLORS.platform }}></div>
-                <span>Plataforma / Volta Base</span>
+                <span>Plataforma</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-1 rounded-full" style={{ backgroundColor: COLORS.interval }}></div>
                 <span>Intervalo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-1 rounded-full" style={{ backgroundColor: COLORS.returnBase }}></div>
+                <span>Volta Base</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-3.5 rounded-sm border-2" style={{ borderColor: COLORS.improdutivoBorder, backgroundColor: 'transparent' }}></div>
