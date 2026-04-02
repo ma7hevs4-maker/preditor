@@ -691,8 +691,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Login: max of "1º Login Corrigido" from M300 base (value already in minutes)
       let maxLoginVal: number | null = null;
       eqData.forEach(d => {
-        const raw = d["1º Login Corrigido"] || d["Log In"];
-        console.log("[DEBUG Login raw]", eq, raw, typeof raw);
+        const raw = d["1º Login Corrigido"];
         const val = getValMinutes(raw);
         if (val != null && (maxLoginVal === null || val > maxLoginVal)) maxLoginVal = val;
       });
