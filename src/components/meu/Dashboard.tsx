@@ -928,7 +928,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       if (d["Equipe Desl."] !== equipe) return false;
 
       const dataM300 = d["Data Referência"] || d["Data M300"] || d["Data Turno"] || d["Data Ação"];
-      if (!matchesSelectedDateFilter(dataM300)) return false;
+      if (isPeriodMode ? dataM300 !== selectedTimelineDay : !matchesSelectedDateFilter(dataM300)) return false;
 
       const numeroNormalizado = normalizeIncidentNumber(d["Número"] || d["Incidente_M300"]);
       return !!numeroNormalizado && !incidentesBaseKeys.has(numeroNormalizado);
