@@ -1289,7 +1289,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                       {row.Login != null ? row.Login.toFixed(1) : "-"}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row.Despacho != null ? row.Despacho.toFixed(1) : "-"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row["Tempo Plataforma"] != null ? row["Tempo Plataforma"].toFixed(1) : "-"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row["Retorno Base"] != null ? row["Retorno Base"].toFixed(1) : "-"}
                     </td>
                   </tr>
                 ))}
