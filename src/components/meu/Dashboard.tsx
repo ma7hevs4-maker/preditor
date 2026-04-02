@@ -263,8 +263,25 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
     }
     
+    const m300OnlyInResult = result.filter(d => d.isM300Only);
+    console.log("[filteredData] total:", result.length, "| M300Only:", m300OnlyInResult.length);
+    if (m300OnlyInResult.length > 0) {
+      const teamSet = new Set(m300OnlyInResult.map(d => d["Equipe Desl."]));
+      console.log("[filteredData] M300Only teams:", Array.from(teamSet).slice(0, 20));
+      console.log("[filteredData] M300Only sample:", m300OnlyInResult[0]["Equipe Desl."], m300OnlyInResult[0]["Data Turno"], m300OnlyInResult[0]["Número"]);
+    }
+    
+    // Also check all data for M300Only
+    const m300OnlyInAll = data.filter(d => d.isM300Only);
+    console.log("[allData] M300Only total:", m300OnlyInAll.length);
+    if (m300OnlyInAll.length > 0 && m300OnlyInResult.length === 0) {
+      const sampleTeam = m300OnlyInAll[0]["Equipe Desl."];
+      const sampleDate = m300OnlyInAll[0]["Data Turno"];
+      console.log("[allData] M300Only sample NOT in filtered:", sampleTeam, sampleDate, "selectedData:", selectedData);
+    }
+    
     return result;
-  }, [dataFilteredByBasics, tmdeAbove150Filter, o2AnomaliaFilter, teamsWithAbove150]);
+  }, [dataFilteredByBasics, tmdeAbove150Filter, o2AnomaliaFilter, teamsWithAbove150, data, selectedData]);
 
   // Helper to convert various formats to minutes
   const getValMinutes = (val: any): number | null => {
