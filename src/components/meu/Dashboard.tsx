@@ -1047,7 +1047,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   ].filter(Boolean).length;
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden max-w-[100vw]">
       {/* Top Bar */}
       <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-6 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
