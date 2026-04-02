@@ -1530,7 +1530,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
             <div className="p-6">
               {/* Timeline */}
-              <div className="mb-8">
+              <div className="mb-8 w-full min-w-0 overflow-hidden">
                 <TimelineChart
                   data={timelineData}
                   onEventClick={(id, isMulti) => {
