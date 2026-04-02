@@ -617,22 +617,22 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                               const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                               return (
                                 <g key={`shift-lines-${sIdx}`}>
-                                  {/* Platform - starts from login */}
-                                  {shift.platformDuration !== undefined && shift.firstLogin !== undefined && (
+                                  {/* Platform - starts from shift start (IT) */}
+                                  {shift.platformDuration !== undefined && shift.shiftStart !== undefined && (
                                     <g>
                                       <line
-                                        x1={getXScale(shift.firstLogin, teamShiftStartHour)} y1={yCenter}
-                                        x2={getXScale(shift.firstLogin + shift.platformDuration, teamShiftStartHour)} y2={yCenter}
+                                        x1={getXScale(shift.shiftStart, teamShiftStartHour)} y1={yCenter}
+                                        x2={getXScale(shift.shiftStart + shift.platformDuration, teamShiftStartHour)} y2={yCenter}
                                         stroke={COLORS.platform} strokeWidth="4" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.firstLogin, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.firstLogin, teamShiftStartHour)} y2={yCenter + 5}
+                                        x1={getXScale(shift.shiftStart, teamShiftStartHour)} y1={yCenter - 5}
+                                        x2={getXScale(shift.shiftStart, teamShiftStartHour)} y2={yCenter + 5}
                                         stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.firstLogin + shift.platformDuration, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.firstLogin + shift.platformDuration, teamShiftStartHour)} y2={yCenter + 5}
+                                        x1={getXScale(shift.shiftStart + shift.platformDuration, teamShiftStartHour)} y1={yCenter - 5}
+                                        x2={getXScale(shift.shiftStart + shift.platformDuration, teamShiftStartHour)} y2={yCenter + 5}
                                         stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <title>Tempo de Plataforma: {Math.round(shift.platformDuration * 60)} min</title>
