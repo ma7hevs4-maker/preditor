@@ -377,6 +377,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   };
 
   // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
+  // If the last event before logoff is an interval, use interval start instead
   const calcRetornoBase = (eqData: any[]): number | null => {
     const logoffVal = (() => {
       let best: number | null = null;
@@ -397,9 +398,34 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         const endB = (b.hora_aux_ordenacao || 0) + (Number(b.TMD) || 0) / 60 + (Number(b.TME) || 0) / 60;
         return endB - endA;
       });
-    if (sorted.length === 0) return null;
-    const lastEnd = sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60;
-    const diff = (logoffVal - lastEnd) * 60; // minutes
+
+    const lastIncidentEnd = sorted.length > 0
+      ? sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60
+      : null;
+
+    // Check interval start time
+    const intervalStartVal = (() => {
+      let val: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Inicio intervalo"] || d["Inicio Intervalo"];
+        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
+        if (dec != null && (val === null || dec > val)) val = dec;
+      });
+      return val;
+    })();
+
+    // If interval is the last event before logoff (starts after last incident end), use interval start
+    let returnStart: number | null = null;
+    if (lastIncidentEnd != null && intervalStartVal != null && intervalStartVal >= lastIncidentEnd) {
+      returnStart = intervalStartVal;
+    } else if (lastIncidentEnd != null) {
+      returnStart = lastIncidentEnd;
+    } else if (intervalStartVal != null) {
+      returnStart = intervalStartVal;
+    }
+
+    if (returnStart == null) return null;
+    const diff = (logoffVal - returnStart) * 60; // minutes
     return diff > 0 ? diff : null;
   };
 
