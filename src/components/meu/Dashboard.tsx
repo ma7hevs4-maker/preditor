@@ -413,6 +413,33 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
 
+    // Login médio e Tempo de Plataforma médio por processo
+    const loginValues: number[] = [];
+    const plataformaValues: number[] = [];
+    equipesPresentesNoProcesso.forEach(eq => {
+      const eqData = procData.filter(d => d["Equipe Desl."] === eq);
+      // Max login for this team
+      let maxLogin: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Login Corrigido"] || d["Log In"];
+        const val = convertToDecimalHours(raw);
+        if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
+      });
+      if (maxLogin !== null) loginValues.push(maxLogin);
+
+      // Max tempo plataforma (1º Desloc) for this team
+      let maxPlat: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Desloc"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
+      });
+      if (maxPlat !== null) plataformaValues.push(maxPlat);
+    });
+
+    const avgLogin = loginValues.length > 0 ? loginValues.reduce((a, b) => a + b, 0) / loginValues.length : null;
+    const avgPlataforma = plataformaValues.length > 0 ? plataformaValues.reduce((a, b) => a + b, 0) / plataformaValues.length : null;
+
     return {
       Processos: proc,
       Incidentes: displayIncProc,
@@ -423,6 +450,8 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       TMDE: tmde,
       Ocupação: ocupacao,
       Produtividade: displayProdutividade,
+      Login: avgLogin,
+      "Tempo Plataforma": avgPlataforma,
     };
   });
 
