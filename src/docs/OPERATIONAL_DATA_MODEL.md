@@ -11,7 +11,7 @@
 | Login | "Log In Corrigido" |
 | Logoff | "Log Off Corrigido" |
 | Tempo de Plataforma | Calculado: minutos entre Login e despacho do 1º incidente |
-| Retorno à Base | "Retorno a base" |
+| Retorno à Base | Calculado: minutos entre "Liberada" do último incidente e Logoff |
 | Início do Turno | "Inicio Calendario" |
 | Fim do Turno | "Fim Calendario" |
 | Intervalo | período entre "Inicio intervalo" e "Fim intervalo" |
