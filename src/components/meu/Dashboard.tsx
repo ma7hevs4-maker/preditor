@@ -947,9 +947,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       .filter((d) => d.hora_aux_ordenacao != null)
       .map((d) => {
         let inicio_decimal = Number(d.hora_aux_ordenacao) || 0;
-        if (selectedData && d["Data Ação"]) {
+        if (timelineEffectiveDate && d["Data Ação"]) {
           try {
-            const [ySel, mSel, daySel] = selectedData.split('-').map(Number);
+            const [ySel, mSel, daySel] = timelineEffectiveDate.split('-').map(Number);
             const [yAcao, mAcao, dayAcao] = d["Data Ação"].split('-').map(Number);
             
             const dSel = new Date(Date.UTC(ySel, mSel - 1, daySel));
