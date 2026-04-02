@@ -1092,7 +1092,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   ].filter(Boolean).length;
 
   return (
-    <div className="h-screen w-full max-w-full bg-background flex flex-col overflow-x-clip overflow-y-hidden">
+    <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
       <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-6 py-3 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
@@ -1313,7 +1313,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative w-full">
+      <div className="relative flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden p-6">
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="glass-card p-5">

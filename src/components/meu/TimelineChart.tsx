@@ -174,7 +174,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
   const xScale = (val: number) => getXScale(val, shiftStartHour);
 
   return (
-    <div ref={containerRef} className="w-full min-w-0 max-w-full bg-card rounded-lg border border-border relative overflow-hidden flex flex-col h-[800px]">
+    <div ref={containerRef} className="relative flex h-[800px] w-full min-w-0 max-w-full flex-col overflow-hidden rounded-lg border border-border bg-card">
       <TransformWrapper
         ref={transformRef}
         key={`${data?.length}-${horizontalScale}-${containerWidth}`}
@@ -334,14 +334,14 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
               </div>
             </div>
 
-            <div className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden" style={{ contain: 'strict' }}>
-              <TransformComponent wrapperClass="!w-full !h-full !overflow-hidden" contentClass="w-max h-max">
+            <div className="h-full w-full min-w-0 overflow-auto overscroll-contain cursor-grab active:cursor-grabbing">
+              <TransformComponent wrapperClass="!h-full !w-full !min-w-0 !max-w-full !overflow-auto" contentClass="!min-w-full !h-max">
                 <svg
                   width={width}
                   height={height}
                   viewBox={`0 0 ${width} ${height}`}
                   preserveAspectRatio="none"
-                  className="max-w-none"
+                  className="block max-w-none"
                 >
                   <g transform={`translate(${margin.left}, ${margin.top})`}>
                     {/* Grid lines */}
