@@ -957,7 +957,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
       intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
       returnToBaseDuration,
-      lastLogOff: convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
+      lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
     };
   });
 
