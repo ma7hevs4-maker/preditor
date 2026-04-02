@@ -174,7 +174,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
   const xScale = (val: number) => getXScale(val, shiftStartHour);
 
   return (
-    <div ref={containerRef} className="w-full bg-card rounded-lg border border-border relative overflow-hidden flex flex-col h-[800px] max-w-full">
+    <div ref={containerRef} className="w-full min-w-0 max-w-full bg-card rounded-lg border border-border relative overflow-hidden flex flex-col h-[800px]">
       <TransformWrapper
         ref={transformRef}
         key={`${data?.length}-${horizontalScale}-${containerWidth}`}
