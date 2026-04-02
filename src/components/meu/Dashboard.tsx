@@ -870,6 +870,17 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     return 0; // Default
   }, [selectedTurnos, timelineData]);
 
+  const activeFilterCount = [
+    selectedPolos.length > 0,
+    selectedProcessos.length > 0,
+    selectedTiposEquipe.length > 0,
+    selectedTurnos.length > 0,
+    selectedEquipes.length > 0,
+    selectedIncidents.length > 0,
+    tmdeAbove150Filter !== "todos",
+    o2AnomaliaFilter !== "todos",
+  ].filter(Boolean).length;
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Top Bar */}
