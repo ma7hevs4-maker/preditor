@@ -1563,6 +1563,21 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             <div className="p-6">
               {/* Timeline */}
               <div className="mb-8 w-full min-w-0 overflow-hidden">
+                {isPeriodMode && availableTimelineDays.length > 1 && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dia da Timeline:</label>
+                    <select
+                      value={selectedTimelineDay}
+                      onChange={(e) => setSelectedTimelineDay(e.target.value)}
+                      className="rounded-md bg-background text-foreground border border-border text-xs p-1.5 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                    >
+                      {availableTimelineDays.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <TimelineChart
                   data={timelineData}
                   onEventClick={(id, isMulti) => {
