@@ -293,10 +293,59 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     return null;
   };
 
+  // Helper: calculate platform time (login → first incident dispatch) in minutes
+  const calcTempoPlataforma = (eqData: any[]): number | null => {
+    const loginVal = (() => {
+      let best: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Log In"] || d["1º Login"];
+        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
+        if (dec != null && (best === null || dec < best)) best = dec;
+      });
+      return best;
+    })();
+    if (loginVal == null) return null;
+
+    // First incident dispatch = earliest inicio_decimal (hora_aux_ordenacao)
+    const sorted = eqData
+      .filter(d => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
+      .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao);
+    if (sorted.length === 0) return null;
+    const firstDispatch = sorted[0].hora_aux_ordenacao; // decimal hours
+    const diff = (firstDispatch - loginVal) * 60; // minutes
+    return diff > 0 ? diff : null;
+  };
+
+  // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
+  const calcRetornoBase = (eqData: any[]): number | null => {
+    const logoffVal = (() => {
+      let best: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Log Off Corrigido"] || d["Log Off"];
+        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
+        if (dec != null && (best === null || dec > best)) best = dec;
+      });
+      return best;
+    })();
+    if (logoffVal == null) return null;
+
+    // Last incident end = latest (inicio_decimal + TMD/60 + TME/60)
+    const sorted = eqData
+      .filter(d => d.hora_aux_ordenacao != null)
+      .sort((a, b) => {
+        const endA = (a.hora_aux_ordenacao || 0) + (Number(a.TMD) || 0) / 60 + (Number(a.TME) || 0) / 60;
+        const endB = (b.hora_aux_ordenacao || 0) + (Number(b.TMD) || 0) / 60 + (Number(b.TME) || 0) / 60;
+        return endB - endA;
+      });
+    if (sorted.length === 0) return null;
+    const lastEnd = sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60;
+    const diff = (logoffVal - lastEnd) * 60; // minutes
+    return diff > 0 ? diff : null;
+  };
+
   const calculateOccupancy = (eqData: any[]) => {
     if (eqData.length === 0) return 0;
     
-    // Group by date to handle multiple days if selected
     const dataByDate: Record<string, any[]> = {};
     eqData.forEach(d => {
       const date = d["Data Turno"] || d["Data Ação"];
@@ -308,19 +357,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     let totalDenominator = 0;
     
     Object.values(dataByDate).forEach(dayData => {
-      // soma de todo tmd e tme da equipe no dia, desconsiderando tmde > 150 (exceto se for possível o2 ou anomalia)
       const incidentsToCount = dayData.filter(d => (Number(d.TMDE) || 0) <= 150 || d.possivelO2 || d.possivelAnomalia);
       const sumTmdTme = incidentsToCount.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
       
       const firstRow = dayData[0] || {};
       
-      // tempo de plataforma (caso n tenha o valor será considerado 40 min)
-      const tempoPlataforma = getValMinutes(firstRow["1º Desloc"]) ?? 40;
+      const tempoPlataforma = calcTempoPlataforma(dayData) ?? 40;
+      const retornoBase = calcRetornoBase(dayData) ?? 30;
       
-      // retorno a base (caso n tenha o valor será considerado 30 min)
-      const retornoBase = getValMinutes(firstRow["Retorno a base"]) ?? 30;
-      
-      // Fim Calendario pelo Inicio Calendario (caso n tenha o valor será considerado 480 min)
       const inicioTurno = getValMinutes(firstRow["Inicio Calendario"]);
       const fimTurno = getValMinutes(firstRow["Fim Calendario"]);
       let duracaoTurno = 480;
@@ -329,7 +373,6 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (duracaoTurno <= 0) duracaoTurno += 1440;
       }
       
-      // intervalo (caso n tenha o valor será considerado 60 min)
       const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
       const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
       let duracaoIntervalo = 60;
