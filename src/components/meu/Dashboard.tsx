@@ -1237,7 +1237,6 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                 <tr>
                   {[
                     "Equipe",
-                    "Turno",
                     "Inc.",
                     "Improd.",
                     "Ord.2",
@@ -1245,9 +1244,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "TMDE",
                     "Ocup.",
                     "Login",
-                    "Plataforma",
+                    "T. Plat.",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Turno","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Tempo de plataforma"];
+                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Tempo de plataforma"];
                     return (
                     <th
                       key={h}
