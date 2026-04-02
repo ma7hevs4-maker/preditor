@@ -1173,25 +1173,27 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             </div>
           </div>
           <div className="overflow-x-auto max-h-96">
-            <table className="min-w-full divide-y divide-border">
+            <table className="w-full divide-y divide-border table-fixed">
               <thead className="bg-secondary/30 sticky top-0">
                 <tr>
                   {[
                     "Equipe",
                     "Turno",
-                    "Incidentes",
-                    "Improdutivos",
-                    "Ordem 2",
-                    "Reincidentes causados",
+                    "Inc.",
+                    "Improd.",
+                    "Ord.2",
+                    "Reinc.",
                     "TMDE",
-                    "Ocupação",
+                    "Ocup.",
                     "Login",
-                    "Tempo de plataforma",
-                  ].map((h) => (
+                    "Plataforma",
+                  ].map((h, i) => {
+                    const sortKeys = ["Equipe","Turno","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Tempo de plataforma"];
+                    return (
                     <th
                       key={h}
-                      onClick={() => handleSort(h)}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-background select-none"
+                      onClick={() => handleSort(sortKeys[i])}
+                      className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-background select-none truncate"
                     >
                       <div className="flex items-center space-x-1">
                         <span>{h}</span>
