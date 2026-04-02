@@ -959,7 +959,15 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         return endB - endA;
       })[0];
       const lastEnd = lastEvent.inicio_decimal + lastEvent.TMD / 60 + lastEvent.TME / 60;
-      const diff = lastLogOffDecimal - lastEnd;
+
+      // If interval starts after last incident, use interval start as return-to-base origin
+      const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], selectedData);
+      let returnStart = lastEnd;
+      if (intervalStartDecimal != null && intervalStartDecimal >= lastEnd) {
+        returnStart = intervalStartDecimal;
+      }
+
+      const diff = lastLogOffDecimal - returnStart;
       if (diff > 0) returnToBaseDuration = diff;
     }
 
