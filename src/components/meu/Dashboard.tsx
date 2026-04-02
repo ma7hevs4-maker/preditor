@@ -1291,9 +1291,6 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                         <span className="truncate">{row.Equipe}</span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {row.Turno}
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
