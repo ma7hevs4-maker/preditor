@@ -144,6 +144,14 @@
     @apply border-border;
   }
 
+  html,
+  body,
+  #root {
+    overflow-x: clip;
+    width: 100%;
+    max-width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
