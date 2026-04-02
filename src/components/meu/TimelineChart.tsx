@@ -487,7 +487,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <rect
                                     x={xInicio} y={yRect} width={xFimTmd - xInicio} height={rectHeight}
                                     fill={tmdFill} stroke={rectStroke} strokeWidth={rectStrokeWidth}
-                                    rx="2" ry="2"
+                                    rx="6" ry="6"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
