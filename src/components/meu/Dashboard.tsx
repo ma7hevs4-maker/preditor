@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
-import { getShiftStartHour } from "../../utils/meuDataProcessing";
+import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -422,7 +422,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"] || d["Log In"];
-        const val = convertToDecimalHours(raw);
+        const val = horaParaDecimalSeguro(raw);
         if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
       });
       if (maxLogin !== null) loginValues.push(maxLogin);
@@ -488,7 +488,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     let maxLogin: number | null = null;
     eqData.forEach(d => {
       const raw = d["1º Login Corrigido"] || d["Log In"];
-      const val = convertToDecimalHours(raw);
+      const val = horaParaDecimalSeguro(raw);
       if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
     });
     if (maxLogin !== null) allLoginVals.push(maxLogin);
