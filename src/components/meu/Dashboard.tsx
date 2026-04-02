@@ -1197,14 +1197,15 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     >
                       <div className="flex items-center space-x-1">
                         <span>{h}</span>
-                        {sortConfig.key === h && (
+                        {sortConfig.key === sortKeys[i] && (
                           <span className="text-muted-foreground/70">
                             {sortConfig.direction === "asc" ? "↑" : "↓"}
                           </span>
                         )}
                       </div>
                     </th>
-                  ))}
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="bg-card divide-y divide-border">
