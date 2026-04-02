@@ -910,11 +910,12 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
+    const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], selectedData);
     
-    // Platform duration: login → first incident dispatch (in decimal hours)
+    // Platform duration: shift start (IT) → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
-    if (firstLoginDecimal != null && firstIncident) {
-      const diff = firstIncident.inicio_decimal - firstLoginDecimal;
+    if (shiftStartDecimal != null && firstIncident) {
+      const diff = firstIncident.inicio_decimal - shiftStartDecimal;
       if (diff > 0) platformDuration = diff;
     }
 
