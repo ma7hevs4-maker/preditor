@@ -1079,7 +1079,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             </h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border">
+            <table className="w-full divide-y divide-border table-fixed">
               <thead className="bg-secondary/30">
                 <tr>
                   {[
@@ -1088,14 +1088,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "Equipes",
                     "Improdutivos",
                     "Ordem 2",
-                    "Reincidentes causados",
+                    "Reinc.",
                     "TMDE",
-                    "Ocupação",
-                    "Produção",
+                    "Ocup.",
+                    "Prod.",
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                      className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider truncate"
                     >
                       {h}
                     </th>
