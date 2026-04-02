@@ -149,7 +149,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   // Filter states
   const [isPeriodMode, setIsPeriodMode] = useState<boolean>(false);
   const [selectedPeriod, setSelectedPeriod] = useState<"7d" | "mes">("7d");
-  const [selectedData, setSelectedData] = useState<string>(datas[datas.length - 1] || "");
+  const [selectedData, setSelectedData] = useState<string>(() => {
+    // Default to D-1 (second-to-last date) if available
+    if (datas.length >= 2) return datas[datas.length - 2];
+    return datas[datas.length - 1] || "";
+  });
   const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<string[]>([]);
   const [selectedTiposEquipe, setSelectedTiposEquipe] = useState<string[]>([]);
