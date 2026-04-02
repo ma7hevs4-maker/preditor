@@ -1235,7 +1235,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "Ocup.",
                     "Prod.",
                     "Login",
+                    "Desp.",
                     "T. Plat.",
+                    "Ret. Base",
                   ].map((h) => (
                     <th
                       key={h}
