@@ -1163,6 +1163,8 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "TMDE",
                     "Ocup.",
                     "Prod.",
+                    "Login",
+                    "T. Plat.",
                   ].map((h) => (
                     <th
                       key={h}
