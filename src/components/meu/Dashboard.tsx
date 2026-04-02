@@ -487,7 +487,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
     let maxLogin: number | null = null;
     eqData.forEach(d => {
-      const raw = d["1º Login Corrigido"] || d["Log In"];
+      const raw = d["1º Login Corrigido"];
       const val = getValMinutes(raw);
       if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
     });
