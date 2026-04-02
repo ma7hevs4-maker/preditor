@@ -422,7 +422,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"] || d["Log In"];
-        const val = horaParaDecimalSeguro(raw);
+        const val = getValMinutes(raw);
         if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
       });
       if (maxLogin !== null) loginValues.push(maxLogin);
@@ -488,7 +488,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     let maxLogin: number | null = null;
     eqData.forEach(d => {
       const raw = d["1º Login Corrigido"] || d["Log In"];
-      const val = horaParaDecimalSeguro(raw);
+      const val = getValMinutes(raw);
       if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
     });
     if (maxLogin !== null) allLoginVals.push(maxLogin);
@@ -688,18 +688,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Ocupação
       const ocupacao = calculateOccupancy(eqData);
 
-      // Login: max of "1º Login Corrigido" from M300 base
+      // Login: max of "1º Login Corrigido" from M300 base (value already in minutes)
       let maxLoginVal: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"] || d["Log In"];
-        const val = convertToDecimalHours(raw);
+        const val = getValMinutes(raw);
         if (val != null && (maxLoginVal === null || val > maxLoginVal)) maxLoginVal = val;
       });
-      const primeiroLogin = maxLoginVal != null ? (() => {
-        const h = Math.floor(maxLoginVal);
-        const m = Math.round((maxLoginVal - h) * 60);
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-      })() : "-";
+      const primeiroLogin = maxLoginVal != null ? maxLoginVal.toFixed(1) : "-";
 
       // Tempo de plataforma: max of "1º Desloc" from M300 base
       let maxPlatVal: number | null = null;
@@ -727,15 +723,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let aValue: any = a[sortConfig.key as keyof typeof a];
       let bValue: any = b[sortConfig.key as keyof typeof b];
 
-      if (sortConfig.key === 'Login') {
-        const parseHHMM = (s: string) => {
-          if (s === '-') return -1;
-          const [h, m] = s.split(':').map(Number);
-          return h * 60 + m;
-        };
-        aValue = parseHHMM(aValue);
-        bValue = parseHHMM(bValue);
-      } else if (sortConfig.key === 'Tempo de plataforma') {
+      if (sortConfig.key === 'Login' || sortConfig.key === 'Tempo de plataforma') {
         aValue = aValue === '-' ? -1 : Number(aValue);
         bValue = bValue === '-' ? -1 : Number(bValue);
       }
