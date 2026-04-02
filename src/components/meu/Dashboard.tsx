@@ -6,8 +6,15 @@ import {
   AlertTriangle,
   XCircle,
   X,
-  Menu,
+  SlidersHorizontal,
+  Filter,
+  Calendar,
+  Search,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour } from "../../utils/meuDataProcessing";
 
