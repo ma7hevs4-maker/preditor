@@ -10,7 +10,7 @@
 |---|---|
 | Login | "Log In Corrigido" |
 | Logoff | "Log Off Corrigido" |
-| Tempo de Plataforma | "1º Desloc" |
+| Tempo de Plataforma | Calculado: minutos entre Login e despacho do 1º incidente |
 | Retorno à Base | "Retorno a base" |
 | Início do Turno | "Inicio Calendario" |
 | Fim do Turno | "Fim Calendario" |
