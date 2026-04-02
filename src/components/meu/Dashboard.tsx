@@ -859,9 +859,6 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     numero: string;
     texto: string;
   } | null>(null);
-    numero: string;
-    texto: string;
-  } | null>(null);
 
   // Update selected equipe if ranking changes and current is not in it
   React.useEffect(() => {
