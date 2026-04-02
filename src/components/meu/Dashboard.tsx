@@ -372,7 +372,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao);
     if (sorted.length === 0) return null;
     const firstDispatch = sorted[0].hora_aux_ordenacao; // decimal hours
-    const diff = (firstDispatch - loginVal) * 60; // minutes
+    const diff = (firstDispatch - shiftStartVal) * 60; // minutes
     return diff > 0 ? diff : null;
   };
 
