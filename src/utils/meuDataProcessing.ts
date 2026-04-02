@@ -793,14 +793,26 @@ export async function processFiles(incFile: File, m300File: File | null) {
     if (num && equipe) finalIncKeys.add(`${num}|${equipe}`);
   });
 
+  console.log("[M300-only] finalData antes:", finalData.length, "| m300Processed:", m300Processed.length, "| finalIncKeys:", finalIncKeys.size);
+  let m300OnlyCount = 0;
+  let m300SkipNoInc = 0;
+  let m300SkipDup = 0;
+  let m300SkipNoHora = 0;
+
   m300Processed.forEach((m: any) => {
     const incNum = normalizeIncNum(m["Incidente_M300"]);
     const equipe = m["Equipe"];
     const date = m["Data Turno"];
-    if (!incNum || !equipe || !date) return;
+    if (!incNum || !equipe || !date) {
+      m300SkipNoInc++;
+      return;
+    }
 
     const key = `${incNum}|${equipe}`;
-    if (finalIncKeys.has(key)) return;
+    if (finalIncKeys.has(key)) {
+      m300SkipDup++;
+      return;
+    }
 
     const getMinutesLocal = (start: any, end: any) => {
       if (start == null || end == null) return null;
@@ -827,7 +839,10 @@ export async function processFiles(incFile: File, m300File: File | null) {
       horaAux = hNoLocal - (tmd / 60);
       if (horaAux < 0) horaAux += 24;
     }
-    if (horaAux === null) return;
+    if (horaAux === null) {
+      m300SkipNoHora++;
+      return;
+    }
 
     const causa = String(m["CAUSA"] || m["Causa"] || "");
     const causasImprodutivas = [
@@ -838,6 +853,7 @@ export async function processFiles(incFile: File, m300File: File | null) {
       "REGISTRO INDEVIDO DA RECLAMAÇÃO", "UC FECHADA",
     ];
 
+    m300OnlyCount++;
     finalData.push({
       ...m,
       "Equipe Desl.": equipe,
@@ -863,6 +879,8 @@ export async function processFiles(incFile: File, m300File: File | null) {
 
     finalIncKeys.add(key);
   });
+
+  console.log("[M300-only] Adicionados:", m300OnlyCount, "| Sem incNum/equipe/date:", m300SkipNoInc, "| Duplicados:", m300SkipDup, "| Sem hora:", m300SkipNoHora, "| finalData total:", finalData.length);
 
   return finalData;
 }
