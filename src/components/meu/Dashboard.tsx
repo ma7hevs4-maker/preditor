@@ -854,7 +854,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   // Seleção de Equipe
   const [selectedEquipesDetalhe, setSelectedEquipesDetalhe] = useState<string[]>([]);
   const [highlightedIncidents, setHighlightedIncidents] = useState<string[]>([]);
+  const [selectedTimelineDay, setSelectedTimelineDay] = useState<string>("");
   const [selectedObservation, setSelectedObservation] = useState<{
+    numero: string;
+    texto: string;
+  } | null>(null);
     numero: string;
     texto: string;
   } | null>(null);
