@@ -723,15 +723,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let aValue: any = a[sortConfig.key as keyof typeof a];
       let bValue: any = b[sortConfig.key as keyof typeof b];
 
-      if (sortConfig.key === 'Login') {
-        const parseHHMM = (s: string) => {
-          if (s === '-') return -1;
-          const [h, m] = s.split(':').map(Number);
-          return h * 60 + m;
-        };
-        aValue = parseHHMM(aValue);
-        bValue = parseHHMM(bValue);
-      } else if (sortConfig.key === 'Tempo de plataforma') {
+      if (sortConfig.key === 'Login' || sortConfig.key === 'Tempo de plataforma') {
         aValue = aValue === '-' ? -1 : Number(aValue);
         bValue = bValue === '-' ? -1 : Number(bValue);
       }
