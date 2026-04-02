@@ -996,10 +996,10 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const firstLoginRaw = equipeData
       .map((d) => d["Log In"] || d["1º Login"])
       .find((v) => v != null && v !== "");
-    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
+    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, timelineEffectiveDate);
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
-    const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], selectedData);
+    const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], timelineEffectiveDate);
     
     // Platform duration: shift start (IT) → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
@@ -1012,7 +1012,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const lastLogOffRaw = equipeData
       .map((d) => d["Log Off Corrigido"] || d["Log Off"])
       .find((v) => v != null && v !== "");
-    const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, selectedData);
+    const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, timelineEffectiveDate);
     
     let returnToBaseDuration = undefined;
     if (lastLogOffDecimal != null && events.length > 0) {
@@ -1024,7 +1024,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       const lastEnd = lastEvent.inicio_decimal + lastEvent.TMD / 60 + lastEvent.TME / 60;
 
       // If interval starts after last incident, use interval start as return-to-base origin
-      const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], selectedData);
+      const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
       let returnStart = lastEnd;
       if (intervalStartDecimal != null && intervalStartDecimal >= lastEnd) {
         returnStart = intervalStartDecimal;
@@ -1039,14 +1039,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       events,
       turno: teamTurno,
       shiftStartHour: getShiftStartHour(teamTurno),
-      shiftStart: convertToDecimalHours(firstRow["Inicio Calendario"], selectedData),
-      shiftEnd: convertToDecimalHours(firstRow["Fim Calendario"], selectedData),
+      shiftStart: convertToDecimalHours(firstRow["Inicio Calendario"], timelineEffectiveDate),
+      shiftEnd: convertToDecimalHours(firstRow["Fim Calendario"], timelineEffectiveDate),
       platformDuration,
       firstLogin: firstLoginDecimal,
-      intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
-      intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
+      intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], timelineEffectiveDate),
+      intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], timelineEffectiveDate),
       returnToBaseDuration,
-      lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
+      lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], timelineEffectiveDate),
     };
   });
 
