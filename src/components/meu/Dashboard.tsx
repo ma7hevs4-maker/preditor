@@ -688,54 +688,30 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       // Ocupação
       const ocupacao = calculateOccupancy(eqData);
 
-      // Find first non-null values for login and desloc
-      const firstLoginRaw = eqData
-        .map((d) => d["1º Login Corrigido"] || d["Log In"])
-        .find((v) => v != null && v !== "");
-      const primeiroLogin = formatToHHMM(firstLoginRaw);
-
-      // Calculate Tempo de plataforma: (First Incident Displacement Start) - (Login)
-      // We group by day to calculate it correctly for each day in a period
-      const dataByDay = new Map<string, typeof eqData>();
+      // Login: max of "1º Login Corrigido" from M300 base
+      let maxLoginVal: number | null = null;
       eqData.forEach(d => {
-        const day = d["Data Turno"] || d["Data Ação"];
-        if (day) {
-          if (!dataByDay.has(day)) dataByDay.set(day, []);
-          dataByDay.get(day)!.push(d);
-        }
+        const raw = d["1º Login Corrigido"] || d["Log In"];
+        const val = convertToDecimalHours(raw);
+        if (val != null && (maxLoginVal === null || val > maxLoginVal)) maxLoginVal = val;
       });
+      const primeiroLogin = maxLoginVal != null ? (() => {
+        const h = Math.floor(maxLoginVal);
+        const m = Math.round((maxLoginVal - h) * 60);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      })() : "-";
 
-      let totalTempoPlataforma = 0;
-      let daysWithPlataforma = 0;
-
-      dataByDay.forEach((dayData, day) => {
-        const loginRaw = dayData
-          .map((d) => d["1º Login Corrigido"] || d["Log In"])
-          .find((v) => v != null && v !== "");
-        const loginDec = convertToDecimalHours(loginRaw, day);
-        
-        const firstInc = dayData
-          .filter(d => d.hora_aux_ordenacao != null)
-          .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0))[0];
-        
-        if (loginDec != null && firstInc && firstInc.hora_aux_ordenacao != null) {
-          const diff = (firstInc.hora_aux_ordenacao - loginDec) * 60;
-          if (diff > 0) {
-            totalTempoPlataforma += diff;
-            daysWithPlataforma++;
-          }
-        }
+      // Tempo de plataforma: max of "1º Desloc" from M300 base
+      let maxPlatVal: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Desloc"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxPlatVal === null || val > maxPlatVal)) maxPlatVal = val;
       });
-
-      const tempoPlataforma = daysWithPlataforma > 0 
-        ? (totalTempoPlataforma / (isPeriodMode ? eqDays : 1)).toFixed(1) 
-        : "-";
-
-      const turno = eqData[0]?.Turno || "Outros";
+      const tempoPlataforma = maxPlatVal != null ? maxPlatVal.toFixed(1) : "-";
 
       return {
         Equipe: eq,
-        Turno: turno,
         Incidentes: isPeriodMode ? inc / eqDays : inc,
         Improdutivos: isPeriodMode ? imp / eqDays : imp,
         "Reincidentes causados": isPeriodMode ? reinc / eqDays : reinc,
