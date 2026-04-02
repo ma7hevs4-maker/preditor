@@ -502,7 +502,9 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
   // Averages for Login and Tempo Plataforma in total row
   const allLoginVals: number[] = [];
+  const allDespachoVals: number[] = [];
   const allPlatVals: number[] = [];
+  const allRetornoVals: number[] = [];
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
     let maxLogin: number | null = null;
@@ -513,6 +515,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     });
     if (maxLogin !== null) allLoginVals.push(maxLogin);
 
+    let maxDespacho: number | null = null;
+    eqData.forEach(d => {
+      const raw = d["1º Despacho"];
+      const val = getValMinutes(raw);
+      if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+    });
+    if (maxDespacho !== null) allDespachoVals.push(maxDespacho);
+
     let maxPlat: number | null = null;
     eqData.forEach(d => {
       const raw = d["1º Desloc"];
@@ -520,26 +530,30 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
     });
     if (maxPlat !== null) allPlatVals.push(maxPlat);
+
+    let maxRetorno: number | null = null;
+    eqData.forEach(d => {
+      const raw = d["Retorno a base"];
+      const val = getValMinutes(raw);
+      if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
+    });
+    if (maxRetorno !== null) allRetornoVals.push(maxRetorno);
   });
 
   const totalRowProcessos = {
     Processos: "Total",
     Incidentes: resumoProcessos.reduce((acc, curr) => acc + curr.Incidentes, 0),
     Equipes: totalEquipesGeralCount,
-    Improdutivos: resumoProcessos.reduce(
-      (acc, curr) => acc + curr.Improdutivos,
-      0,
-    ),
+    Improdutivos: resumoProcessos.reduce((acc, curr) => acc + curr.Improdutivos, 0),
     "Ordem 2": resumoProcessos.reduce((acc, curr) => acc + curr["Ordem 2"], 0),
-    "Reincidentes causados": resumoProcessos.reduce(
-      (acc, curr) => acc + curr["Reincidentes causados"],
-      0,
-    ),
+    "Reincidentes causados": resumoProcessos.reduce((acc, curr) => acc + curr["Reincidentes causados"], 0),
     TMDE: tmdeMedio,
     Ocupação: ocupacaoMediaGeral,
     Produtividade: isPeriodMode ? (totalIncProdutivos / totalEquipesGeralCount) / numDays : totalIncProdutivos / totalEquipesGeralCount,
     Login: allLoginVals.length > 0 ? allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length : null,
+    Despacho: allDespachoVals.length > 0 ? allDespachoVals.reduce((a, b) => a + b, 0) / allDespachoVals.length : null,
     "Tempo Plataforma": allPlatVals.length > 0 ? allPlatVals.reduce((a, b) => a + b, 0) / allPlatVals.length : null,
+    "Retorno Base": allRetornoVals.length > 0 ? allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length : null,
   };
 
   // Helper to convert various formats to decimal hours
