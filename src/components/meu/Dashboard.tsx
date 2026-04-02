@@ -422,7 +422,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"] || d["Log In"];
-        const val = horaParaDecimalSeguro(raw);
+        const val = getValMinutes(raw);
         if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
       });
       if (maxLogin !== null) loginValues.push(maxLogin);
