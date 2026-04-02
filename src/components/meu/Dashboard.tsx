@@ -413,12 +413,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
 
-    // Login médio e Tempo de Plataforma médio por processo
+    // Login, Despacho, Tempo de Plataforma, Retorno a Base médios por processo
     const loginValues: number[] = [];
+    const despachoValues: number[] = [];
     const plataformaValues: number[] = [];
+    const retornoValues: number[] = [];
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      // Max login for this team
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"];
@@ -427,7 +428,14 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       if (maxLogin !== null) loginValues.push(maxLogin);
 
-      // Max tempo plataforma (1º Desloc) for this team
+      let maxDespacho: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Despacho"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+      });
+      if (maxDespacho !== null) despachoValues.push(maxDespacho);
+
       let maxPlat: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Desloc"];
@@ -435,10 +443,20 @@ export function Dashboard({ data, onBack }: DashboardProps) {
         if (val != null && (maxPlat === null || val > maxPlat)) maxPlat = val;
       });
       if (maxPlat !== null) plataformaValues.push(maxPlat);
+
+      let maxRetorno: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Retorno a base"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxRetorno === null || val > maxRetorno)) maxRetorno = val;
+      });
+      if (maxRetorno !== null) retornoValues.push(maxRetorno);
     });
 
     const avgLogin = loginValues.length > 0 ? loginValues.reduce((a, b) => a + b, 0) / loginValues.length : null;
+    const avgDespacho = despachoValues.length > 0 ? despachoValues.reduce((a, b) => a + b, 0) / despachoValues.length : null;
     const avgPlataforma = plataformaValues.length > 0 ? plataformaValues.reduce((a, b) => a + b, 0) / plataformaValues.length : null;
+    const avgRetorno = retornoValues.length > 0 ? retornoValues.reduce((a, b) => a + b, 0) / retornoValues.length : null;
 
     return {
       Processos: proc,
