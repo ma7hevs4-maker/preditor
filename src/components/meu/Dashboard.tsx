@@ -1136,41 +1136,79 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       {/* Main Content */}
       <div className="flex-1 min-w-0 p-6 overflow-y-auto overflow-x-hidden relative">
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="glass-card p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <AlertTriangle className="h-5 w-5 mr-2 text-warning" />
-              <h3 className="text-sm font-medium">Incidentes</h3>
+              <AlertTriangle className="h-4 w-4 mr-2 text-warning" />
+              <h3 className="text-xs font-medium">Incidentes</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {isPeriodMode ? displayInc.toFixed(1) : displayInc}
             </p>
           </div>
-          <div className="glass-card p-6">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <Clock className="h-5 w-5 mr-2 text-primary" />
-              <h3 className="text-sm font-medium">TMDE Médio</h3>
+              <Clock className="h-4 w-4 mr-2 text-primary" />
+              <h3 className="text-xs font-medium">TMDE Médio</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {tmdeMedio.toFixed(1)}
             </p>
           </div>
-          <div className="glass-card p-6">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <BarChart3 className="h-5 w-5 mr-2 text-accent" />
-              <h3 className="text-sm font-medium">Taxa Reincidência</h3>
+              <BarChart3 className="h-4 w-4 mr-2 text-accent" />
+              <h3 className="text-xs font-medium">Taxa Reincidência</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {(taxaReinc * 100).toFixed(1)}%
             </p>
           </div>
-          <div className="glass-card p-6">
+          <div className="glass-card p-5">
             <div className="flex items-center text-muted-foreground mb-2">
-              <XCircle className="h-5 w-5 mr-2 text-destructive" />
-              <h3 className="text-sm font-medium">% Improdutivo</h3>
+              <XCircle className="h-4 w-4 mr-2 text-destructive" />
+              <h3 className="text-xs font-medium">% Improdutivo</h3>
             </div>
-            <p className="kpi-value text-foreground">
+            <p className="text-2xl font-bold text-foreground">
               {(taxaImprod * 100).toFixed(1)}%
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <LogIn className="h-4 w-4 mr-2 text-success" />
+              <h3 className="text-xs font-medium">Login Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allLoginVals.length > 0 ? (allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length).toFixed(1) : "-"}
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <Navigation className="h-4 w-4 mr-2 text-primary" />
+              <h3 className="text-xs font-medium">Despacho Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allDespachoVals.length > 0 ? (allDespachoVals.reduce((a, b) => a + b, 0) / allDespachoVals.length).toFixed(1) : "-"}
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <Timer className="h-4 w-4 mr-2" style={{ color: "hsl(142 71% 45%)" }} />
+              <h3 className="text-xs font-medium">T. Plataforma Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allPlatVals.length > 0 ? (allPlatVals.reduce((a, b) => a + b, 0) / allPlatVals.length).toFixed(1) : "-"}
+            </p>
+          </div>
+          <div className="glass-card p-5">
+            <div className="flex items-center text-muted-foreground mb-2">
+              <RotateCcw className="h-4 w-4 mr-2" style={{ color: "hsl(0 65% 60%)" }} />
+              <h3 className="text-xs font-medium">Ret. Base Médio</h3>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {allRetornoVals.length > 0 ? (allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length).toFixed(1) : "-"}
             </p>
           </div>
         </div>
