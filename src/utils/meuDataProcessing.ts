@@ -436,6 +436,7 @@ export async function processFiles(incFile: File, m300File: File | null) {
 
     if (loginMinutesKey) {
       const loginMinutesVal = row[loginMinutesKey];
+      console.log("[M300 login key]", loginMinutesKey, loginMinutesVal);
       row["1º Login Corrigido"] = loginMinutesVal;
       row["Log In Corrigido"] = loginMinutesVal;
     }
