@@ -887,8 +887,39 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0));
   }, [filteredData, selectedEquipesDetalhe]);
 
+  // Available days for selected teams (used in period mode timeline dropdown)
+  const availableTimelineDays = useMemo(() => {
+    if (!isPeriodMode) return [];
+    const days = new Set<string>();
+    filteredData.forEach(d => {
+      if (selectedEquipesDetalhe.includes(d["Equipe Desl."])) {
+        const dt = d["Data Turno"] || d["Data Ação"];
+        if (dt) days.add(dt);
+      }
+    });
+    return Array.from(days).sort();
+  }, [filteredData, selectedEquipesDetalhe, isPeriodMode]);
+
+  // Auto-select first available day when switching to period mode or changing teams
+  React.useEffect(() => {
+    if (isPeriodMode && availableTimelineDays.length > 0 && !availableTimelineDays.includes(selectedTimelineDay)) {
+      setSelectedTimelineDay(availableTimelineDays[availableTimelineDays.length - 1]);
+    }
+  }, [isPeriodMode, availableTimelineDays]);
+
+  // The effective date for the timeline (in period mode, use the dropdown; otherwise use selectedData)
+  const timelineEffectiveDate = isPeriodMode ? selectedTimelineDay : selectedData;
+
+  const timelineFilteredData = useMemo(() => {
+    if (!isPeriodMode) return filteredData;
+    return filteredData.filter(d => {
+      const dt = d["Data Turno"] || d["Data Ação"];
+      return dt === selectedTimelineDay;
+    });
+  }, [filteredData, isPeriodMode, selectedTimelineDay]);
+
   const timelineData = selectedEquipesDetalhe.map(equipe => {
-    const incidentesPlotados = filteredData.filter((d) => d["Equipe Desl."] === equipe);
+    const incidentesPlotados = timelineFilteredData.filter((d) => d["Equipe Desl."] === equipe);
     const incidentesBaseKeys = new Set(
       incidentesPlotados.map((d) => normalizeIncidentNumber(d["Número"]))
     );
