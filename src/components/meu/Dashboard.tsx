@@ -767,23 +767,13 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
       const despacho = maxDespachoVal != null ? maxDespachoVal.toFixed(1) : "-";
 
-      // Tempo de plataforma
-      let maxPlatVal: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["1º Desloc"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxPlatVal === null || val > maxPlatVal)) maxPlatVal = val;
-      });
-      const tempoPlataforma = maxPlatVal != null ? maxPlatVal.toFixed(1) : "-";
+      // Tempo de plataforma (login → first dispatch)
+      const platVal = calcTempoPlataforma(eqData);
+      const tempoPlataforma = platVal != null ? platVal.toFixed(1) : "-";
 
-      // Retorno a base
-      let maxRetornoVal: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["Retorno a base"];
-        const val = getValMinutes(raw);
-        if (val != null && (maxRetornoVal === null || val > maxRetornoVal)) maxRetornoVal = val;
-      });
-      const retornoBase = maxRetornoVal != null ? maxRetornoVal.toFixed(1) : "-";
+      // Retorno a base (last liberada → logoff)
+      const retVal = calcRetornoBase(eqData);
+      const retornoBase = retVal != null ? retVal.toFixed(1) : "-";
 
       return {
         Equipe: eq,
