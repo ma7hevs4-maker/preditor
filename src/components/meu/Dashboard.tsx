@@ -1343,9 +1343,11 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     "TMDE",
                     "Ocup.",
                     "Login",
+                    "Desp.",
                     "T. Plat.",
+                    "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Tempo de plataforma"];
+                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
