@@ -880,6 +880,12 @@ export function Dashboard({ data, onBack }: DashboardProps) {
     const firstRow = equipeData[0] || {};
     const teamTurno = firstRow.Turno || "B";
     
+    const m300OnlyInTeam = equipeData.filter(d => d.isM300Only);
+    console.log(`[Timeline] Equipe ${equipe}: total=${equipeData.length}, M300Only=${m300OnlyInTeam.length}, comHora=${equipeData.filter(d => d.hora_aux_ordenacao != null).length}`);
+    if (m300OnlyInTeam.length > 0) {
+      console.log("[Timeline] M300Only sample:", m300OnlyInTeam[0]["Número"], "hora_aux:", m300OnlyInTeam[0].hora_aux_ordenacao, "TMD:", m300OnlyInTeam[0].TMD, "TME:", m300OnlyInTeam[0].TME);
+    }
+
     const events = equipeData
       .filter((d) => d.hora_aux_ordenacao != null)
       .map((d) => {
