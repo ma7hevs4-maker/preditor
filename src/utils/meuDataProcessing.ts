@@ -418,21 +418,28 @@ export async function processFiles(incFile: File, m300File: File | null) {
       row["Data Ação Real"] = row["Data Turno"];
     }
 
-    // Normalize specific columns to ensure they match exactly what Dashboard expects
-    const loginKey = rowKeys.find(k => k.toLowerCase().trim() === 'log in corrigido') || 
-                     rowKeys.find(k => k.toLowerCase().trim() === '1º login corrigido') ||
-                     rowKeys.find(k => {
+    // Keep corrected login as raw minutes, separate from actual login time used in timeline
+    const loginMinutesKey = rowKeys.find(k => {
+      const lower = k.toLowerCase().trim();
+      return lower === 'log in corrigido' || lower === '1º login corrigido' || lower === '1o login corrigido';
+    });
+
+    if (loginMinutesKey) {
+      const loginMinutesVal = row[loginMinutesKey];
+      row["1º Login Corrigido"] = loginMinutesVal;
+      row["Log In Corrigido"] = loginMinutesVal;
+    }
+
+    const loginTimeKey = rowKeys.find(k => {
       const lower = k.toLowerCase().trim();
       return lower === 'log in' || lower === '1º login' || lower === '1o login' || lower === '1º despacho' || lower === '1o despacho';
     });
-    
-    if (loginKey) {
-      const loginVal = parseFullDateTime(row[loginKey]);
-      row["Log In"] = loginVal;
-      row["1º Login Corrigido"] = loginVal;
-      row["Log In Corrigido"] = loginVal;
-      row["1º Login"] = loginVal;
-      row["1º Despacho"] = loginVal;
+
+    if (loginTimeKey) {
+      const loginTimeVal = parseFullDateTime(row[loginTimeKey]);
+      row["Log In"] = loginTimeVal;
+      row["1º Login"] = loginTimeVal;
+      row["1º Despacho"] = loginTimeVal;
     }
 
     const deslocKey = rowKeys.find(k => {
