@@ -205,7 +205,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
 
               <div className="flex items-center space-x-2">
                 <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-md border border-border">
-                  <button onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Diminuir Escala Horizontal">
+                  <button onClick={() => setHorizontalScale(prev => Math.max(0.5, prev - 0.25))} className="p-1 hover:bg-muted/60 rounded text-muted-foreground transition-colors" title="Diminuir Escala Horizontal" disabled={horizontalScale <= 0.5}>
                     <MoveHorizontal className="w-3.5 h-3.5 rotate-90" />
                   </button>
                   <div className="text-[10px] font-bold text-primary min-w-[2.8rem] text-center font-mono">{Math.round(horizontalScale * 100)}%</div>
