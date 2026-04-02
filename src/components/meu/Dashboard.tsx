@@ -867,7 +867,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
   }, [selectedTurnos, timelineData]);
 
   return (
-    <div className="min-h-screen bg-background flex overflow-hidden">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <div className={`${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 bg-card shadow-lg flex flex-col h-screen sticky top-0 z-20 overflow-hidden shrink-0`}>
         <div className="p-4 border-b flex items-center justify-between bg-primary text-primary-foreground min-w-[16rem]">
