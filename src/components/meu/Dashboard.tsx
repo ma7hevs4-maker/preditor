@@ -1181,10 +1181,10 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     {isPeriodMode && (
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => setSelectedPeriod("7d")}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "7d" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
+                          onClick={() => setSelectedPeriod("periodo")}
+                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "periodo" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
                         >
-                          7 DIAS
+                          PERÍODO
                         </button>
                         <button
                           onClick={() => setSelectedPeriod("mes")}
@@ -1196,23 +1196,78 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     )}
                   </div>
 
-                  {/* Data */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      {isPeriodMode ? 'Data de Referência' : 'Dia'}
-                    </label>
-                    <select
-                      value={selectedData}
-                      onChange={(e) => setSelectedData(e.target.value)}
-                      className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
-                    >
-                      <option value="">Todos</option>
-                      {datas.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {/* Data / Período / Mês */}
+                  {!isPeriodMode && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        Dia
+                      </label>
+                      <select
+                        value={selectedData}
+                        onChange={(e) => setSelectedData(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="">Todos</option>
+                        {datas.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {isPeriodMode && selectedPeriod === "periodo" && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        Período
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">De</span>
+                          <select
+                            value={periodStart}
+                            onChange={(e) => setPeriodStart(e.target.value)}
+                            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                          >
+                            {datas.map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">Até</span>
+                          <select
+                            value={periodEnd}
+                            onChange={(e) => setPeriodEnd(e.target.value)}
+                            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                          >
+                            {datas.filter(d => d >= periodStart).map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {isPeriodMode && selectedPeriod === "mes" && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        Mês
+                      </label>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        {availableMonths.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Quick Filters */}
                   <div className="grid grid-cols-2 gap-3">
