@@ -1212,6 +1212,16 @@ export function Dashboard({ data, onBack }: DashboardProps) {
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Produtividade.toFixed(2)}
                     </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row.Login != null ? (() => {
+                        const h = Math.floor(row.Login);
+                        const m = Math.round((row.Login - h) * 60);
+                        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                      })() : "-"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row["Tempo Plataforma"] != null ? row["Tempo Plataforma"].toFixed(1) : "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
