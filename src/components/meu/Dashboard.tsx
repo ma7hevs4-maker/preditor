@@ -903,10 +903,20 @@ export function Dashboard({ data, onBack }: DashboardProps) {
 
     const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
     
+    // Platform duration from "1º Desloc" column (in minutes → convert to hours)
     let platformDuration = undefined;
-    if (firstLoginDecimal != null && firstIncident) {
-      platformDuration = firstIncident.inicio_decimal - firstLoginDecimal;
-      if (platformDuration < 0) platformDuration = 0;
+    const platRaw = firstRow["1º Desloc"];
+    const platMinutes = getValMinutes(platRaw);
+    if (platMinutes != null && firstLoginDecimal != null) {
+      platformDuration = platMinutes / 60; // minutes to decimal hours
+    }
+
+    // Return to base duration from "Retorno a base" column (in minutes → convert to hours)
+    let returnToBaseDuration = undefined;
+    const retRaw = firstRow["Retorno a base"];
+    const retMinutes = getValMinutes(retRaw);
+    if (retMinutes != null) {
+      returnToBaseDuration = retMinutes / 60;
     }
 
     return { 
@@ -920,7 +930,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       firstLogin: firstLoginDecimal,
       intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], selectedData),
       intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], selectedData),
-      returnToBaseDuration: convertToDecimalHours(firstRow["Retorno a base"]), // This is a duration
+      returnToBaseDuration,
       lastLogOff: convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], selectedData),
     };
   });
