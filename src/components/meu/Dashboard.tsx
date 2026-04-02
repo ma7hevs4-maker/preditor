@@ -842,7 +842,7 @@ export function Dashboard({ data, onBack }: DashboardProps) {
       });
 
     const firstLoginRaw = equipeData
-      .map((d) => d["1º Login Corrigido"] || d["Log In"])
+      .map((d) => d["Log In"] || d["1º Login"])
       .find((v) => v != null && v !== "");
     const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, selectedData);
 
