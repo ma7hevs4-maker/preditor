@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   ArrowLeft,
   BarChart3,
@@ -93,23 +93,14 @@ interface DashboardProps {
   sourceFiles?: { incFileName?: string; m300FileName?: string };
 }
 
-export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
+export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveDashboard, deleteDashboard } = useSavedDashboard();
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
-
-  if (!data || !Array.isArray(data)) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center p-8 bg-card rounded-xl shadow-md">
-          <h2 className="text-xl font-bold text-destructive mb-2">Erro de Dados</h2>
-          <p className="text-muted-foreground">Os dados fornecidos são inválidos ou estão vazios.</p>
-          <button onClick={onBack} className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg">Voltar</button>
-        </div>
-      </div>
-    );
-  }
+  const isPersisting = saveDashboard.isPending || deleteDashboard.isPending;
+  const isInvalidData = !rawData || !Array.isArray(rawData);
+  const data = Array.isArray(rawData) ? rawData : [];
 
   // Extract unique values for filters
   const datas = useMemo(() => {
@@ -389,48 +380,87 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
     return undefined;
   };
 
+  const getShiftWindowBounds = useCallback((eqData: any[]) => {
+    let shiftStart: number | null = null;
+    let shiftEnd: number | null = null;
+
+    eqData.forEach((d) => {
+      const baseDate = d["Data Turno"] || d["Data Ação"];
+      const start = convertToDecimalHours(d["Inicio Calendario"], baseDate);
+      const end = convertToDecimalHours(d["Fim Calendario"], baseDate);
+
+      if (start != null && (shiftStart === null || start < shiftStart)) shiftStart = start;
+      if (end != null && (shiftEnd === null || end > shiftEnd)) shiftEnd = end;
+    });
+
+    return { shiftStart, shiftEnd };
+  }, []);
+
+  const getIntervalBounds = useCallback((eqData: any[]) => {
+    let intervalStart: number | null = null;
+    let intervalEnd: number | null = null;
+
+    eqData.forEach((d) => {
+      const baseDate = d["Data Turno"] || d["Data Ação"];
+      const start = convertToDecimalHours(d["Inicio intervalo"] || d["Inicio Intervalo"], baseDate);
+      const end = convertToDecimalHours(d["Fim intervalo"] || d["Fim Intervalo"], baseDate);
+
+      if (start != null && (intervalStart === null || start < intervalStart)) intervalStart = start;
+      if (end != null && (intervalEnd === null || end > intervalEnd)) intervalEnd = end;
+    });
+
+    return { intervalStart, intervalEnd };
+  }, []);
+
+  const getFirstDispatch = useCallback((eqData: any[]) => {
+    const firstDispatchFromOrder = eqData
+      .filter((d) => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
+      .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao)[0]?.hora_aux_ordenacao;
+
+    if (firstDispatchFromOrder != null) return firstDispatchFromOrder;
+
+    let firstDispatch: number | null = null;
+    eqData.forEach((d) => {
+      const baseDate = d["Data Turno"] || d["Data Ação"];
+      const dispatch = convertToDecimalHours(d["1º Despacho"], baseDate);
+      if (dispatch != null && (firstDispatch === null || dispatch < firstDispatch)) firstDispatch = dispatch;
+    });
+
+    return firstDispatch;
+  }, []);
+
+  const getPlatformSegment = useCallback((eqData: any[]) => {
+    const { shiftStart, shiftEnd } = getShiftWindowBounds(eqData);
+    if (shiftStart == null) return null;
+
+    const { intervalStart } = getIntervalBounds(eqData);
+    const firstDispatch = getFirstDispatch(eqData);
+
+    let end: number | null = null;
+
+    if (
+      intervalStart != null &&
+      intervalStart > shiftStart &&
+      (shiftEnd == null || intervalStart <= shiftEnd) &&
+      (firstDispatch == null || intervalStart <= firstDispatch)
+    ) {
+      end = intervalStart;
+    } else if (firstDispatch != null && firstDispatch > shiftStart) {
+      end = firstDispatch;
+    }
+
+    if (end == null) return null;
+
+    const durationMinutes = (end - shiftStart) * 60;
+    if (durationMinutes <= 0) return null;
+
+    return { start: shiftStart, end, durationMinutes };
+  }, [getFirstDispatch, getIntervalBounds, getShiftWindowBounds]);
+
   // Helper: calculate platform time (login → first incident dispatch) in minutes
   // If the first event after shift start is an interval (before first dispatch), use interval start instead
   const calcTempoPlataforma = (eqData: any[]): number | null => {
-    const shiftStartVal = (() => {
-      let best: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["Inicio Calendario"];
-        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
-        if (dec != null && (best === null || dec < best)) best = dec;
-      });
-      return best;
-    })();
-    if (shiftStartVal == null) return null;
-
-    // First incident dispatch = earliest inicio_decimal (hora_aux_ordenacao)
-    const sorted = eqData
-      .filter(d => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
-      .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao);
-    const firstDispatch = sorted.length > 0 ? sorted[0].hora_aux_ordenacao : null;
-
-    // Check interval start time
-    const intervalStartVal = (() => {
-      let val: number | null = null;
-      eqData.forEach(d => {
-        const raw = d["Inicio intervalo"] || d["Inicio Intervalo"];
-        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
-        if (dec != null && (val === null || dec < val)) val = dec;
-      });
-      return val;
-    })();
-
-    // If interval starts before first dispatch (is the first event), use interval start as endpoint
-    let platformEnd: number | null = null;
-    if (firstDispatch != null && intervalStartVal != null && intervalStartVal <= firstDispatch && intervalStartVal > shiftStartVal) {
-      platformEnd = intervalStartVal;
-    } else if (firstDispatch != null) {
-      platformEnd = firstDispatch;
-    }
-
-    if (platformEnd == null) return null;
-    const diff = (platformEnd - shiftStartVal) * 60; // minutes
-    return diff > 0 ? diff : null;
+    return getPlatformSegment(eqData)?.durationMinutes ?? null;
   };
 
   // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
@@ -1044,14 +1074,20 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
       .find((v) => v != null && v !== "");
     const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, timelineEffectiveDate);
 
-    const firstIncident = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal)[0];
     const shiftStartDecimal = convertToDecimalHours(firstRow["Inicio Calendario"], timelineEffectiveDate);
+    const shiftEndDecimal = convertToDecimalHours(firstRow["Fim Calendario"], timelineEffectiveDate);
+    const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
+    const intervalEndDecimal = convertToDecimalHours(firstRow["Fim Intervalo"] || firstRow["Fim intervalo"], timelineEffectiveDate);
     
     // Platform duration: shift start (IT) → first incident dispatch (in decimal hours)
     let platformDuration = undefined;
-    if (shiftStartDecimal != null && firstIncident) {
-      const diff = firstIncident.inicio_decimal - shiftStartDecimal;
-      if (diff > 0) platformDuration = diff;
+    let platformStart = shiftStartDecimal ?? undefined;
+    let platformEnd = undefined as number | undefined;
+    const platformSegment = getPlatformSegment(equipeData);
+    if (platformSegment) {
+      platformStart = platformSegment.start;
+      platformEnd = platformSegment.end;
+      platformDuration = platformSegment.end - platformSegment.start;
     }
 
     // Return to base: last incident "Liberada" (end) → logoff (in decimal hours)
@@ -1070,7 +1106,6 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
       const lastEnd = lastEvent.inicio_decimal + lastEvent.TMD / 60 + lastEvent.TME / 60;
 
       // If interval starts after last incident, use interval start as return-to-base origin
-      const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
       let returnStart = lastEnd;
       if (intervalStartDecimal != null && intervalStartDecimal >= lastEnd) {
         returnStart = intervalStartDecimal;
@@ -1086,15 +1121,45 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
       turno: teamTurno,
       shiftStartHour: getShiftStartHour(teamTurno),
       shiftStart: convertToDecimalHours(firstRow["Inicio Calendario"], timelineEffectiveDate),
-      shiftEnd: convertToDecimalHours(firstRow["Fim Calendario"], timelineEffectiveDate),
+      shiftEnd: shiftEndDecimal,
+      platformStart,
+      platformEnd,
       platformDuration,
       firstLogin: firstLoginDecimal,
-      intervalStart: convertToDecimalHours(firstRow["Inicio Intervalo"], timelineEffectiveDate),
-      intervalEnd: convertToDecimalHours(firstRow["Fim Intervalo"], timelineEffectiveDate),
+      intervalStart: intervalStartDecimal,
+      intervalEnd: intervalEndDecimal,
       returnToBaseDuration,
       lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], timelineEffectiveDate),
     };
   });
+
+  const handlePasswordAction = useCallback(async () => {
+    if (isPersisting || !pendingAction) return;
+
+    if (passwordInput !== "dys") {
+      toast.error("Senha incorreta.");
+      return;
+    }
+
+    try {
+      if (pendingAction === "save") {
+        await saveDashboard.mutateAsync({
+          data,
+          incFileName: sourceFiles?.incFileName,
+          m300FileName: sourceFiles?.m300FileName,
+        });
+        toast.success("Dashboard salvo com sucesso!");
+      } else {
+        await deleteDashboard.mutateAsync();
+        toast.success("Dashboard excluído com sucesso!");
+      }
+
+      setPendingAction(null);
+      setPasswordInput("");
+    } catch {
+      toast.error(pendingAction === "save" ? "Erro ao salvar dashboard." : "Erro ao excluir dashboard.");
+    }
+  }, [data, deleteDashboard, isPersisting, passwordInput, pendingAction, saveDashboard, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
 
   const currentShiftStartHour = useMemo(() => {
     if (selectedTurnos.length === 1) {
@@ -1123,6 +1188,18 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
     tmdeAbove150Filter !== "todos",
     o2AnomaliaFilter !== "todos",
   ].filter(Boolean).length;
+
+  if (isInvalidData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center p-8 bg-card rounded-xl shadow-md">
+          <h2 className="text-xl font-bold text-destructive mb-2">Erro de Dados</h2>
+          <p className="text-muted-foreground">Os dados fornecidos são inválidos ou estão vazios.</p>
+          <button onClick={onBack} className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg">Voltar</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
@@ -1183,7 +1260,7 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
             size="sm"
             className="h-8 text-xs gap-1.5"
             onClick={() => setPendingAction("save")}
-            disabled={saveDashboard.isPending}
+            disabled={isPersisting}
           >
             {saveDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Salvar
@@ -1193,7 +1270,7 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
             size="sm"
             className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
             onClick={() => setPendingAction("delete")}
-            disabled={deleteDashboard.isPending}
+            disabled={isPersisting}
           >
             {deleteDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             Excluir
@@ -1901,58 +1978,24 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
               onChange={(e) => setPasswordInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  if (passwordInput === "dys") {
-                    if (pendingAction === "save") {
-                      saveDashboard.mutate(
-                        { data, incFileName: sourceFiles?.incFileName, m300FileName: sourceFiles?.m300FileName },
-                        {
-                          onSuccess: () => { toast.success("Dashboard salvo com sucesso!"); setPendingAction(null); setPasswordInput(""); },
-                          onError: () => toast.error("Erro ao salvar dashboard."),
-                        }
-                      );
-                    } else {
-                      deleteDashboard.mutate(undefined, {
-                        onSuccess: () => { toast.success("Dashboard excluído com sucesso!"); setPendingAction(null); setPasswordInput(""); },
-                        onError: () => toast.error("Erro ao excluir dashboard."),
-                      });
-                    }
-                  } else {
-                    toast.error("Senha incorreta.");
-                  }
+                  void handlePasswordAction();
                 }
               }}
               className="w-full rounded-md bg-background text-foreground border border-border text-sm p-2 mb-3 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
               autoFocus
+              disabled={isPersisting}
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
+              <Button variant="ghost" size="sm" disabled={isPersisting} onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
                 Cancelar
               </Button>
               <Button
                 size="sm"
                 variant={pendingAction === "delete" ? "destructive" : "default"}
-                onClick={() => {
-                  if (passwordInput === "dys") {
-                    if (pendingAction === "save") {
-                      saveDashboard.mutate(
-                        { data, incFileName: sourceFiles?.incFileName, m300FileName: sourceFiles?.m300FileName },
-                        {
-                          onSuccess: () => { toast.success("Dashboard salvo com sucesso!"); setPendingAction(null); setPasswordInput(""); },
-                          onError: () => toast.error("Erro ao salvar dashboard."),
-                        }
-                      );
-                    } else {
-                      deleteDashboard.mutate(undefined, {
-                        onSuccess: () => { toast.success("Dashboard excluído com sucesso!"); setPendingAction(null); setPasswordInput(""); },
-                        onError: () => toast.error("Erro ao excluir dashboard."),
-                      });
-                    }
-                  } else {
-                    toast.error("Senha incorreta.");
-                  }
-                }}
+                disabled={isPersisting}
+                onClick={() => void handlePasswordAction()}
               >
-                Confirmar
+                {isPersisting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar"}
               </Button>
             </div>
           </div>

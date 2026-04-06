@@ -28,6 +28,8 @@ interface TimelineEvent {
 interface ShiftData {
   shiftStart?: number;
   shiftEnd?: number;
+  platformStart?: number;
+  platformEnd?: number;
   platformDuration?: number;
   firstLogin?: number;
   lastLogOff?: number;
@@ -44,6 +46,8 @@ interface TeamTimelineData {
   shiftStartHour?: number;
   shiftStart?: number;
   shiftEnd?: number;
+  platformStart?: number;
+  platformEnd?: number;
   platformDuration?: number;
   firstLogin?: number;
   lastLogOff?: number;
@@ -612,6 +616,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                           {(() => {
                             const shiftsToRender: ShiftData[] = teamData.shifts || [{
                               shiftStart: teamData.shiftStart, shiftEnd: teamData.shiftEnd,
+                              platformStart: teamData.platformStart, platformEnd: teamData.platformEnd,
                               platformDuration: teamData.platformDuration, firstLogin: teamData.firstLogin,
                               lastLogOff: teamData.lastLogOff, intervalStart: teamData.intervalStart,
                               intervalEnd: teamData.intervalEnd, returnToBaseDuration: teamData.returnToBaseDuration
@@ -621,25 +626,25 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                               const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                               return (
                                 <g key={`shift-lines-${sIdx}`}>
-                                  {/* Platform - starts from shift start (IT) */}
-                                  {shift.platformDuration !== undefined && shift.shiftStart !== undefined && (
+                                  {/* Platform - starts from IT and can end at interval start if interval happens before first dispatch */}
+                                  {shift.platformStart !== undefined && shift.platformEnd !== undefined && (
                                     <g>
                                       <line
-                                        x1={getXScale(shift.shiftStart, teamShiftStartHour)} y1={yCenter}
-                                        x2={getXScale(shift.shiftStart + shift.platformDuration, teamShiftStartHour)} y2={yCenter}
+                                        x1={getXScale(shift.platformStart, teamShiftStartHour)} y1={yCenter}
+                                        x2={getXScale(shift.platformEnd, teamShiftStartHour)} y2={yCenter}
                                         stroke={COLORS.platform} strokeWidth="4" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.shiftStart, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.shiftStart, teamShiftStartHour)} y2={yCenter + 5}
+                                        x1={getXScale(shift.platformStart, teamShiftStartHour)} y1={yCenter - 5}
+                                        x2={getXScale(shift.platformStart, teamShiftStartHour)} y2={yCenter + 5}
                                         stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
                                       <line
-                                        x1={getXScale(shift.shiftStart + shift.platformDuration, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.shiftStart + shift.platformDuration, teamShiftStartHour)} y2={yCenter + 5}
+                                        x1={getXScale(shift.platformEnd, teamShiftStartHour)} y1={yCenter - 5}
+                                        x2={getXScale(shift.platformEnd, teamShiftStartHour)} y2={yCenter + 5}
                                         stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
                                       />
-                                      <title>Tempo de Plataforma: {Math.round(shift.platformDuration * 60)} min</title>
+                                      <title>Tempo de Plataforma: {Math.round((shift.platformEnd - shift.platformStart) * 60)} min</title>
                                     </g>
                                   )}
 
@@ -689,6 +694,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                           {(() => {
                             const shiftsToRender: ShiftData[] = teamData.shifts || [{
                               shiftStart: teamData.shiftStart, shiftEnd: teamData.shiftEnd,
+                              platformStart: teamData.platformStart, platformEnd: teamData.platformEnd,
                               platformDuration: teamData.platformDuration, firstLogin: teamData.firstLogin,
                               lastLogOff: teamData.lastLogOff, intervalStart: teamData.intervalStart,
                               intervalEnd: teamData.intervalEnd, returnToBaseDuration: teamData.returnToBaseDuration

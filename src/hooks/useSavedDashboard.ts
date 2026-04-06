@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+const SAVED_DASHBOARD_SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
+
 export interface SavedDashboardEntry {
   id: string;
   data: any[];
@@ -18,8 +20,7 @@ export const useSavedDashboard = () => {
       const { data, error } = await supabase
         .from("saved_dashboard_data")
         .select("*")
-        .order("saved_at", { ascending: false })
-        .limit(1)
+        .eq("id", SAVED_DASHBOARD_SINGLETON_ID)
         .maybeSingle();
 
       if (error) throw error;
@@ -29,15 +30,15 @@ export const useSavedDashboard = () => {
 
   const saveDashboard = useMutation({
     mutationFn: async (params: { data: any[]; incFileName?: string; m300FileName?: string }) => {
-      // Delete all existing entries first (keep only latest)
-      await supabase.from("saved_dashboard_data").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-
       const { data, error } = await supabase
         .from("saved_dashboard_data")
-        .insert({
+        .upsert({
+          id: SAVED_DASHBOARD_SINGLETON_ID,
           data: params.data as unknown,
           source_files: { incFileName: params.incFileName, m300FileName: params.m300FileName },
-        } as never)
+        } as never, {
+          onConflict: "id",
+        })
         .select()
         .single();
 
@@ -54,7 +55,7 @@ export const useSavedDashboard = () => {
       const { error } = await supabase
         .from("saved_dashboard_data")
         .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
+        .eq("id", SAVED_DASHBOARD_SINGLETON_ID);
 
       if (error) throw error;
     },
