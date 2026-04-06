@@ -1178,7 +1178,7 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
             Excluir
           </Button>
 
-
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-2">
                 <SlidersHorizontal className="h-3.5 w-3.5" />
