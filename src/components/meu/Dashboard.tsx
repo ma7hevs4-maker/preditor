@@ -1135,7 +1135,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   });
 
   const handlePasswordAction = useCallback(async () => {
-    if (isPersisting || !pendingAction) return;
+    if (isSaving || !pendingAction) return;
 
     if (passwordInput !== "dys") {
       toast.error("Senha incorreta.");
@@ -1143,24 +1143,23 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     }
 
     try {
-      if (pendingAction === "save") {
-        await saveDashboard.mutateAsync({
-          data,
-          incFileName: sourceFiles?.incFileName,
-          m300FileName: sourceFiles?.m300FileName,
-        });
-        toast.success("Dashboard salvo com sucesso!");
-      } else {
-        await deleteDashboard.mutateAsync();
-        toast.success("Dashboard excluído com sucesso!");
+      if (!rawInc || rawInc.length === 0) {
+        toast.error("Nenhum dado bruto disponível para salvar.");
+        return;
       }
-
+      await saveRawData({
+        incRaw: rawInc,
+        m300Raw: rawM300 || [],
+        incFileName: sourceFiles?.incFileName,
+        m300FileName: sourceFiles?.m300FileName,
+      });
+      toast.success("Dashboard salvo com sucesso!");
       setPendingAction(null);
       setPasswordInput("");
     } catch {
-      toast.error(pendingAction === "save" ? "Erro ao salvar dashboard." : "Erro ao excluir dashboard.");
+      toast.error("Erro ao salvar dashboard.");
     }
-  }, [data, deleteDashboard, isPersisting, passwordInput, pendingAction, saveDashboard, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
+  }, [isSaving, passwordInput, pendingAction, rawInc, rawM300, saveRawData, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
 
   const currentShiftStartHour = useMemo(() => {
     if (selectedTurnos.length === 1) {
