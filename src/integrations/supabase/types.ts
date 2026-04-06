@@ -356,27 +356,60 @@ export type Database = {
           },
         ]
       }
-      saved_dashboard_data: {
+      saved_inc_rows: {
         Row: {
-          data: Json
-          id: string
-          saved_at: string
-          source_files: Json | null
-          updated_at: string
+          id: number
+          row_data: Json
         }
         Insert: {
-          data: Json
-          id?: string
-          saved_at?: string
-          source_files?: Json | null
-          updated_at?: string
+          id?: never
+          row_data: Json
         }
         Update: {
-          data?: Json
+          id?: never
+          row_data?: Json
+        }
+        Relationships: []
+      }
+      saved_m300_rows: {
+        Row: {
+          id: number
+          row_data: Json
+        }
+        Insert: {
+          id?: never
+          row_data: Json
+        }
+        Update: {
+          id?: never
+          row_data?: Json
+        }
+        Relationships: []
+      }
+      saved_upload_meta: {
+        Row: {
+          id: string
+          inc_file_name: string | null
+          m300_file_name: string | null
+          row_count_inc: number
+          row_count_m300: number
+          saved_at: string
+        }
+        Insert: {
           id?: string
+          inc_file_name?: string | null
+          m300_file_name?: string | null
+          row_count_inc?: number
+          row_count_m300?: number
           saved_at?: string
-          source_files?: Json | null
-          updated_at?: string
+        }
+        Update: {
+          id?: string
+          inc_file_name?: string | null
+          m300_file_name?: string | null
+          row_count_inc?: number
+          row_count_m300?: number
+          saved_at?: string
         }
         Relationships: []
       }

@@ -15,7 +15,6 @@ import {
   Timer,
   RotateCcw,
   Save,
-  Trash2,
   Loader2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -91,14 +90,15 @@ interface DashboardProps {
   data: any[];
   onBack: () => void;
   sourceFiles?: { incFileName?: string; m300FileName?: string };
+  rawInc?: any[];
+  rawM300?: any[];
 }
 
-export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps) {
+export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const { saveDashboard, deleteDashboard } = useSavedDashboard();
+  const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
   const [passwordInput, setPasswordInput] = useState("");
-  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
-  const isPersisting = saveDashboard.isPending || deleteDashboard.isPending;
+  const [pendingAction, setPendingAction] = useState<"save" | null>(null);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
@@ -1134,7 +1134,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps
   });
 
   const handlePasswordAction = useCallback(async () => {
-    if (isPersisting || !pendingAction) return;
+    if (isSaving || !pendingAction) return;
 
     if (passwordInput !== "dys") {
       toast.error("Senha incorreta.");
@@ -1142,24 +1142,23 @@ export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps
     }
 
     try {
-      if (pendingAction === "save") {
-        await saveDashboard.mutateAsync({
-          data,
-          incFileName: sourceFiles?.incFileName,
-          m300FileName: sourceFiles?.m300FileName,
-        });
-        toast.success("Dashboard salvo com sucesso!");
-      } else {
-        await deleteDashboard.mutateAsync();
-        toast.success("Dashboard excluído com sucesso!");
+      if (!rawInc || rawInc.length === 0) {
+        toast.error("Nenhum dado bruto disponível para salvar.");
+        return;
       }
-
+      await saveRawData({
+        incRaw: rawInc,
+        m300Raw: rawM300 || [],
+        incFileName: sourceFiles?.incFileName,
+        m300FileName: sourceFiles?.m300FileName,
+      });
+      toast.success("Dashboard salvo com sucesso!");
       setPendingAction(null);
       setPasswordInput("");
     } catch {
-      toast.error(pendingAction === "save" ? "Erro ao salvar dashboard." : "Erro ao excluir dashboard.");
+      toast.error("Erro ao salvar dashboard.");
     }
-  }, [data, deleteDashboard, isPersisting, passwordInput, pendingAction, saveDashboard, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
+  }, [isSaving, passwordInput, pendingAction, rawInc, rawM300, saveRawData, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
 
   const currentShiftStartHour = useMemo(() => {
     if (selectedTurnos.length === 1) {
@@ -1254,26 +1253,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps
             </Button>
           )}
 
-          {/* Save / Delete buttons */}
+          {/* Save button */}
           <Button
             variant="outline"
             size="sm"
             className="h-8 text-xs gap-1.5"
             onClick={() => setPendingAction("save")}
-            disabled={isPersisting}
+            disabled={isSaving || !rawInc || rawInc.length === 0}
           >
-            {saveDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Salvar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
-            onClick={() => setPendingAction("delete")}
-            disabled={isPersisting}
-          >
-            {deleteDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            Excluir
           </Button>
 
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
@@ -1963,13 +1952,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps
       {pendingAction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-card rounded-xl shadow-2xl border border-border p-6 w-80">
-            <h3 className="text-sm font-semibold text-foreground mb-1">
-              {pendingAction === "save" ? "Salvar Dashboard" : "Excluir Dashboard Salvo"}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Salvar Dashboard</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              {pendingAction === "save"
-                ? "Os dados serão salvos para acesso de todos os usuários."
-                : "Os dados salvos serão excluídos permanentemente."}
+              {saveProgress || "Os dados brutos serão salvos para acesso de todos os usuários. Dados anteriores serão substituídos."}
             </p>
             <input
               type="password"
@@ -1983,19 +1968,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps
               }}
               className="w-full rounded-md bg-background text-foreground border border-border text-sm p-2 mb-3 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
               autoFocus
-              disabled={isPersisting}
+              disabled={isSaving}
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" disabled={isPersisting} onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
+              <Button variant="ghost" size="sm" disabled={isSaving} onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
                 Cancelar
               </Button>
               <Button
                 size="sm"
-                variant={pendingAction === "delete" ? "destructive" : "default"}
-                disabled={isPersisting}
+                disabled={isSaving}
                 onClick={() => void handlePasswordAction()}
               >
-                {isPersisting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar"}
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar"}
               </Button>
             </div>
           </div>
