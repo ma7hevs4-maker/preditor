@@ -1254,26 +1254,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             </Button>
           )}
 
-          {/* Save / Delete buttons */}
+          {/* Save button */}
           <Button
             variant="outline"
             size="sm"
             className="h-8 text-xs gap-1.5"
             onClick={() => setPendingAction("save")}
-            disabled={isPersisting}
+            disabled={isSaving || !rawInc || rawInc.length === 0}
           >
-            {saveDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Salvar
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
-            onClick={() => setPendingAction("delete")}
-            disabled={isPersisting}
-          >
-            {deleteDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            Excluir
           </Button>
 
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
