@@ -390,6 +390,7 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
   };
 
   // Helper: calculate platform time (login → first incident dispatch) in minutes
+  // If the first event after shift start is an interval (before first dispatch), use interval start instead
   const calcTempoPlataforma = (eqData: any[]): number | null => {
     const shiftStartVal = (() => {
       let best: number | null = null;
@@ -406,9 +407,29 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
     const sorted = eqData
       .filter(d => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
       .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao);
-    if (sorted.length === 0) return null;
-    const firstDispatch = sorted[0].hora_aux_ordenacao; // decimal hours
-    const diff = (firstDispatch - shiftStartVal) * 60; // minutes
+    const firstDispatch = sorted.length > 0 ? sorted[0].hora_aux_ordenacao : null;
+
+    // Check interval start time
+    const intervalStartVal = (() => {
+      let val: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["Inicio intervalo"] || d["Inicio Intervalo"];
+        const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
+        if (dec != null && (val === null || dec < val)) val = dec;
+      });
+      return val;
+    })();
+
+    // If interval starts before first dispatch (is the first event), use interval start as endpoint
+    let platformEnd: number | null = null;
+    if (firstDispatch != null && intervalStartVal != null && intervalStartVal <= firstDispatch && intervalStartVal > shiftStartVal) {
+      platformEnd = intervalStartVal;
+    } else if (firstDispatch != null) {
+      platformEnd = firstDispatch;
+    }
+
+    if (platformEnd == null) return null;
+    const diff = (platformEnd - shiftStartVal) * 60; // minutes
     return diff > 0 ? diff : null;
   };
 
