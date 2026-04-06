@@ -90,10 +90,14 @@ const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: a
 interface DashboardProps {
   data: any[];
   onBack: () => void;
+  sourceFiles?: { incFileName?: string; m300FileName?: string };
 }
 
-export function Dashboard({ data, onBack }: DashboardProps) {
+export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { saveDashboard, deleteDashboard } = useSavedDashboard();
+  const [passwordInput, setPasswordInput] = useState("");
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
 
   if (!data || !Array.isArray(data)) {
     return (
