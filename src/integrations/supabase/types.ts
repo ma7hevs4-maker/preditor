@@ -356,6 +356,30 @@ export type Database = {
           },
         ]
       }
+      saved_dashboard_data: {
+        Row: {
+          data: Json
+          id: string
+          saved_at: string
+          source_files: Json | null
+          updated_at: string
+        }
+        Insert: {
+          data: Json
+          id?: string
+          saved_at?: string
+          source_files?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          id?: string
+          saved_at?: string
+          source_files?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       simulation_configs: {
         Row: {
           base_id: string
