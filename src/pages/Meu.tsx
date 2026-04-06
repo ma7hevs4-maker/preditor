@@ -1,14 +1,17 @@
 import React, { useState } from "react";
-import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, Database } from "lucide-react";
 import { processFiles } from "@/utils/meuDataProcessing";
 import { Dashboard } from "@/components/meu/Dashboard";
+import { useSavedDashboard } from "@/hooks/useSavedDashboard";
 
 export default function Meu() {
   const [incFile, setIncFile] = useState<File | null>(null);
   const [m300File, setM300File] = useState<File | null>(null);
   const [data, setData] = useState<any[] | null>(null);
+  const [sourceFiles, setSourceFiles] = useState<{ incFileName?: string; m300FileName?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { latest, isLoading: loadingSaved } = useSavedDashboard();
 
   const handleProcess = async () => {
     if (!incFile) return;
@@ -16,6 +19,7 @@ export default function Meu() {
     setError(null);
     try {
       const processedData = await processFiles(incFile, m300File);
+      setSourceFiles({ incFileName: incFile.name, m300FileName: m300File?.name });
       setData(processedData);
     } catch (err) {
       console.error(err);
@@ -27,8 +31,15 @@ export default function Meu() {
     }
   };
 
+  const handleLoadSaved = () => {
+    if (latest?.data) {
+      setSourceFiles(latest.source_files || {});
+      setData(latest.data);
+    }
+  };
+
   if (data) {
-    return <Dashboard data={data} onBack={() => setData(null)} />;
+    return <Dashboard data={data} onBack={() => setData(null)} sourceFiles={sourceFiles} />;
   }
 
   return (
@@ -94,6 +105,33 @@ export default function Meu() {
               </>
             )}
           </button>
+
+          {/* Load saved dashboard button */}
+          {loadingSaved ? (
+            <div className="flex items-center justify-center py-3 text-muted-foreground text-sm">
+              <Loader2 className="animate-spin mr-2 h-4 w-4" />
+              Verificando dados salvos...
+            </div>
+          ) : latest ? (
+            <button
+              onClick={handleLoadSaved}
+              className="w-full flex flex-col items-center justify-center py-3 px-4 border border-border rounded-lg text-sm font-medium text-foreground bg-secondary/50 hover:bg-secondary/80 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-primary" />
+                Acessar última atualização
+              </span>
+              <span className="text-[11px] text-muted-foreground mt-1">
+                Salvo em {new Date(latest.saved_at).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
