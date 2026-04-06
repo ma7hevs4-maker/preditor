@@ -14,6 +14,9 @@ import {
   Navigation,
   Timer,
   RotateCcw,
+  Save,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +24,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
+import { useSavedDashboard } from "@/hooks/useSavedDashboard";
+import { toast } from "sonner";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -85,10 +90,14 @@ const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: a
 interface DashboardProps {
   data: any[];
   onBack: () => void;
+  sourceFiles?: { incFileName?: string; m300FileName?: string };
 }
 
-export function Dashboard({ data, onBack }: DashboardProps) {
+export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { saveDashboard, deleteDashboard } = useSavedDashboard();
+  const [passwordInput, setPasswordInput] = useState("");
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
 
   if (!data || !Array.isArray(data)) {
     return (
@@ -1147,6 +1156,28 @@ export function Dashboard({ data, onBack }: DashboardProps) {
             </Button>
           )}
 
+          {/* Save / Delete buttons */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setPendingAction("save")}
+            disabled={saveDashboard.isPending}
+          >
+            {saveDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Salvar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
+            onClick={() => setPendingAction("delete")}
+            disabled={deleteDashboard.isPending}
+          >
+            {deleteDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Excluir
+          </Button>
+
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-2">
@@ -1825,6 +1856,83 @@ export function Dashboard({ data, onBack }: DashboardProps) {
               >
                 Fechar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password confirmation dialog */}
+      {pendingAction && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card rounded-xl shadow-2xl border border-border p-6 w-80">
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              {pendingAction === "save" ? "Salvar Dashboard" : "Excluir Dashboard Salvo"}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              {pendingAction === "save"
+                ? "Os dados serão salvos para acesso de todos os usuários."
+                : "Os dados salvos serão excluídos permanentemente."}
+            </p>
+            <input
+              type="password"
+              placeholder="Senha de administrador"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  if (passwordInput === "dys") {
+                    if (pendingAction === "save") {
+                      saveDashboard.mutate(
+                        { data, incFileName: sourceFiles?.incFileName, m300FileName: sourceFiles?.m300FileName },
+                        {
+                          onSuccess: () => { toast.success("Dashboard salvo com sucesso!"); setPendingAction(null); setPasswordInput(""); },
+                          onError: () => toast.error("Erro ao salvar dashboard."),
+                        }
+                      );
+                    } else {
+                      deleteDashboard.mutate(undefined, {
+                        onSuccess: () => { toast.success("Dashboard excluído com sucesso!"); setPendingAction(null); setPasswordInput(""); },
+                        onError: () => toast.error("Erro ao excluir dashboard."),
+                      });
+                    }
+                  } else {
+                    toast.error("Senha incorreta.");
+                  }
+                }
+              }}
+              className="w-full rounded-md bg-background text-foreground border border-border text-sm p-2 mb-3 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                variant={pendingAction === "delete" ? "destructive" : "default"}
+                onClick={() => {
+                  if (passwordInput === "dys") {
+                    if (pendingAction === "save") {
+                      saveDashboard.mutate(
+                        { data, incFileName: sourceFiles?.incFileName, m300FileName: sourceFiles?.m300FileName },
+                        {
+                          onSuccess: () => { toast.success("Dashboard salvo com sucesso!"); setPendingAction(null); setPasswordInput(""); },
+                          onError: () => toast.error("Erro ao salvar dashboard."),
+                        }
+                      );
+                    } else {
+                      deleteDashboard.mutate(undefined, {
+                        onSuccess: () => { toast.success("Dashboard excluído com sucesso!"); setPendingAction(null); setPasswordInput(""); },
+                        onError: () => toast.error("Erro ao excluir dashboard."),
+                      });
+                    }
+                  } else {
+                    toast.error("Senha incorreta.");
+                  }
+                }}
+              >
+                Confirmar
+              </Button>
             </div>
           </div>
         </div>
