@@ -122,33 +122,27 @@ export function calculateShiftDate(date: Date | string, hour: number, shiftStart
   return parseDate(shiftDate);
 }
 
-export async function processFiles(incFile: File, m300File: File | null) {
-  const readExcel = async (file: File) => {
-    const data = await file.arrayBuffer();
-    // Read WITHOUT cellDates to get raw serial numbers
-    const workbook = XLSX.read(data, { type: "array", cellDates: false });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    return XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: true });
-  };
+export async function readExcelToJson(file: File): Promise<any[]> {
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data, { type: "array", cellDates: false });
+  const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheetName];
+  return XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: true });
+}
 
-  const [incRaw, m300Raw] = await Promise.all([
-    readExcel(incFile),
-    m300File ? readExcel(m300File) : Promise.resolve([]),
-  ]);
-
-  // Clean column names
-  const cleanKeys = (obj: any) => {
-    if (!obj || typeof obj !== 'object') return {};
-    const newObj: any = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        newObj[key.trim()] = obj[key];
-      }
+// Clean column names helper
+const cleanKeys = (obj: any) => {
+  if (!obj || typeof obj !== 'object') return {};
+  const newObj: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      newObj[key.trim()] = obj[key];
     }
-    return newObj;
-  };
+  }
+  return newObj;
+};
 
+export function processRawData(incRaw: any[], m300Raw: any[]) {
   const inc = (incRaw || []).map(cleanKeys);
   const m300 = (m300Raw || []).map(cleanKeys);
 
