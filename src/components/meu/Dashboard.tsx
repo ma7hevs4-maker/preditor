@@ -15,7 +15,6 @@ import {
   Timer,
   RotateCcw,
   Save,
-  Trash2,
   Loader2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
