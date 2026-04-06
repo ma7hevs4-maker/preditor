@@ -91,14 +91,15 @@ interface DashboardProps {
   data: any[];
   onBack: () => void;
   sourceFiles?: { incFileName?: string; m300FileName?: string };
+  rawInc?: any[];
+  rawM300?: any[];
 }
 
-export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps) {
+export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const { saveDashboard, deleteDashboard } = useSavedDashboard();
+  const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
   const [passwordInput, setPasswordInput] = useState("");
-  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
-  const isPersisting = saveDashboard.isPending || deleteDashboard.isPending;
+  const [pendingAction, setPendingAction] = useState<"save" | null>(null);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
