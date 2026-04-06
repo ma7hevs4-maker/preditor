@@ -1156,7 +1156,29 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
             </Button>
           )}
 
-          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+          {/* Save / Delete buttons */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setPendingAction("save")}
+            disabled={saveDashboard.isPending}
+          >
+            {saveDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Salvar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
+            onClick={() => setPendingAction("delete")}
+            disabled={deleteDashboard.isPending}
+          >
+            {deleteDashboard.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+            Excluir
+          </Button>
+
+
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-2">
                 <SlidersHorizontal className="h-3.5 w-3.5" />
