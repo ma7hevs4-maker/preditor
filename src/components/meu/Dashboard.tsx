@@ -93,24 +93,14 @@ interface DashboardProps {
   sourceFiles?: { incFileName?: string; m300FileName?: string };
 }
 
-export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
+export function Dashboard({ data: rawData, onBack, sourceFiles }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveDashboard, deleteDashboard } = useSavedDashboard();
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
   const isPersisting = saveDashboard.isPending || deleteDashboard.isPending;
-
-  if (!data || !Array.isArray(data)) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center p-8 bg-card rounded-xl shadow-md">
-          <h2 className="text-xl font-bold text-destructive mb-2">Erro de Dados</h2>
-          <p className="text-muted-foreground">Os dados fornecidos são inválidos ou estão vazios.</p>
-          <button onClick={onBack} className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg">Voltar</button>
-        </div>
-      </div>
-    );
-  }
+  const isInvalidData = !rawData || !Array.isArray(rawData);
+  const data = Array.isArray(rawData) ? rawData : [];
 
   // Extract unique values for filters
   const datas = useMemo(() => {
@@ -1198,6 +1188,18 @@ export function Dashboard({ data, onBack, sourceFiles }: DashboardProps) {
     tmdeAbove150Filter !== "todos",
     o2AnomaliaFilter !== "todos",
   ].filter(Boolean).length;
+
+  if (isInvalidData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center p-8 bg-card rounded-xl shadow-md">
+          <h2 className="text-xl font-bold text-destructive mb-2">Erro de Dados</h2>
+          <p className="text-muted-foreground">Os dados fornecidos são inválidos ou estão vazios.</p>
+          <button onClick={onBack} className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg">Voltar</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
