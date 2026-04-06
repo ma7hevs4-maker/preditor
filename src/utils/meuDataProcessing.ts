@@ -900,3 +900,11 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
 
   return finalData;
 }
+
+export async function processFiles(incFile: File, m300File: File | null) {
+  const [incRaw, m300Raw] = await Promise.all([
+    readExcelToJson(incFile),
+    m300File ? readExcelToJson(m300File) : Promise.resolve([]),
+  ]);
+  return processRawData(incRaw, m300Raw);
+}
