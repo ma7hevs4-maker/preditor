@@ -1953,13 +1953,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       {pendingAction && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-card rounded-xl shadow-2xl border border-border p-6 w-80">
-            <h3 className="text-sm font-semibold text-foreground mb-1">
-              {pendingAction === "save" ? "Salvar Dashboard" : "Excluir Dashboard Salvo"}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Salvar Dashboard</h3>
             <p className="text-xs text-muted-foreground mb-4">
-              {pendingAction === "save"
-                ? "Os dados serão salvos para acesso de todos os usuários."
-                : "Os dados salvos serão excluídos permanentemente."}
+              {saveProgress || "Os dados brutos serão salvos para acesso de todos os usuários. Dados anteriores serão substituídos."}
             </p>
             <input
               type="password"
@@ -1973,19 +1969,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
               }}
               className="w-full rounded-md bg-background text-foreground border border-border text-sm p-2 mb-3 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
               autoFocus
-              disabled={isPersisting}
+              disabled={isSaving}
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="ghost" size="sm" disabled={isPersisting} onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
+              <Button variant="ghost" size="sm" disabled={isSaving} onClick={() => { setPendingAction(null); setPasswordInput(""); }}>
                 Cancelar
               </Button>
               <Button
                 size="sm"
-                variant={pendingAction === "delete" ? "destructive" : "default"}
-                disabled={isPersisting}
+                disabled={isSaving}
                 onClick={() => void handlePasswordAction()}
               >
-                {isPersisting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar"}
+                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmar"}
               </Button>
             </div>
           </div>
