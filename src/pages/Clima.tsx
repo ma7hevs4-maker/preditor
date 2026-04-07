@@ -616,7 +616,7 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
   }, [regionais, allBases]);
 
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${basesInGroup.length}, minmax(0, 1fr))` }}>
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style={{ ['--cols' as any]: basesInGroup.length }}>
       {basesInGroup.map(({ regional, bases }) => (
         <div key={regional} className="space-y-2 min-w-0">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
@@ -767,12 +767,12 @@ export default function Clima() {
         </div>
 
         {viewMode === "cards" && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {Array.from({ length: maxDays + 1 }, (_, i) => {
               const day = addDays(today, i);
               const label = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : format(day, "EEE dd", { locale: ptBR });
               return (
-                <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setDayOffset(i)}>
+                <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7 whitespace-nowrap shrink-0" onClick={() => setDayOffset(i)}>
                   {label}
                 </Button>
               );
