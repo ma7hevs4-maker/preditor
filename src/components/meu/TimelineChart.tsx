@@ -445,8 +445,8 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                             const tmdFill = isHighlighted ? COLORS.highlight : (ev.isM300Only ? COLORS.tmdM300 : (isTmdeHigh ? COLORS.error : COLORS.tmd));
                             const tmeFill = isHighlighted ? COLORS.highlight : (ev.isM300Only ? COLORS.tmeM300 : (isTmdeHigh ? COLORS.error : COLORS.tme));
 
-                            const rectStroke = isHighlighted ? COLORS.foreground : COLORS.foreground;
-                            const rectStrokeWidth = isHighlighted ? "2" : "0.5";
+                            const rectStroke = isHighlighted ? COLORS.foreground : COLORS.border;
+                            const rectStrokeWidth = isHighlighted ? "2" : "0.8";
 
                             const handleEventClick = (e: React.MouseEvent) => {
                               if (!ev.id) return;
