@@ -767,12 +767,12 @@ export default function Clima() {
         </div>
 
         {viewMode === "cards" && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {Array.from({ length: maxDays + 1 }, (_, i) => {
               const day = addDays(today, i);
               const label = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : format(day, "EEE dd", { locale: ptBR });
               return (
-                <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7" onClick={() => setDayOffset(i)}>
+                <Button key={i} variant={dayOffset === i ? "default" : "outline"} size="sm" className="text-xs h-7 whitespace-nowrap shrink-0" onClick={() => setDayOffset(i)}>
                   {label}
                 </Button>
               );
