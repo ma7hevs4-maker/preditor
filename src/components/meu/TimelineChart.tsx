@@ -480,8 +480,8 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <circle
                                     cx={xInicio} cy={yRect + rectHeight / 2} r={5}
                                     fill={isHighlighted ? COLORS.highlight : COLORS.zeroEvent}
-                                    stroke={COLORS.foreground}
-                                    strokeWidth={isHighlighted ? "2" : "0.5"}
+                                    stroke={isHighlighted ? COLORS.foreground : COLORS.border}
+                                    strokeWidth={isHighlighted ? "2" : "0.8"}
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
