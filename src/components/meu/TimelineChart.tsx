@@ -519,7 +519,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                 {/* Ordem 2 Yellow Stripe */}
                                 {ev.ordem2 && xFimTotal > xInicio && (
                                   <g>
-                                    <rect x={xInicio} y={yRect + rectHeight / 2 - 2} width={xFimTotal - xInicio} height={4} fill={COLORS.warning} stroke={COLORS.foreground} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                                    <rect x={xInicio} y={yRect + rectHeight / 2 - 2} width={xFimTotal - xInicio} height={4} fill={COLORS.warning} stroke={COLORS.border} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
                                     {ev.isAtribuidaO2 && (
                                       <rect x={xInicio} y={yRect + rectHeight / 2 - 6} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
