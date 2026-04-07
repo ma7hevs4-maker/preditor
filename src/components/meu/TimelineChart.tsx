@@ -445,8 +445,8 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                             const tmdFill = isHighlighted ? COLORS.highlight : (ev.isM300Only ? COLORS.tmdM300 : (isTmdeHigh ? COLORS.error : COLORS.tmd));
                             const tmeFill = isHighlighted ? COLORS.highlight : (ev.isM300Only ? COLORS.tmeM300 : (isTmdeHigh ? COLORS.error : COLORS.tme));
 
-                            const rectStroke = isHighlighted ? COLORS.foreground : COLORS.foreground;
-                            const rectStrokeWidth = isHighlighted ? "2" : "0.5";
+                            const rectStroke = isHighlighted ? COLORS.foreground : COLORS.border;
+                            const rectStrokeWidth = isHighlighted ? "2" : "0.8";
 
                             const handleEventClick = (e: React.MouseEvent) => {
                               if (!ev.id) return;
@@ -480,8 +480,8 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   <circle
                                     cx={xInicio} cy={yRect + rectHeight / 2} r={5}
                                     fill={isHighlighted ? COLORS.highlight : COLORS.zeroEvent}
-                                    stroke={COLORS.foreground}
-                                    strokeWidth={isHighlighted ? "2" : "0.5"}
+                                    stroke={isHighlighted ? COLORS.foreground : COLORS.border}
+                                    strokeWidth={isHighlighted ? "2" : "0.8"}
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
@@ -519,7 +519,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                 {/* Ordem 2 Yellow Stripe */}
                                 {ev.ordem2 && xFimTotal > xInicio && (
                                   <g>
-                                    <rect x={xInicio} y={yRect + rectHeight / 2 - 2} width={xFimTotal - xInicio} height={4} fill={COLORS.warning} stroke={COLORS.foreground} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+                                    <rect x={xInicio} y={yRect + rectHeight / 2 - 2} width={xFimTotal - xInicio} height={4} fill={COLORS.warning} stroke={COLORS.border} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
                                     {ev.isAtribuidaO2 && (
                                       <rect x={xInicio} y={yRect + rectHeight / 2 - 6} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
