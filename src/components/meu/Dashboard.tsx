@@ -1437,7 +1437,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       </div>
 
       {/* Main Content */}
-      <div className="relative flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden p-6">
+      <div className="relative flex-1 w-full min-w-0 overflow-y-auto overflow-x-hidden p-3 sm:p-6">
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="glass-card p-5">
