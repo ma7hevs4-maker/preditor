@@ -1203,18 +1203,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
-      <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-6 py-3 flex items-center justify-between z-10">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8" title="Voltar">
+      <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0" title="Voltar">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Dashboard Operacional
+          <h1 className="text-base sm:text-xl font-bold text-foreground flex items-center gap-2 truncate">
+            <BarChart3 className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate">Dashboard Operacional</span>
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Active filter badges */}
           {activeFilterCount > 0 && (
             <div className="flex items-center gap-1.5 mr-2">
@@ -1521,7 +1521,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             </h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-border table-fixed">
+            <table className="min-w-[900px] w-full divide-y divide-border">
               <thead className="bg-secondary/30">
                 <tr>
                   {[
@@ -1533,6 +1533,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Reinc.",
                     "TMDE",
                     "Ocup.",
+                    "Ociosid.",
                     "Prod.",
                     "Login",
                     "Desp.",
@@ -1583,6 +1584,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                       {row.Ocupação.toFixed(1)}%
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row.Ociosidade.toFixed(1)}%
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Produtividade.toFixed(2)}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
@@ -1631,7 +1635,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             </div>
           </div>
           <div className="overflow-x-auto max-h-96">
-            <table className="w-full divide-y divide-border table-fixed">
+            <table className="min-w-[900px] w-full divide-y divide-border">
               <thead className="bg-secondary/30 sticky top-0">
                 <tr>
                   {[
@@ -1642,12 +1646,13 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Reinc.",
                     "TMDE",
                     "Ocup.",
+                    "Ociosid.",
                     "Login",
                     "Desp.",
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
@@ -1708,6 +1713,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Ocupação.toFixed(1)}%
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                        {row.Ociosidade.toFixed(1)}%
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Login}
