@@ -155,8 +155,8 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 
               {/* Hourly table - clickable rows */}
               <div className="rounded-lg border border-border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
+                <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
+                  <table className="min-w-[600px] w-full text-xs">
                     <thead>
                       <tr className="bg-muted/30 border-b border-border">
                         <th className="text-left px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-muted/30 z-10">Hora</th>
