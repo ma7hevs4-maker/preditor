@@ -363,6 +363,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     const normalizeHeader = (key: string) => key
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[ºª]/g, (ch) => ch === 'º' ? 'o' : 'a')
       .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
@@ -430,12 +431,12 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       return lower === '1o login corrigido' || /^1o login corrigido_\d+$/.test(lower);
     });
 
-    const column53Key = rowKeys[52];
-    const loginMinutesKey = exactLoginMinutesKey || column53Key;
+    // Do NOT use column index fallback (rowKeys[52]) - JSON round-trips through
+    // Supabase do not preserve key order, so positional access is unreliable.
+    const loginMinutesKey = exactLoginMinutesKey;
 
     if (loginMinutesKey) {
       const loginMinutesVal = row[loginMinutesKey];
-      console.log("[M300 login key]", loginMinutesKey, loginMinutesVal);
       row["1º Login Corrigido"] = loginMinutesVal;
       row["Log In Corrigido"] = loginMinutesVal;
     }
