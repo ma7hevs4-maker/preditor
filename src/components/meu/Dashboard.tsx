@@ -868,8 +868,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       // Ordem 2
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
-      // Ocupação
-      const ocupacao = calculateOccupancy(eqData);
+      // Ocupação e Ociosidade
+      const occDetails = calculateOccupancyDetails(eqData);
+      const ocupacao = occDetails.pct;
+      const idleMinutes = occDetails.idleMinutes;
 
       // Login
       let maxLoginVal: number | null = null;
