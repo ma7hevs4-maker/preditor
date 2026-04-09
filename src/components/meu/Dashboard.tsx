@@ -674,13 +674,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
     );
     
+    let countOcupacaoValidas = 0;
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      somaOcupacao += calculateOccupancy(eqData);
+      const occ = calculateOccupancy(eqData);
       somaIdleMinutes += calculateIdleMinutes(eqData);
+      if (occ <= 120) {
+        somaOcupacao += occ;
+        countOcupacaoValidas++;
+      }
     });
 
-    const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
+    const ocupacao = countOcupacaoValidas > 0 ? somaOcupacao / countOcupacaoValidas : 0;
     const avgIdleMinutes = equipesPresentesNoProcesso.length > 0 ? somaIdleMinutes / equipesPresentesNoProcesso.length : 0;
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
