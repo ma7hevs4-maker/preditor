@@ -763,12 +763,17 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const equipesPresentesGeral = Array.from(
     new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean))
   );
+  let countOcupacaoValidasGeral = 0;
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    somaOcupacaoGeral += calculateOccupancy(eqData);
+    const occ = calculateOccupancy(eqData);
     somaIdleMinutesGeral += calculateIdleMinutes(eqData);
+    if (occ <= 120) {
+      somaOcupacaoGeral += occ;
+      countOcupacaoValidasGeral++;
+    }
   });
-  const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
+  const ocupacaoMediaGeral = countOcupacaoValidasGeral > 0 ? somaOcupacaoGeral / countOcupacaoValidasGeral : 0;
   const avgIdleMinutesGeral = equipesPresentesGeral.length > 0 ? somaIdleMinutesGeral / equipesPresentesGeral.length : 0;
 
   // Averages for Login and Tempo Plataforma in total row
