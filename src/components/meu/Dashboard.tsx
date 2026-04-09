@@ -148,7 +148,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   // Filter states
   const [isPeriodMode, setIsPeriodMode] = useState<boolean>(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<"periodo" | "mes">("periodo");
   const [selectedData, setSelectedData] = useState<string>(() => {
     // Default to D-1 (second-to-last date) if available
     if (datas.length >= 2) return datas[datas.length - 2];
@@ -161,11 +160,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   });
   const [periodEnd, setPeriodEnd] = useState<string>(() => {
     return datas[datas.length - 1] || "";
-  });
-  // Period mode: month
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    const last = datas[datas.length - 1] || "";
-    return last ? last.substring(0, 7) : ""; // YYYY-MM
   });
   const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<string[]>([]);
@@ -181,13 +175,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
   };
 
-  // Available months from data
-  const availableMonths = useMemo(() => {
-    const months = new Set<string>();
-    datas.forEach(d => { if (d) months.add(d.substring(0, 7)); });
-    return Array.from(months).sort();
-  }, [datas]);
-
   const matchesSelectedDateFilter = (rowDateStr?: string | null) => {
     if (!rowDateStr) return false;
 
@@ -195,14 +182,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       return !selectedData || rowDateStr === selectedData;
     }
 
-    if (selectedPeriod === "periodo") {
-      if (!periodStart || !periodEnd) return true;
-      return rowDateStr >= periodStart && rowDateStr <= periodEnd;
-    }
-
-    // Mês mode
-    if (!selectedMonth) return true;
-    return rowDateStr.startsWith(selectedMonth);
+    if (!periodStart || !periodEnd) return true;
+    return rowDateStr >= periodStart && rowDateStr <= periodEnd;
   };
 
   // Apply filters
@@ -253,7 +234,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     data,
     selectedData,
     isPeriodMode,
-    selectedPeriod,
+    periodStart,
+    periodEnd,
     selectedPolos,
     selectedProcessos,
     selectedTiposEquipe,
@@ -617,7 +599,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   }, [filteredData]);
 
   const totalInc = new Set(filteredData.map((d) => d.Número)).size;
-  const displayInc = isPeriodMode ? totalInc / numDays : totalInc;
+  const displayInc = totalInc;
 
   const tmdeMedio =
     filteredData.length > 0
@@ -642,7 +624,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const resumoProcessos = processosOrdem.map((proc) => {
     const procData = filteredData.filter((d) => d.Processo === proc);
     const inc = new Set(procData.map((d) => d.Número)).size;
-    const displayIncProc = isPeriodMode ? inc / numDays : inc;
 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
@@ -727,16 +708,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     return {
       Processos: proc,
-      Incidentes: displayIncProc,
+      Incidentes: inc,
       Equipes: equipesCount,
-      Improdutivos: isPeriodMode ? imp / numDays : imp,
-      "Ordem 2": isPeriodMode ? ord2 / numDays : ord2,
-      "Reincidentes causados": isPeriodMode ? reinc / numDays : reinc,
+      Improdutivos: imp,
+      "Ordem 2": ord2,
+      "Reincidentes causados": reinc,
       TMDE: tmde,
       Ocupação: ocupacao,
       "Ociosidade (min)": avgIdleMinutes,
       "Inc. Ociosid.": Math.round(avgIdleMinutes / 60 * 1.5),
-      Produtividade: displayProdutividade,
+      Produtividade: isPeriodMode ? produtividade / numDays : produtividade,
       Login: avgLogin,
       Despacho: avgDespacho,
       "Tempo Plataforma": avgPlataforma,
@@ -950,11 +931,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
       return {
         Equipe: eq,
-        Incidentes: isPeriodMode ? inc / eqDays : inc,
-        Improdutivos: isPeriodMode ? imp / eqDays : imp,
-        "Reincidentes causados": isPeriodMode ? reinc / eqDays : reinc,
+        Incidentes: inc,
+        Improdutivos: imp,
+        "Reincidentes causados": reinc,
         TMDE: tmde,
-        "Ordem 2": isPeriodMode ? ord2 / eqDays : ord2,
+        "Ordem 2": ord2,
         Ocupação: ocupacao,
         "Ociosidade (min)": idleMinutes,
         "Inc. Ociosid.": Math.round(idleMinutes / 60 * 1.5),
@@ -1380,25 +1361,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform ${isPeriodMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                       </button>
                     </div>
-                    {isPeriodMode && (
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => setSelectedPeriod("periodo")}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "periodo" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
-                        >
-                          PERÍODO
-                        </button>
-                        <button
-                          onClick={() => setSelectedPeriod("mes")}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "mes" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
-                        >
-                          MÊS
-                        </button>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Data / Período / Mês */}
+                  {/* Data / Período */}
                   {!isPeriodMode && (
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -1418,7 +1383,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     </div>
                   )}
 
-                  {isPeriodMode && selectedPeriod === "periodo" && (
+                  {isPeriodMode && (
                     <div className="space-y-2">
                       <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
@@ -1450,24 +1415,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                           </select>
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {isPeriodMode && selectedPeriod === "mes" && (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        Mês
-                      </label>
-                      <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
-                      >
-                        {availableMonths.map((m) => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
                     </div>
                   )}
 
@@ -1524,7 +1471,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
               <h3 className="text-xs font-medium">Incidentes</h3>
             </div>
             <p className="text-2xl font-bold text-foreground">
-              {isPeriodMode ? displayInc.toFixed(1) : displayInc}
+              {displayInc}
             </p>
           </div>
           <div className="glass-card p-5">
@@ -1645,19 +1592,19 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                       {row.Processos}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
+                      {row.Incidentes}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Equipes}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
+                      {row.Improdutivos}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
+                      {row["Ordem 2"]}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
+                      {row["Reincidentes causados"]}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.TMDE.toFixed(1)}
@@ -1783,16 +1730,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <span className="truncate">{row.Equipe}</span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
+                        {row.Incidentes}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
+                        {row.Improdutivos}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
+                        {row["Ordem 2"]}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
+                        {row["Reincidentes causados"]}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.TMDE.toFixed(1)}

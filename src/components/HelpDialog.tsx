@@ -4,13 +4,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-type Section = "simulacao" | "clima" | "estrutura" | "visao" | "config";
+type Section = "simulacao" | "clima" | "estrutura" | "visao" | "meu" | "config";
 
 const sections: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "simulacao", label: "Simulação", icon: Zap },
   { id: "clima", label: "Central Climática", icon: CloudSun },
   { id: "estrutura", label: "Estrutura", icon: Users },
   { id: "visao", label: "Visão", icon: Eye },
+  { id: "meu", label: "Dashboard Operacional", icon: BarChart3 },
   { id: "config", label: "Configurações", icon: Settings },
 ];
 
@@ -256,6 +257,136 @@ const ConfigHelp = () => (
   </div>
 );
 
+const MeuHelp = () => (
+  <div className="space-y-6 text-sm text-foreground/90">
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+        <BarChart3 className="w-4 h-4 text-primary" /> Visão Geral
+      </h3>
+      <p>
+        O <strong>Dashboard Operacional</strong> (/meu) analisa bases de incidentes e M300 carregadas via upload de planilhas Excel. Exibe KPIs, resultado por processo, ranking das equipes e timeline visual dos incidentes.
+      </p>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+        <Calculator className="w-4 h-4 text-primary" /> Passo a Passo
+      </h3>
+      <ol className="list-decimal list-inside space-y-2 pl-1">
+        <li><strong>Faça upload</strong> da base de incidentes (.xlsx) e opcionalmente da base M300.</li>
+        <li><strong>Clique em "Gerar Dashboard"</strong> para processar e visualizar.</li>
+        <li><strong>Use os filtros</strong> (lateral direita) para refinar por polo, processo, turno, equipe, data ou período.</li>
+        <li><strong>Selecione equipes</strong> no Ranking para ver a timeline e detalhes dos incidentes.</li>
+        <li><strong>Salve os dados</strong> para acumular a base mensal no Supabase (senha requerida).</li>
+      </ol>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2">Modo de Análise (Período)</h3>
+      <div className="space-y-2 text-xs text-muted-foreground">
+        <p>No painel de filtros, ative o <strong>Modo de Análise</strong> para selecionar um período (data início e fim).</p>
+        <p>No modo período, as colunas de <strong>Incidentes, Improdutivos, Ordem 2 e Reincidentes</strong> exibem o <strong>total acumulado</strong> do período.</p>
+        <p>As colunas de <strong>TMDE, Ocupação, Ociosidade, Login, Despacho, T. Plataforma e Retorno à Base</strong> exibem a <strong>média</strong> do período.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2">Classificação de Incidentes</h3>
+      <div className="space-y-2 text-xs text-muted-foreground">
+        <div>
+          <p className="font-medium text-foreground">Reincidente:</p>
+          <p>Incidentes com o mesmo número de cliente após um incidente anterior da mesma equipe.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Improdutivo:</p>
+          <p>Incidentes com causas específicas como CASA FECHADA, UC FECHADA, ENDEREÇO NÃO LOCALIZADO, ESTAVA NORMAL, entre outras causas de terceiros ou sem afetação.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Ordem 2:</p>
+          <p>Identificado pela coluna 'ord 2' (valor 'sim') ou via termos como 'ord2', 'ordem 2' em observações.</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+        <Calculator className="w-4 h-4 text-primary" /> Fórmulas e Métricas
+      </h3>
+      <div className="space-y-3 bg-muted/30 rounded-lg p-3 border border-border/50">
+        <div>
+          <p className="font-medium text-foreground">Tempo de Plataforma (min):</p>
+          <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+            T. Plat. = min(Início Turno → 1º Despacho, 25 min)
+          </code>
+          <p className="text-xs text-muted-foreground mt-1">Se o intervalo ocorre antes do 1º despacho, usa-se o início do intervalo. Limitado ao ideal de 25 min.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Volta à Base (min):</p>
+          <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+            Ret. Base = min(Último incidente liberado → Logoff, 40 min)
+          </code>
+          <p className="text-xs text-muted-foreground mt-1">Se o intervalo é o último evento antes do logoff, usa-se o início do intervalo. Limitado ao ideal de 40 min.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Intervalo:</p>
+          <p className="text-xs text-muted-foreground">Período de descanso entre incidentes, limitado ao ideal de 60 min.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Ocupação (%):</p>
+          <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+            Ocupação = (Σ(TMD + TME) + T.Plat.capado + Interv.capado + Ret.capado) / Duração Turno × 100
+          </code>
+          <p className="text-xs text-muted-foreground mt-1">Equipes com ocupação {'>'} 120% são excluídas das médias por processo para evitar distorções.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Ociosidade (min):</p>
+          <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+            Ociosidade = Duração Turno - Σ(TMD + TME) - T.Plat.capado - Interv.capado - Ret.capado
+          </code>
+          <p className="text-xs text-muted-foreground mt-1">Tempo absoluto de inatividade. Excesso nos tempos ideais é contabilizado como ociosidade.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Inc. Ociosidade:</p>
+          <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+            Inc. Ociosid. = round(minutos ociosos / 60 × 1.5)
+          </code>
+          <p className="text-xs text-muted-foreground mt-1">Quantidade de incidentes potenciais perdidos no tempo ocioso.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Produtividade:</p>
+          <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+            Produtividade = Incidentes Produtivos / Equipes Únicas
+          </code>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2">Persistência e Acumulação</h3>
+      <ul className="space-y-1.5 text-xs text-muted-foreground">
+        <li>• <strong>Salvar:</strong> Envia os dados brutos ao Supabase com upsert (não duplica registros com mesmo ID+Equipe+Data).</li>
+        <li>• <strong>Acessar última atualização:</strong> Carrega os dados processados do cache, sem reprocessamento.</li>
+        <li>• <strong>Limpar base mensal:</strong> Remove todos os dados salvos (protegido por senha).</li>
+        <li>• <strong>Login e Despacho:</strong> Mantêm valores brutos (em minutos) para referência de auditoria.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2">Timeline</h3>
+      <ul className="space-y-1.5 text-xs text-muted-foreground">
+        <li>• <strong>Barras azuis:</strong> TMD (tempo de deslocamento).</li>
+        <li>• <strong>Barras verdes:</strong> TME (tempo de execução) dentro do padrão.</li>
+        <li>• <strong>Barras vermelhas:</strong> TME acima do tempo padrão do processo.</li>
+        <li>• <strong>Faixa laranja:</strong> Intervalo programado.</li>
+        <li>• <strong>Faixa verde clara:</strong> Tempo de plataforma (login → 1º despacho).</li>
+        <li>• <strong>Faixa vermelha clara:</strong> Retorno à base (último incidente → logoff).</li>
+        <li>• <strong>Linha tracejada verde:</strong> Limite ideal de retorno (40 min).</li>
+        <li>• <strong>Incidentes M300:</strong> Exibidos com borda tracejada (presentes apenas no M300, ausentes da base principal).</li>
+      </ul>
+    </div>
+  </div>
+);
+
 interface HelpDialogProps {
   trigger: React.ReactNode;
 }
@@ -268,6 +399,7 @@ export function HelpDialog({ trigger }: HelpDialogProps) {
     clima: <ClimaHelp />,
     estrutura: <EstruturaHelp />,
     visao: <VisaoHelp />,
+    meu: <MeuHelp />,
     config: <ConfigHelp />,
   };
 
