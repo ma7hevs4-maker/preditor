@@ -1221,6 +1221,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         m300Raw: rawM300 || [],
         incFileName: sourceFiles?.incFileName,
         m300FileName: sourceFiles?.m300FileName,
+        processedData: rawData,
       });
       toast.success("Dashboard salvo com sucesso!");
       setPendingAction(null);
@@ -1228,7 +1229,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     } catch {
       toast.error("Erro ao salvar dashboard.");
     }
-  }, [isSaving, passwordInput, pendingAction, rawInc, rawM300, saveRawData, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
+  }, [isSaving, passwordInput, pendingAction, rawData, rawInc, rawM300, saveRawData, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
 
   const currentShiftStartHour = useMemo(() => {
     if (selectedTurnos.length === 1) {

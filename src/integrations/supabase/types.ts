@@ -360,14 +360,17 @@ export type Database = {
         Row: {
           id: number
           row_data: Json
+          row_hash: string | null
         }
         Insert: {
           id?: never
           row_data: Json
+          row_hash?: string | null
         }
         Update: {
           id?: never
           row_data?: Json
+          row_hash?: string | null
         }
         Relationships: []
       }
@@ -375,14 +378,47 @@ export type Database = {
         Row: {
           id: number
           row_data: Json
+          row_hash: string | null
         }
         Insert: {
           id?: never
           row_data: Json
+          row_hash?: string | null
         }
         Update: {
           id?: never
           row_data?: Json
+          row_hash?: string | null
+        }
+        Relationships: []
+      }
+      saved_processed_cache: {
+        Row: {
+          created_at: string
+          id: string
+          inc_file_name: string | null
+          m300_file_name: string | null
+          processed_data: Json
+          row_count_inc: number
+          row_count_m300: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inc_file_name?: string | null
+          m300_file_name?: string | null
+          processed_data: Json
+          row_count_inc?: number
+          row_count_m300?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inc_file_name?: string | null
+          m300_file_name?: string | null
+          processed_data?: Json
+          row_count_inc?: number
+          row_count_m300?: number
         }
         Relationships: []
       }
