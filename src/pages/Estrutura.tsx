@@ -703,8 +703,8 @@ const Estrutura = () => {
                           const isBTOnly = BT_ONLY_TYPES.includes(type as any);
                           return (
                             <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                              <td className={`py-0.5 pr-1 sticky left-0 bg-card z-10 truncate text-[11px] ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
-                                {type}
+                              <td className={`py-0.5 pr-1 sticky left-0 bg-card z-10 truncate text-[11px] whitespace-nowrap ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
+                                {SHORT_NAMES[type] ?? type}
                               </td>
                               {turno.hours.map(h => (
                                 <td key={h} className="py-0.5 px-0.5">
