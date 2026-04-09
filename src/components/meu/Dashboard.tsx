@@ -691,9 +691,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      const details = calculateOccupancyDetails(eqData);
-      somaOcupacao += details.pct;
-      somaIdleMinutes += details.idleMinutes;
+      somaOcupacao += calculateOccupancy(eqData);
+      somaIdleMinutes += calculateIdleMinutes(eqData);
     });
 
     const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
