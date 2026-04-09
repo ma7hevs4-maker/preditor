@@ -25,7 +25,10 @@ function generateRowHash(row: any, type: "inc" | "m300"): string {
       row["Data Referência"] || row["Data Referencia"] || 
       Object.entries(row).find(([k]) => k.toLowerCase().includes("data referencia"))?.[1] || ""
     ).trim();
-    return `m300:${equipe}:${dataRef}`;
+    const incidente = String(
+      row["Incidente"] || row["Número"] || row["Numero"] || row["Nr_Ordem"] || row["Nr Ordem"] || ""
+    ).trim().replace(/^0+/, "");
+    return `m300:${equipe}:${dataRef}:${incidente}`;
   }
 }
 
