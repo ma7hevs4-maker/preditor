@@ -1601,7 +1601,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                       {row.Ocupação.toFixed(1)}%
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {row.Ociosidade.toFixed(1)}%
+                      {row["Ociosidade (min)"].toFixed(0)}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row["Inc. Ociosid."]}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Produtividade.toFixed(2)}
