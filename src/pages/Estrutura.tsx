@@ -420,6 +420,71 @@ const Estrutura = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // ── Clipboard paste (Ctrl+C from Excel) ──
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast({ title: "Clipboard vazio", description: "Copie os dados da planilha primeiro (Ctrl+C).", variant: "destructive" });
+        return;
+      }
+
+      const lines = text.trim().split("\n").map(line => line.split("\t"));
+      if (lines.length < 2) {
+        toast({ title: "Formato inválido", description: "Esperado: tabela com tipo de equipe na 1ª coluna e valores por hora nas demais.", variant: "destructive" });
+        return;
+      }
+
+      const newTypeData: Record<string, number[]> = {};
+      TEAM_TYPES.forEach(t => { newTypeData[t] = Array(24).fill(0); });
+
+      // Detect if first row is header (check if 2nd cell is a number)
+      const firstRowSecondCell = parseFloat(lines[0][1]);
+      const startRow = isNaN(firstRowSecondCell) ? 1 : 0;
+
+      let matchCount = 0;
+      for (let r = startRow; r < lines.length; r++) {
+        const cells = lines[r];
+        const typeName = (cells[0] ?? "").trim();
+        if (!typeName) continue;
+
+        // Match by full name or short name
+        const matched = TEAM_TYPES.find(t => {
+          const tLower = t.toLowerCase();
+          const inputLower = typeName.toLowerCase();
+          const shortLower = (SHORT_NAMES[t] ?? "").toLowerCase();
+          return tLower === inputLower || shortLower === inputLower || tLower.startsWith(inputLower) || inputLower.startsWith(tLower);
+        });
+
+        if (!matched) continue;
+        matchCount++;
+        for (let h = 0; h < 24 && h + 1 < cells.length; h++) {
+          newTypeData[matched][h] = Math.max(0, parseInt(cells[h + 1]) || 0);
+        }
+      }
+
+      if (matchCount === 0) {
+        toast({ title: "Nenhum tipo reconhecido", description: "Verifique se a 1ª coluna contém os nomes dos tipos de equipe.", variant: "destructive" });
+        return;
+      }
+
+      setTypeData(newTypeData);
+      const newTeams = Array(24).fill(0);
+      const newLoss = Array(24).fill(0);
+      for (let h = 0; h < 24; h++) {
+        newTeams[h] = TEAM_TYPES.reduce((s, t) => s + (newTypeData[t]?.[h] ?? 0), 0);
+        newLoss[h] = newTypeData["Perdas"]?.[h] ?? 0;
+      }
+      setTeams(newTeams);
+      setLossTeams(newLoss);
+      setIsDirty(true);
+
+      toast({ title: "Dados colados!", description: `${matchCount} tipo(s) de equipe importado(s) do clipboard.` });
+    } catch (err) {
+      toast({ title: "Erro ao colar", description: "Permita o acesso ao clipboard ou use Ctrl+V.", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
       <div className="w-full mx-auto">
