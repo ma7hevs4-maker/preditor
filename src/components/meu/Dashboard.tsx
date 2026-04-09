@@ -1669,13 +1669,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Reinc.",
                     "TMDE",
                     "Ocup.",
-                    "Ociosid.",
+                    "Ociosid.(min)",
+                    "Inc. Ociosid.",
                     "Login",
                     "Desp.",
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
