@@ -23,6 +23,9 @@ export default function Meu() {
   const [sourceFiles, setSourceFiles] = useState<{ incFileName?: string; m300FileName?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearPassword, setClearPassword] = useState("");
+  const [clearPasswordError, setClearPasswordError] = useState(false);
   const { meta, isLoadingMeta, loadMeta, saveRawData, isSaving, saveProgress, loadSavedData, clearAllData } = useSavedDashboard();
 
   useEffect(() => { loadMeta(); }, []);
