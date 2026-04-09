@@ -294,6 +294,10 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                 <span>Volta Base</span>
               </div>
               <div className="flex items-center gap-1.5">
+                <div className="w-4 h-1 rounded-full" style={{ backgroundColor: COLORS.excessIdle }}></div>
+                <span>Excesso Ocioso</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <div className="w-4 h-3.5 rounded-sm border-2" style={{ borderColor: COLORS.improdutivoBorder, backgroundColor: 'transparent' }}></div>
                 <span>Improdutivo</span>
               </div>
