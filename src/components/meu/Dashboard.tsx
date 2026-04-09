@@ -1471,7 +1471,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
               <h3 className="text-xs font-medium">Incidentes</h3>
             </div>
             <p className="text-2xl font-bold text-foreground">
-              {isPeriodMode ? displayInc.toFixed(1) : displayInc}
+              {displayInc}
             </p>
           </div>
           <div className="glass-card p-5">
