@@ -594,13 +594,16 @@ const Estrutura = () => {
               </div>
             )}
 
-            {/* Excel Import/Export */}
+            {/* Excel Import/Export/Paste */}
             <div className="flex gap-1.5">
               <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleDownloadTemplate} title="Baixar modelo Excel com os dados atuais">
                 <Download className="w-3.5 h-3.5 mr-1" />Modelo
               </Button>
               <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => fileInputRef.current?.click()} title="Importar estrutura de um arquivo Excel">
                 <Upload className="w-3.5 h-3.5 mr-1" />Importar
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs bg-primary/10 hover:bg-primary/20 border-primary/30" onClick={handlePasteFromClipboard} title="Colar dados copiados da planilha (Ctrl+C no Excel → clique aqui)">
+                <ClipboardPaste className="w-3.5 h-3.5 mr-1" />Colar
               </Button>
               <input
                 ref={fileInputRef}
