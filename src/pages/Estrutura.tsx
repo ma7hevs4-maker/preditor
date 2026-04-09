@@ -689,7 +689,7 @@ const Estrutura = () => {
                     <table className="w-full text-[11px]">
                       <thead>
                         <tr>
-                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[90px]">Tipo</th>
+                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[75px]">Tipo</th>
                           {turno.hours.map(h => (
                             <th key={h} className={`text-center py-0.5 px-0.5 font-mono min-w-[38px] ${turnoColors.text}`}>
                               {String(h).padStart(2, "0")}h
