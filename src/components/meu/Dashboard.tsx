@@ -775,9 +775,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   );
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    const details = calculateOccupancyDetails(eqData);
-    somaOcupacaoGeral += details.pct;
-    somaIdleMinutesGeral += details.idleMinutes;
+    somaOcupacaoGeral += calculateOccupancy(eqData);
+    somaIdleMinutesGeral += calculateIdleMinutes(eqData);
   });
   const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
   const avgIdleMinutesGeral = equipesPresentesGeral.length > 0 ? somaIdleMinutesGeral / equipesPresentesGeral.length : 0;
@@ -925,9 +924,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
       // Ocupação e Ociosidade
-      const occDetails = calculateOccupancyDetails(eqData);
-      const ocupacao = occDetails.pct;
-      const idleMinutes = occDetails.idleMinutes;
+      const ocupacao = calculateOccupancy(eqData);
+      const idleMinutes = calculateIdleMinutes(eqData);
 
       // Login
       let maxLoginVal: number | null = null;
