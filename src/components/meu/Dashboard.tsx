@@ -1221,6 +1221,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         m300Raw: rawM300 || [],
         incFileName: sourceFiles?.incFileName,
         m300FileName: sourceFiles?.m300FileName,
+        processedData: rawData,
       });
       toast.success("Dashboard salvo com sucesso!");
       setPendingAction(null);
