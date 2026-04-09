@@ -599,7 +599,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   }, [filteredData]);
 
   const totalInc = new Set(filteredData.map((d) => d.Número)).size;
-  const displayInc = isPeriodMode ? totalInc / numDays : totalInc;
+  const displayInc = totalInc;
 
   const tmdeMedio =
     filteredData.length > 0
@@ -624,7 +624,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const resumoProcessos = processosOrdem.map((proc) => {
     const procData = filteredData.filter((d) => d.Processo === proc);
     const inc = new Set(procData.map((d) => d.Número)).size;
-    const displayIncProc = isPeriodMode ? inc / numDays : inc;
 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
@@ -932,11 +931,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
       return {
         Equipe: eq,
-        Incidentes: isPeriodMode ? inc / eqDays : inc,
-        Improdutivos: isPeriodMode ? imp / eqDays : imp,
-        "Reincidentes causados": isPeriodMode ? reinc / eqDays : reinc,
+        Incidentes: inc,
+        Improdutivos: imp,
+        "Reincidentes causados": reinc,
         TMDE: tmde,
-        "Ordem 2": isPeriodMode ? ord2 / eqDays : ord2,
+        "Ordem 2": ord2,
         Ocupação: ocupacao,
         "Ociosidade (min)": idleMinutes,
         "Inc. Ociosid.": Math.round(idleMinutes / 60 * 1.5),
