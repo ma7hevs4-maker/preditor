@@ -516,6 +516,35 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
+  // Tempos ideais (em minutos)
+  const IDEAL_PLATFORM_MIN = 25;
+  const IDEAL_INTERVAL_MIN = 60;
+  const IDEAL_RETURN_BASE_MIN = 30;
+
+  const getShiftDurationMinutes = (dayData: any[]): number => {
+    const firstRow = dayData[0] || {};
+    const inicioTurno = getValMinutes(firstRow["Inicio Calendario"]);
+    const fimTurno = getValMinutes(firstRow["Fim Calendario"]);
+    let duracaoTurno = 480;
+    if (inicioTurno !== null && fimTurno !== null) {
+      duracaoTurno = fimTurno - inicioTurno;
+      if (duracaoTurno <= 0) duracaoTurno += 1440;
+    }
+    return duracaoTurno;
+  };
+
+  const getIntervalDurationMinutes = (dayData: any[]): number => {
+    const firstRow = dayData[0] || {};
+    const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
+    const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
+    if (inicioIntervalo !== null && fimIntervalo !== null) {
+      let dur = fimIntervalo - inicioIntervalo;
+      if (dur <= 0) dur += 1440;
+      return dur;
+    }
+    return 0; // sem intervalo registrado
+  };
+
   const calculateOccupancy = (eqData: any[]) => {
     if (eqData.length === 0) return 0;
     
@@ -530,42 +559,26 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     let totalDenominator = 0;
     
     Object.values(dataByDate).forEach(dayData => {
-      const incidentsToCount = dayData.filter(d => (Number(d.TMDE) || 0) <= 150 || d.possivelO2 || d.possivelAnomalia);
-      const sumTmdTme = incidentsToCount.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
+      const sumTmdTme = dayData.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
       
-      const firstRow = dayData[0] || {};
+      const tempoPlataforma = calcTempoPlataforma(dayData) ?? IDEAL_PLATFORM_MIN;
+      const retornoBase = calcRetornoBase(dayData) ?? IDEAL_RETURN_BASE_MIN;
+      const duracaoIntervalo = getIntervalDurationMinutes(dayData) || IDEAL_INTERVAL_MIN;
+      const duracaoTurno = getShiftDurationMinutes(dayData);
       
-      const tempoPlataforma = calcTempoPlataforma(dayData) ?? 40;
-      const retornoBase = calcRetornoBase(dayData) ?? 30;
+      // Cap at ideal values
+      const platCapped = Math.min(tempoPlataforma, IDEAL_PLATFORM_MIN);
+      const intervalCapped = Math.min(duracaoIntervalo, IDEAL_INTERVAL_MIN);
+      const returnCapped = Math.min(retornoBase, IDEAL_RETURN_BASE_MIN);
       
-      const tempoPlataformaAdj = tempoPlataforma > 60 ? 40 : tempoPlataforma;
-      const retornoBaseAdj = retornoBase > 60 ? 30 : retornoBase;
-      
-      const inicioTurno = getValMinutes(firstRow["Inicio Calendario"]);
-      const fimTurno = getValMinutes(firstRow["Fim Calendario"]);
-      let duracaoTurno = 480;
-      if (inicioTurno !== null && fimTurno !== null) {
-        duracaoTurno = fimTurno - inicioTurno;
-        if (duracaoTurno <= 0) duracaoTurno += 1440;
-      }
-      
-      const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
-      const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
-      let duracaoIntervalo = 60;
-      if (inicioIntervalo !== null && fimIntervalo !== null) {
-        duracaoIntervalo = fimIntervalo - inicioIntervalo;
-        if (duracaoIntervalo <= 0) duracaoIntervalo += 1440;
-      }
-      
-      totalNumerator += (sumTmdTme + tempoPlataformaAdj + duracaoIntervalo + retornoBaseAdj);
+      totalNumerator += (sumTmdTme + platCapped + intervalCapped + returnCapped);
       totalDenominator += duracaoTurno;
     });
     
     return totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
   };
 
-  // Calcula minutos ociosos reais: gaps entre incidentes (tempo logado sem atividade)
-  // Fórmula: (último incidente fim - primeiro despacho) - soma(TMD+TME) - intervalo
+  // Calcula minutos ociosos: tudo que não é atividade produtiva (inclui excesso de plataforma/intervalo/retorno)
   const calculateIdleMinutes = (eqData: any[]): number => {
     if (eqData.length === 0) return 0;
 
@@ -579,47 +592,19 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     let totalIdle = 0;
 
     Object.values(dataByDate).forEach(dayData => {
-      // First dispatch time (decimal hours)
-      const firstDispatch = getFirstDispatch(dayData);
-      if (firstDispatch == null) return;
+      const sumTmdTme = dayData.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
+      
+      const tempoPlataforma = calcTempoPlataforma(dayData) ?? IDEAL_PLATFORM_MIN;
+      const retornoBase = calcRetornoBase(dayData) ?? IDEAL_RETURN_BASE_MIN;
+      const duracaoIntervalo = getIntervalDurationMinutes(dayData) || IDEAL_INTERVAL_MIN;
+      const duracaoTurno = getShiftDurationMinutes(dayData);
+      
+      // Cap at ideal values
+      const platCapped = Math.min(tempoPlataforma, IDEAL_PLATFORM_MIN);
+      const intervalCapped = Math.min(duracaoIntervalo, IDEAL_INTERVAL_MIN);
+      const returnCapped = Math.min(retornoBase, IDEAL_RETURN_BASE_MIN);
 
-      // Last incident end (decimal hours) = last hora_aux + TMD/60 + TME/60
-      const sorted = dayData
-        .filter(d => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
-        .sort((a, b) => {
-          const endA = (a.hora_aux_ordenacao || 0) + (Number(a.TMD) || 0) / 60 + (Number(a.TME) || 0) / 60;
-          const endB = (b.hora_aux_ordenacao || 0) + (Number(b.TMD) || 0) / 60 + (Number(b.TME) || 0) / 60;
-          return endB - endA;
-        });
-
-      if (sorted.length === 0) return;
-
-      const lastIncEnd = sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60;
-
-      // Total span in minutes from first dispatch to last incident end
-      let spanMinutes = (lastIncEnd - firstDispatch) * 60;
-      if (spanMinutes <= 0) spanMinutes += 1440;
-
-      // Sum TMD+TME of counted incidents
-      const incidentsToCount = dayData.filter(d => (Number(d.TMDE) || 0) <= 150 || d.possivelO2 || d.possivelAnomalia);
-      const sumTmdTme = incidentsToCount.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
-
-      // Interval duration (only if it falls within the dispatch-to-last-incident window)
-      const firstRow = dayData[0] || {};
-      const { intervalStart } = getIntervalBounds(dayData);
-      let duracaoIntervalo = 0;
-      if (intervalStart != null && intervalStart >= firstDispatch && intervalStart <= lastIncEnd) {
-        const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
-        const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
-        if (inicioIntervalo !== null && fimIntervalo !== null) {
-          duracaoIntervalo = fimIntervalo - inicioIntervalo;
-          if (duracaoIntervalo <= 0) duracaoIntervalo += 1440;
-        } else {
-          duracaoIntervalo = 60;
-        }
-      }
-
-      const idle = spanMinutes - sumTmdTme - duracaoIntervalo;
+      const idle = duracaoTurno - sumTmdTme - platCapped - intervalCapped - returnCapped;
       totalIdle += Math.max(0, idle);
     });
 
@@ -1152,15 +1137,27 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
     const intervalEndDecimal = convertToDecimalHours(firstRow["Fim Intervalo"] || firstRow["Fim intervalo"], timelineEffectiveDate);
     
-    // Platform duration: shift start (IT) → first incident dispatch (in decimal hours)
+    // Platform duration: shift start (IT) → first incident dispatch
+    // Use events (already in timeline reference frame) instead of getPlatformSegment to avoid midnight crossing issues
     let platformDuration = undefined;
     let platformStart = shiftStartDecimal ?? undefined;
     let platformEnd = undefined as number | undefined;
-    const platformSegment = getPlatformSegment(equipeData);
-    if (platformSegment) {
-      platformStart = platformSegment.start;
-      platformEnd = platformSegment.end;
-      platformDuration = platformSegment.end - platformSegment.start;
+    
+    if (shiftStartDecimal != null && events.length > 0) {
+      const sortedEvents = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal);
+      const firstEventStart = sortedEvents[0].inicio_decimal;
+      
+      // Check if interval happens before first dispatch
+      if (intervalStartDecimal != null && intervalStartDecimal > shiftStartDecimal && intervalStartDecimal <= firstEventStart) {
+        platformEnd = intervalStartDecimal;
+      } else if (firstEventStart > shiftStartDecimal) {
+        platformEnd = firstEventStart;
+      }
+      
+      if (platformEnd != null) {
+        platformDuration = platformEnd - shiftStartDecimal;
+        if (platformDuration <= 0) platformDuration = undefined;
+      }
     }
 
     // Return to base: last incident "Liberada" (end) → logoff (in decimal hours)
