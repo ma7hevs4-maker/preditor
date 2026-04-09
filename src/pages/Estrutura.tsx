@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
-import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay } from "date-fns";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,6 +15,7 @@ import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDa
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
 
 const ADMIN_PASSWORD = "dys";
 
@@ -25,7 +26,6 @@ const Estrutura = () => {
   const [planningMode, setPlanningMode] = useState<"single" | "period">("single");
   const [teams, setTeams] = useState<number[]>(Array(24).fill(0));
   const [lossTeams, setLossTeams] = useState<number[]>(Array(24).fill(0));
-  // typeData: { [teamType]: number[] (24 hours) }
   const [typeData, setTypeData] = useState<Record<string, number[]>>(() => {
     const init: Record<string, number[]> = {};
     TEAM_TYPES.forEach(t => { init[t] = Array(24).fill(0); });
@@ -35,16 +35,16 @@ const Estrutura = () => {
   const [isCalendarViewOpen, setIsCalendarViewOpen] = useState(false);
   const [calendarViewMonth, setCalendarViewMonth] = useState<Date>(new Date());
 
-  // Auth/edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editPassword, setEditPassword] = useState("");
   const [editPasswordError, setEditPasswordError] = useState(false);
   const [editUnlocked, setEditUnlocked] = useState(false);
 
-  // Save as structure dialog state
   const [saveStructureOpen, setSaveStructureOpen] = useState(false);
   const [structureName, setStructureName] = useState("");
   const [savingStructure, setSavingStructure] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: bases } = useBases();
   const { data: teamStructures } = useTeamStructures(selectedBaseId || null);
@@ -62,15 +62,12 @@ const Estrutura = () => {
   const deletePlan = useDeleteDailyTeamPlan();
   const upsertTypeEntries = useUpsertTeamTypeEntries();
 
-  // Fetch type entries for existing plan
   const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
 
-  // Fetch all plans for calendar view
   const monthStart = format(startOfMonth(selectedDate), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
   const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd);
 
-  // Fetch plans for calendar view dialog (may be a different month)
   const calendarViewMonthStart = format(startOfMonth(calendarViewMonth), "yyyy-MM-dd");
   const calendarViewMonthEnd = format(endOfMonth(calendarViewMonth), "yyyy-MM-dd");
   const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd);
@@ -80,7 +77,6 @@ const Estrutura = () => {
     return new Set(calendarViewMonthPlans.map(p => p.plan_date));
   }, [calendarViewMonthPlans]);
 
-  // Load existing plan
   useMemo(() => {
     if (existingPlan) {
       setTeams(planToTeamsArray(existingPlan));
@@ -93,7 +89,6 @@ const Estrutura = () => {
     }
   }, [existingPlan, planLoading]);
 
-  // Load type entries
   useMemo(() => {
     const newTypeData: Record<string, number[]> = {};
     TEAM_TYPES.forEach(t => { newTypeData[t] = Array(24).fill(0); });
@@ -199,7 +194,6 @@ const Estrutura = () => {
       ...teamsArrayToPlanFields(teams, lossTeams),
     } as any);
 
-    // Save type entries
     const planId = planResult?.id || existingPlan?.id;
     if (planId) {
       const entries: { team_type: string; hour: number; quantity: number }[] = [];
@@ -251,7 +245,7 @@ const Estrutura = () => {
       setEditDialogOpen(false);
       setEditPassword("");
       setEditPasswordError(false);
-      toast({ title: "Modo edição ativado", description: "Agora você pode apagar o plano." });
+      toast({ title: "Modo edição ativado", description: "Agora você pode editar o plano." });
     } else {
       setEditPasswordError(true);
     }
@@ -261,16 +255,13 @@ const Estrutura = () => {
     if (!structureName.trim() || !selectedBaseId) return;
     setSavingStructure(true);
     try {
-      // Build structure from current type grid (source of truth in this screen)
       const structureFields: Record<string, any> = {};
       for (let h = 0; h < 24; h++) {
         const totalHour = TEAM_TYPES.reduce((sum, type) => sum + (typeData[type]?.[h] ?? 0), 0);
         const perdasHour = typeData["Perdas"]?.[h] ?? 0;
-
         structureFields[`teams_hour_${h}`] = totalHour;
         structureFields[`loss_teams_hour_${h}`] = perdasHour;
       }
-      // Include type data snapshot
       structureFields.type_data_snapshot = typeData;
       await addTeamStructure.mutateAsync({
         base_id: selectedBaseId,
@@ -294,7 +285,6 @@ const Estrutura = () => {
     setTeams(structureToTeamsArray(structure));
     setLossTeams(structureToLossTeamsArray(structure));
 
-    // Restore type data from snapshot when available
     const snapshot = (structure as any).type_data_snapshot as Record<string, number[]> | null;
     if (snapshot) {
       const newTypeData: Record<string, number[]> = {};
@@ -306,7 +296,6 @@ const Estrutura = () => {
       });
       setTypeData(newTypeData);
     } else {
-      // Fallback for legacy structures created before type_data_snapshot existed
       const fallbackTypeData: Record<string, number[]> = {};
       TEAM_TYPES.forEach(t => { fallbackTypeData[t] = Array(24).fill(0); });
 
@@ -317,7 +306,6 @@ const Estrutura = () => {
         const total = Number((structure as any)[`teams_hour_${h}`] ?? 0);
         const perdas = Number((structure as any)[`loss_teams_hour_${h}`] ?? 0);
         const apoio = Math.max(total - perdas, 0);
-
         fallbackTypeData[emergencyKey][h] = apoio;
         if (perdasKey) fallbackTypeData[perdasKey][h] = Math.max(perdas, 0);
       }
@@ -338,28 +326,96 @@ const Estrutura = () => {
     return new Set(monthPlans.map(p => p.plan_date));
   }, [monthPlans]);
 
-  // BT only: Perdas, Corte e Religa, Reguladas
   const BT_ONLY_TYPES = ["Perdas", "Corte e Religa"] as const;
-  // Excluded from calculations: LV, MK and Reguladas
   const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras", "Reguladas"] as const;
-  // Apoio types count for all incidents (not excluded, not BT only)
-  // "Apoio UTS" and "Apoio UTN" are automatically included in totalAllIncidents since they're not in EXCLUDED or BT_ONLY
 
   const totalAllIncidents = TEAM_TYPES
     .filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
     .reduce((s, t) => s + (typeData[t]?.reduce((a, b) => a + b, 0) ?? 0), 0);
   const totalBT = BT_ONLY_TYPES.reduce((s, t) => s + (typeData[t]?.reduce((a, b) => a + b, 0) ?? 0), 0);
 
+  // ── Excel template download ──
+  const handleDownloadTemplate = () => {
+    const wb = XLSX.utils.book_new();
+    const headers = ["Tipo de Equipe", ...Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}h`)];
+    const rows = TEAM_TYPES.map(type => {
+      const row: (string | number)[] = [type];
+      for (let h = 0; h < 24; h++) row.push(typeData[type]?.[h] ?? 0);
+      return row;
+    });
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws["!cols"] = [{ wch: 20 }, ...Array(24).fill({ wch: 6 })];
+    XLSX.utils.book_append_sheet(wb, ws, "Estrutura");
+    const baseName = bases?.find(b => b.id === selectedBaseId)?.name ?? "base";
+    XLSX.writeFile(wb, `Estrutura_${baseName}_${format(selectedDate, "yyyy-MM-dd")}.xlsx`);
+  };
+
+  // ── Excel upload ──
+  const handleUploadExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (rows.length < 2) {
+          toast({ title: "Arquivo vazio", variant: "destructive" });
+          return;
+        }
+
+        const newTypeData: Record<string, number[]> = {};
+        TEAM_TYPES.forEach(t => { newTypeData[t] = Array(24).fill(0); });
+
+        // Skip header row (index 0)
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r];
+          const typeName = String(row[0] ?? "").trim();
+          if (!typeName) continue;
+          const matched = TEAM_TYPES.find(t => t.toLowerCase() === typeName.toLowerCase());
+          if (!matched) continue;
+          for (let h = 0; h < 24; h++) {
+            newTypeData[matched][h] = Math.max(0, parseInt(String(row[h + 1] ?? 0)) || 0);
+          }
+        }
+
+        setTypeData(newTypeData);
+
+        // Recalculate totals for teams/lossTeams arrays
+        const newTeams = Array(24).fill(0);
+        const newLoss = Array(24).fill(0);
+        for (let h = 0; h < 24; h++) {
+          newTeams[h] = TEAM_TYPES.reduce((s, t) => s + (newTypeData[t]?.[h] ?? 0), 0);
+          newLoss[h] = newTypeData["Perdas"]?.[h] ?? 0;
+        }
+        setTeams(newTeams);
+        setLossTeams(newLoss);
+        setIsDirty(true);
+
+        toast({ title: "Estrutura importada", description: `Dados carregados de "${file.name}".` });
+      } catch {
+        toast({ title: "Erro ao ler arquivo", variant: "destructive" });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    // Reset input so same file can be re-uploaded
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
       <div className="w-full mx-auto">
-        <div className="mb-6">
+        {/* Header */}
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-foreground">Planejamento de Equipes</h1>
           <p className="text-sm text-muted-foreground">Defina a quantidade de equipes por tipo e hora para dias específicos</p>
         </div>
 
         {/* Controls */}
-        <div className="glass-card p-4 mb-6">
+        <div className="glass-card p-4 mb-4">
           <div className="flex flex-wrap items-end gap-3">
             {/* Base */}
             <div className="space-y-1.5">
@@ -458,6 +514,23 @@ const Estrutura = () => {
               </div>
             )}
 
+            {/* Excel Import/Export */}
+            <div className="flex gap-1.5">
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleDownloadTemplate} title="Baixar modelo Excel com os dados atuais">
+                <Download className="w-3.5 h-3.5 mr-1" />Modelo
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => fileInputRef.current?.click()} title="Importar estrutura de um arquivo Excel">
+                <Upload className="w-3.5 h-3.5 mr-1" />Importar
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={handleUploadExcel}
+              />
+            </div>
+
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
               {existingPlan && !editUnlocked && (
@@ -478,7 +551,6 @@ const Estrutura = () => {
                 Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
-
           </div>
 
           {/* Edit password dialog */}
@@ -529,7 +601,6 @@ const Estrutura = () => {
             </DialogContent>
           </Dialog>
 
-
           {/* Summary */}
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
             <span>Equipes Totais (Dia): <strong className="text-foreground">{(totalAllIncidents / 24).toFixed(1)} eq/h</strong></span>
@@ -539,14 +610,14 @@ const Estrutura = () => {
           </div>
         </div>
 
-        {/* Hourly Grid by Turno */}
+        {/* Hourly Grid - 3 Turnos side by side */}
         {planLoading ? (
           <div className="glass-card p-8 flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
             <span>Carregando plano...</span>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
             {TURNOS.map((turno, turnoIdx) => {
               const turnoColors = [
                 { badge: "text-blue-400 bg-blue-500/10 border border-blue-500/30", text: "text-blue-400", icon: "text-blue-400", cardBorder: "border border-blue-500/30" },
@@ -563,118 +634,116 @@ const Estrutura = () => {
               const isLocked = !!existingPlan && !editUnlocked;
 
               return (
-                <div key={turno.letter} className={`glass-card p-4 ${turnoColors.cardBorder}`}>
-                  <div className="flex items-center justify-between mb-3">
+                <div key={turno.letter} className={`glass-card p-3 ${turnoColors.cardBorder}`}>
+                  {/* Turno header */}
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded ${turnoColors.badge}`}>
                         TURNO {turno.letter}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] text-muted-foreground">
                         {String(turno.hours[0]).padStart(2, "0")}h – {String(turno.hours[turno.hours.length - 1]).padStart(2, "0")}h
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`text-xs h-7 ${turnoColors.icon}`}
+                        className={`text-[10px] h-6 px-1.5 ${turnoColors.icon}`}
                         onClick={() => replicarParaTurno(turnoIdx, turno.hours[0])}
                         title={`Replicar hora ${String(turno.hours[0]).padStart(2, "0")} para todo o turno`}
                         disabled={isLocked}
                       >
-                        <Copy className="w-3 h-3 mr-1" />Replicar 1ª hora
+                        <Copy className="w-3 h-3 mr-0.5" />Replicar
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`text-xs h-7 ${turnoColors.icon} hover:bg-muted/40`}
+                        className={`text-[10px] h-6 px-1.5 ${turnoColors.icon} hover:bg-muted/40`}
                         onClick={() => apagarTurno(turnoIdx)}
                         title="Apagar todos os valores do turno"
                         disabled={isLocked}
                       >
-                        <Trash2 className="w-3 h-3 mr-1" />Apagar Turno
+                        <Trash2 className="w-3 h-3 mr-0.5" />Apagar
                       </Button>
                     </div>
                   </div>
 
                   {/* Scrollable horizontal grid */}
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
+                    <table className="w-full text-[11px]">
                       <thead>
                         <tr>
-                          <th className="text-left py-1 pr-2 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[120px]">Tipo</th>
+                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[90px]">Tipo</th>
                           {turno.hours.map(h => (
-                            <th key={h} className={`text-center py-1 px-1 font-mono min-w-[56px] ${turnoColors.text}`}>
+                            <th key={h} className={`text-center py-0.5 px-0.5 font-mono min-w-[38px] ${turnoColors.text}`}>
                               {String(h).padStart(2, "0")}h
                             </th>
                           ))}
-                          <th className="py-1 pl-1 w-[52px]"></th>
-                         </tr>
+                          <th className="py-0.5 pl-0.5 w-[40px]"></th>
+                        </tr>
                       </thead>
                       <tbody>
                         {TEAM_TYPES.map((type, typeIdx) => {
                           const isBTOnly = BT_ONLY_TYPES.includes(type as any);
-                          const isExcluded = EXCLUDED_TYPES.includes(type as any);
                           return (
                             <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                              <td className={`py-1 pr-2 sticky left-0 bg-card z-10 truncate text-xs ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
+                              <td className={`py-0.5 pr-1 sticky left-0 bg-card z-10 truncate text-[11px] ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
                                 {type}
-                                {isBTOnly && <span className="ml-1 text-[10px] text-orange-400/60">BT</span>}
                               </td>
-                               {turno.hours.map(h => (
-                                 <td key={h} className="py-1 px-0.5">
-                                   <Input
-                                     type="number"
-                                     min={0}
-                                     value={typeData[type]?.[h] ?? 0}
-                                     onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
-                                     className={`h-7 text-center text-xs font-mono w-full ${isBTOnly ? "border-orange-500/30" : ""}`}
-                                     disabled={isLocked}
-                                     readOnly={isLocked}
-                                   />
-                                 </td>
-                               ))}
-                               <td className="py-1 pl-1">
-                                 <div className="flex gap-0.5">
-                                   <Button
-                                     variant="ghost"
-                                     size="icon"
-                                     className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
-                                     title={`Copiar 1ª hora de ${type} para todo o turno`}
-                                     onClick={() => copiarTipoParaTurno(type, turnoIdx)}
-                                     disabled={isLocked}
-                                   >
-                                     <Copy className="w-3 h-3" />
-                                   </Button>
-                                   <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className={`h-7 w-6 ${turnoColors.icon} hover:bg-muted/40`}
-                                      title={`Apagar ${type} neste turno`}
-                                      onClick={() => apagarTipoNoTurno(type, turnoIdx)}
-                                      disabled={isLocked}
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </Button>
-                                 </div>
-                               </td>
-                             </tr>
-                           );
-                         })}
+                              {turno.hours.map(h => (
+                                <td key={h} className="py-0.5 px-0.5">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={typeData[type]?.[h] ?? 0}
+                                    onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
+                                    className={`h-6 text-center text-[11px] font-mono w-full px-0.5 ${isBTOnly ? "border-orange-500/30" : ""}`}
+                                    disabled={isLocked}
+                                    readOnly={isLocked}
+                                  />
+                                </td>
+                              ))}
+                              <td className="py-0.5 pl-0.5">
+                                <div className="flex gap-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-6 w-5 ${turnoColors.icon} hover:bg-muted/40`}
+                                    title={`Copiar 1ª hora de ${type} para todo o turno`}
+                                    onClick={() => copiarTipoParaTurno(type, turnoIdx)}
+                                    disabled={isLocked}
+                                  >
+                                    <Copy className="w-2.5 h-2.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-6 w-5 ${turnoColors.icon} hover:bg-muted/40`}
+                                    title={`Apagar ${type} neste turno`}
+                                    onClick={() => apagarTipoNoTurno(type, turnoIdx)}
+                                    disabled={isLocked}
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
 
-                  <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                    <span>Equipes Totais: <strong className="text-foreground">{(turnoAllIncidents / hoursCount).toFixed(1)} eq/h</strong></span>
-                    <span>Equipes BT: <strong className="text-orange-400">{(turnoBT / hoursCount).toFixed(1)} eq/h</strong></span>
+                  <div className="mt-2 flex gap-3 text-[10px] text-muted-foreground">
+                    <span>eq/h: <strong className="text-foreground">{(turnoAllIncidents / hoursCount).toFixed(1)}</strong></span>
+                    <span>BT: <strong className="text-orange-400">{(turnoBT / hoursCount).toFixed(1)}</strong></span>
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
       </div>
     </div>
   );
