@@ -148,7 +148,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   // Filter states
   const [isPeriodMode, setIsPeriodMode] = useState<boolean>(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<"periodo" | "mes">("periodo");
   const [selectedData, setSelectedData] = useState<string>(() => {
     // Default to D-1 (second-to-last date) if available
     if (datas.length >= 2) return datas[datas.length - 2];
@@ -161,11 +160,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   });
   const [periodEnd, setPeriodEnd] = useState<string>(() => {
     return datas[datas.length - 1] || "";
-  });
-  // Period mode: month
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    const last = datas[datas.length - 1] || "";
-    return last ? last.substring(0, 7) : ""; // YYYY-MM
   });
   const [selectedPolos, setSelectedPolos] = useState<string[]>([]);
   const [selectedProcessos, setSelectedProcessos] = useState<string[]>([]);
@@ -181,13 +175,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
   };
 
-  // Available months from data
-  const availableMonths = useMemo(() => {
-    const months = new Set<string>();
-    datas.forEach(d => { if (d) months.add(d.substring(0, 7)); });
-    return Array.from(months).sort();
-  }, [datas]);
-
   const matchesSelectedDateFilter = (rowDateStr?: string | null) => {
     if (!rowDateStr) return false;
 
@@ -195,14 +182,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       return !selectedData || rowDateStr === selectedData;
     }
 
-    if (selectedPeriod === "periodo") {
-      if (!periodStart || !periodEnd) return true;
-      return rowDateStr >= periodStart && rowDateStr <= periodEnd;
-    }
-
-    // Mês mode
-    if (!selectedMonth) return true;
-    return rowDateStr.startsWith(selectedMonth);
+    if (!periodStart || !periodEnd) return true;
+    return rowDateStr >= periodStart && rowDateStr <= periodEnd;
   };
 
   // Apply filters
