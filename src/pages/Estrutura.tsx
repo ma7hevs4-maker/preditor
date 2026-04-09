@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -420,6 +420,71 @@ const Estrutura = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // ── Clipboard paste (Ctrl+C from Excel) ──
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast({ title: "Clipboard vazio", description: "Copie os dados da planilha primeiro (Ctrl+C).", variant: "destructive" });
+        return;
+      }
+
+      const lines = text.trim().split("\n").map(line => line.split("\t"));
+      if (lines.length < 2) {
+        toast({ title: "Formato inválido", description: "Esperado: tabela com tipo de equipe na 1ª coluna e valores por hora nas demais.", variant: "destructive" });
+        return;
+      }
+
+      const newTypeData: Record<string, number[]> = {};
+      TEAM_TYPES.forEach(t => { newTypeData[t] = Array(24).fill(0); });
+
+      // Detect if first row is header (check if 2nd cell is a number)
+      const firstRowSecondCell = parseFloat(lines[0][1]);
+      const startRow = isNaN(firstRowSecondCell) ? 1 : 0;
+
+      let matchCount = 0;
+      for (let r = startRow; r < lines.length; r++) {
+        const cells = lines[r];
+        const typeName = (cells[0] ?? "").trim();
+        if (!typeName) continue;
+
+        // Match by full name or short name
+        const matched = TEAM_TYPES.find(t => {
+          const tLower = t.toLowerCase();
+          const inputLower = typeName.toLowerCase();
+          const shortLower = (SHORT_NAMES[t] ?? "").toLowerCase();
+          return tLower === inputLower || shortLower === inputLower || tLower.startsWith(inputLower) || inputLower.startsWith(tLower);
+        });
+
+        if (!matched) continue;
+        matchCount++;
+        for (let h = 0; h < 24 && h + 1 < cells.length; h++) {
+          newTypeData[matched][h] = Math.max(0, parseInt(cells[h + 1]) || 0);
+        }
+      }
+
+      if (matchCount === 0) {
+        toast({ title: "Nenhum tipo reconhecido", description: "Verifique se a 1ª coluna contém os nomes dos tipos de equipe.", variant: "destructive" });
+        return;
+      }
+
+      setTypeData(newTypeData);
+      const newTeams = Array(24).fill(0);
+      const newLoss = Array(24).fill(0);
+      for (let h = 0; h < 24; h++) {
+        newTeams[h] = TEAM_TYPES.reduce((s, t) => s + (newTypeData[t]?.[h] ?? 0), 0);
+        newLoss[h] = newTypeData["Perdas"]?.[h] ?? 0;
+      }
+      setTeams(newTeams);
+      setLossTeams(newLoss);
+      setIsDirty(true);
+
+      toast({ title: "Dados colados!", description: `${matchCount} tipo(s) de equipe importado(s) do clipboard.` });
+    } catch (err) {
+      toast({ title: "Erro ao colar", description: "Permita o acesso ao clipboard ou use Ctrl+V.", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6 pl-16">
       <div className="w-full mx-auto">
@@ -529,13 +594,16 @@ const Estrutura = () => {
               </div>
             )}
 
-            {/* Excel Import/Export */}
+            {/* Excel Import/Export/Paste */}
             <div className="flex gap-1.5">
               <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleDownloadTemplate} title="Baixar modelo Excel com os dados atuais">
                 <Download className="w-3.5 h-3.5 mr-1" />Modelo
               </Button>
               <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => fileInputRef.current?.click()} title="Importar estrutura de um arquivo Excel">
                 <Upload className="w-3.5 h-3.5 mr-1" />Importar
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs bg-primary/10 hover:bg-primary/20 border-primary/30" onClick={handlePasteFromClipboard} title="Colar dados copiados da planilha (Ctrl+C no Excel → clique aqui)">
+                <ClipboardPaste className="w-3.5 h-3.5 mr-1" />Colar
               </Button>
               <input
                 ref={fileInputRef}
