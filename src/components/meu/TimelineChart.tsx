@@ -627,60 +627,103 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                               const teamShiftStartHour = teamData.shiftStartHour ?? shiftStartHour;
                               return (
                                 <g key={`shift-lines-${sIdx}`}>
-                                  {/* Platform - starts from IT and can end at interval start if interval happens before first dispatch */}
-                                  {shift.platformStart !== undefined && shift.platformEnd !== undefined && (
-                                    <g>
-                                      <line
-                                        x1={getXScale(shift.platformStart, teamShiftStartHour)} y1={yCenter}
-                                        x2={getXScale(shift.platformEnd, teamShiftStartHour)} y2={yCenter}
-                                        stroke={COLORS.platform} strokeWidth="4" vectorEffect="non-scaling-stroke"
-                                      />
-                                      <line
-                                        x1={getXScale(shift.platformStart, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.platformStart, teamShiftStartHour)} y2={yCenter + 5}
-                                        stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
-                                      />
-                                      <line
-                                        x1={getXScale(shift.platformEnd, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.platformEnd, teamShiftStartHour)} y2={yCenter + 5}
-                                        stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
-                                      />
-                                      <title>Tempo de Plataforma: {Math.round((shift.platformEnd - shift.platformStart) * 60)} min</title>
-                                    </g>
-                                  )}
+                                  {/* Platform - green up to 25min, gray after */}
+                                  {shift.platformStart !== undefined && shift.platformEnd !== undefined && (() => {
+                                    const totalDurHrs = shift.platformEnd - shift.platformStart;
+                                    const idealHrs = 25 / 60;
+                                    const hasExcess = totalDurHrs > idealHrs;
+                                    const idealEnd = hasExcess ? shift.platformStart + idealHrs : shift.platformEnd;
+                                    return (
+                                      <g>
+                                        {/* Ideal portion (green) */}
+                                        <line
+                                          x1={getXScale(shift.platformStart, teamShiftStartHour)} y1={yCenter}
+                                          x2={getXScale(idealEnd, teamShiftStartHour)} y2={yCenter}
+                                          stroke={COLORS.platform} strokeWidth="4" vectorEffect="non-scaling-stroke"
+                                        />
+                                        {/* Excess portion (gray) */}
+                                        {hasExcess && (
+                                          <line
+                                            x1={getXScale(idealEnd, teamShiftStartHour)} y1={yCenter}
+                                            x2={getXScale(shift.platformEnd, teamShiftStartHour)} y2={yCenter}
+                                            stroke={COLORS.excessIdle} strokeWidth="4" vectorEffect="non-scaling-stroke"
+                                          />
+                                        )}
+                                        <line
+                                          x1={getXScale(shift.platformStart, teamShiftStartHour)} y1={yCenter - 5}
+                                          x2={getXScale(shift.platformStart, teamShiftStartHour)} y2={yCenter + 5}
+                                          stroke={COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
+                                        />
+                                        <line
+                                          x1={getXScale(shift.platformEnd, teamShiftStartHour)} y1={yCenter - 5}
+                                          x2={getXScale(shift.platformEnd, teamShiftStartHour)} y2={yCenter + 5}
+                                          stroke={hasExcess ? COLORS.excessIdle : COLORS.platform} strokeWidth="3" vectorEffect="non-scaling-stroke"
+                                        />
+                                        <title>Tempo de Plataforma: {Math.round(totalDurHrs * 60)} min{hasExcess ? ` (ideal: 25min, excesso: ${Math.round((totalDurHrs - idealHrs) * 60)}min contabilizado como ocioso)` : ''}</title>
+                                      </g>
+                                    );
+                                  })()}
 
-                                  {/* Interval - centered */}
-                                  {shift.intervalStart !== undefined && shift.intervalEnd !== undefined && (
-                                    <g>
-                                      <line
-                                        x1={getXScale(shift.intervalStart, teamShiftStartHour)} y1={yCenter}
-                                        x2={getXScale(shift.intervalEnd, teamShiftStartHour)} y2={yCenter}
-                                        stroke={COLORS.interval} strokeWidth="4" vectorEffect="non-scaling-stroke"
-                                      />
-                                      <line
-                                        x1={getXScale(shift.intervalStart, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.intervalStart, teamShiftStartHour)} y2={yCenter + 5}
-                                        stroke={COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
-                                      />
-                                      <line
-                                        x1={getXScale(shift.intervalEnd, teamShiftStartHour)} y1={yCenter - 5}
-                                        x2={getXScale(shift.intervalEnd, teamShiftStartHour)} y2={yCenter + 5}
-                                        stroke={COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
-                                      />
-                                      <title>Intervalo: {formatDecimalTime(shift.intervalStart)} - {formatDecimalTime(shift.intervalEnd)} ({Math.round((shift.intervalEnd - shift.intervalStart) * 60)} min)</title>
-                                    </g>
-                                  )}
+                                  {/* Interval - orange up to 60min, gray after */}
+                                  {shift.intervalStart !== undefined && shift.intervalEnd !== undefined && (() => {
+                                    const totalDurHrs = shift.intervalEnd - shift.intervalStart;
+                                    const idealHrs = 60 / 60;
+                                    const hasExcess = totalDurHrs > idealHrs;
+                                    const idealEnd = hasExcess ? shift.intervalStart + idealHrs : shift.intervalEnd;
+                                    return (
+                                      <g>
+                                        <line
+                                          x1={getXScale(shift.intervalStart, teamShiftStartHour)} y1={yCenter}
+                                          x2={getXScale(idealEnd, teamShiftStartHour)} y2={yCenter}
+                                          stroke={COLORS.interval} strokeWidth="4" vectorEffect="non-scaling-stroke"
+                                        />
+                                        {hasExcess && (
+                                          <line
+                                            x1={getXScale(idealEnd, teamShiftStartHour)} y1={yCenter}
+                                            x2={getXScale(shift.intervalEnd, teamShiftStartHour)} y2={yCenter}
+                                            stroke={COLORS.excessIdle} strokeWidth="4" vectorEffect="non-scaling-stroke"
+                                          />
+                                        )}
+                                        <line
+                                          x1={getXScale(shift.intervalStart, teamShiftStartHour)} y1={yCenter - 5}
+                                          x2={getXScale(shift.intervalStart, teamShiftStartHour)} y2={yCenter + 5}
+                                          stroke={COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
+                                        />
+                                        <line
+                                          x1={getXScale(shift.intervalEnd, teamShiftStartHour)} y1={yCenter - 5}
+                                          x2={getXScale(shift.intervalEnd, teamShiftStartHour)} y2={yCenter + 5}
+                                          stroke={hasExcess ? COLORS.excessIdle : COLORS.interval} strokeWidth="3" vectorEffect="non-scaling-stroke"
+                                        />
+                                        <title>Intervalo: {formatDecimalTime(shift.intervalStart)} - {formatDecimalTime(shift.intervalEnd)} ({Math.round(totalDurHrs * 60)} min){hasExcess ? ` (excesso: ${Math.round((totalDurHrs - idealHrs) * 60)}min)` : ''}</title>
+                                      </g>
+                                    );
+                                  })()}
 
-                                  {/* Return to Base - counts backwards from logoff */}
+                                  {/* Return to Base - red up to 30min, gray after */}
                                   {(() => {
                                     if (shift.returnToBaseDuration !== undefined && shift.lastLogOff !== undefined) {
                                       const returnStart = shift.lastLogOff - shift.returnToBaseDuration;
+                                      const totalDurHrs = shift.returnToBaseDuration;
+                                      const idealHrs = 30 / 60;
+                                      const hasExcess = totalDurHrs > idealHrs;
+                                      const excessStart = hasExcess ? returnStart + idealHrs : shift.lastLogOff;
                                       return (
                                         <g>
-                                          <line x1={getXScale(returnStart, teamShiftStartHour)} y1={yCenter} x2={getXScale(shift.lastLogOff, teamShiftStartHour)} y2={yCenter} stroke={COLORS.returnBase} strokeWidth="4" vectorEffect="non-scaling-stroke" />
+                                          <line
+                                            x1={getXScale(returnStart, teamShiftStartHour)} y1={yCenter}
+                                            x2={getXScale(hasExcess ? excessStart : shift.lastLogOff, teamShiftStartHour)} y2={yCenter}
+                                            stroke={COLORS.returnBase} strokeWidth="4" vectorEffect="non-scaling-stroke"
+                                          />
+                                          {hasExcess && (
+                                            <line
+                                              x1={getXScale(excessStart, teamShiftStartHour)} y1={yCenter}
+                                              x2={getXScale(shift.lastLogOff, teamShiftStartHour)} y2={yCenter}
+                                              stroke={COLORS.excessIdle} strokeWidth="4" vectorEffect="non-scaling-stroke"
+                                            />
+                                          )}
                                           <line x1={getXScale(returnStart, teamShiftStartHour)} y1={yCenter - 5} x2={getXScale(returnStart, teamShiftStartHour)} y2={yCenter + 5} stroke={COLORS.returnBase} strokeWidth="3" vectorEffect="non-scaling-stroke" />
-                                          <line x1={getXScale(shift.lastLogOff, teamShiftStartHour)} y1={yCenter - 5} x2={getXScale(shift.lastLogOff, teamShiftStartHour)} y2={yCenter + 5} stroke={COLORS.returnBase} strokeWidth="3" vectorEffect="non-scaling-stroke" />
-                                          <title>Volta a Base: {Math.round(shift.returnToBaseDuration * 60)} min</title>
+                                          <line x1={getXScale(shift.lastLogOff, teamShiftStartHour)} y1={yCenter - 5} x2={getXScale(shift.lastLogOff, teamShiftStartHour)} y2={yCenter + 5} stroke={hasExcess ? COLORS.excessIdle : COLORS.returnBase} strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                                          <title>Volta a Base: {Math.round(totalDurHrs * 60)} min{hasExcess ? ` (excesso: ${Math.round((totalDurHrs - idealHrs) * 60)}min)` : ''}</title>
                                         </g>
                                       );
                                     }
