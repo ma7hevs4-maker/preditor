@@ -1229,7 +1229,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     } catch {
       toast.error("Erro ao salvar dashboard.");
     }
-  }, [isSaving, passwordInput, pendingAction, rawInc, rawM300, saveRawData, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
+  }, [isSaving, passwordInput, pendingAction, rawData, rawInc, rawM300, saveRawData, sourceFiles?.incFileName, sourceFiles?.m300FileName]);
 
   const currentShiftStartHour = useMemo(() => {
     if (selectedTurnos.length === 1) {
