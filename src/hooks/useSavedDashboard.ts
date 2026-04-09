@@ -15,21 +15,17 @@ export interface SavedMeta {
 // Generate a simple hash string from key fields of a row
 function generateRowHash(row: any, type: "inc" | "m300"): string {
   if (type === "inc") {
-    const numero = String(row["Número"] || row["Numero"] || "").trim();
-    const equipe = String(row["Equipe Desl."] || row["Equipe"] || "").trim();
-    const status = String(row["Status"] || "").trim();
-    return `inc:${numero}:${equipe}:${status}`;
+    // Use only incident number as unique key for incremental merge
+    const numero = String(row["Número"] || row["Numero"] || "").trim().replace(/^0+/, "");
+    return `inc:${numero}`;
   } else {
-    // m300: use equipe + incident + date ref
+    // m300: use equipe + data referência as unique key
     const equipe = String(row["Equipe"] || "").trim();
-    const incidente = String(
-      row["Incidente"] || row["Número"] || row["Numero"] || row["Nr_Ordem"] || row["Nr Ordem"] || ""
-    ).trim();
     const dataRef = String(
       row["Data Referência"] || row["Data Referencia"] || 
       Object.entries(row).find(([k]) => k.toLowerCase().includes("data referencia"))?.[1] || ""
     ).trim();
-    return `m300:${equipe}:${incidente}:${dataRef}`;
+    return `m300:${equipe}:${dataRef}`;
   }
 }
 
@@ -213,13 +209,6 @@ export const useSavedDashboard = () => {
   }) => {
     setIsSaving(true);
     try {
-      // Clear existing rows to prevent duplicates from old NULL-hash rows
-      setSaveProgress("Limpando dados antigos...");
-      await Promise.all([
-        supabase.from("saved_inc_rows").delete().gte("id", 0),
-        supabase.from("saved_m300_rows").delete().gte("id", 0),
-      ]);
-
       setSaveProgress(`Salvando incidentes (0/${params.incRaw.length})...`);
       await batchUpsert("saved_inc_rows", params.incRaw, "inc", (done, total) => {
         setSaveProgress(`Salvando incidentes (${done}/${total})...`);
