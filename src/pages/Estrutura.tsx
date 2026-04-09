@@ -19,6 +19,21 @@ import * as XLSX from "xlsx";
 
 const ADMIN_PASSWORD = "dys";
 
+const SHORT_NAMES: Record<string, string> = {
+  "Emergência": "Emerg.",
+  "Gestores": "Gest.",
+  "Cesto Manutenção": "Cesto Man.",
+  "Cesto Obras": "Cesto Obr.",
+  "LV Manutenção": "LV Man.",
+  "LV Obras": "LV Obr.",
+  "MK Manutenção": "MK Man.",
+  "MK Obras": "MK Obr.",
+  "Apoio UTS": "Ap. UTS",
+  "Apoio UTN": "Ap. UTN",
+  "Corte e Religa": "Corte/Rel.",
+  "Reguladas": "Regul.",
+};
+
 const Estrutura = () => {
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -674,7 +689,7 @@ const Estrutura = () => {
                     <table className="w-full text-[11px]">
                       <thead>
                         <tr>
-                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[90px]">Tipo</th>
+                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[75px]">Tipo</th>
                           {turno.hours.map(h => (
                             <th key={h} className={`text-center py-0.5 px-0.5 font-mono min-w-[38px] ${turnoColors.text}`}>
                               {String(h).padStart(2, "0")}h
@@ -688,8 +703,8 @@ const Estrutura = () => {
                           const isBTOnly = BT_ONLY_TYPES.includes(type as any);
                           return (
                             <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                              <td className={`py-0.5 pr-1 sticky left-0 bg-card z-10 truncate text-[11px] ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
-                                {type}
+                              <td className={`py-0.5 pr-1 sticky left-0 bg-card z-10 truncate text-[11px] whitespace-nowrap ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
+                                {SHORT_NAMES[type] ?? type}
                               </td>
                               {turno.hours.map(h => (
                                 <td key={h} className="py-0.5 px-0.5">
