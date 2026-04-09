@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Upload, FileSpreadsheet, Loader2, Database } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, Database, Trash2 } from "lucide-react";
 import { readExcelToJson, processRawData } from "@/utils/meuDataProcessing";
 import { Dashboard } from "@/components/meu/Dashboard";
 import { useSavedDashboard } from "@/hooks/useSavedDashboard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Meu() {
   const [incFile, setIncFile] = useState<File | null>(null);
@@ -13,7 +24,7 @@ export default function Meu() {
   const [sourceFiles, setSourceFiles] = useState<{ incFileName?: string; m300FileName?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { meta, isLoadingMeta, loadMeta, saveRawData, isSaving, saveProgress, loadSavedData } = useSavedDashboard();
+  const { meta, isLoadingMeta, loadMeta, saveRawData, isSaving, saveProgress, loadSavedData, clearAllData } = useSavedDashboard();
 
   useEffect(() => { loadMeta(); }, []);
 
@@ -43,18 +54,43 @@ export default function Meu() {
     setLoading(true);
     setError(null);
     try {
-      const { incRaw, m300Raw } = await loadSavedData();
-      setRawInc(incRaw);
-      setRawM300(m300Raw);
-      setSourceFiles({
-        incFileName: meta?.inc_file_name || undefined,
-        m300FileName: meta?.m300_file_name || undefined,
-      });
-      const processedData = processRawData(incRaw, m300Raw);
-      setData(processedData);
+      const { incRaw, m300Raw, cachedProcessed } = await loadSavedData();
+      
+      if (cachedProcessed) {
+        // Fast path: use cached processed data
+        setRawInc([]);
+        setRawM300([]);
+        setSourceFiles({
+          incFileName: meta?.inc_file_name || undefined,
+          m300FileName: meta?.m300_file_name || undefined,
+        });
+        setData(cachedProcessed);
+      } else {
+        // Fallback: process from raw
+        setRawInc(incRaw);
+        setRawM300(m300Raw);
+        setSourceFiles({
+          incFileName: meta?.inc_file_name || undefined,
+          m300FileName: meta?.m300_file_name || undefined,
+        });
+        const processedData = processRawData(incRaw, m300Raw);
+        setData(processedData);
+      }
     } catch (err) {
       console.error(err);
       setError("Erro ao carregar dados salvos.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    setLoading(true);
+    try {
+      await clearAllData();
+    } catch (err) {
+      console.error(err);
+      setError("Erro ao limpar dados.");
     } finally {
       setLoading(false);
     }
@@ -132,22 +168,58 @@ export default function Meu() {
               Verificando dados salvos...
             </div>
           ) : meta ? (
-            <button
-              onClick={handleLoadSaved}
-              disabled={loading}
-              className="w-full flex flex-col items-center justify-center py-3 px-4 border border-border rounded-lg text-sm font-medium text-foreground bg-secondary/50 hover:bg-secondary/80 transition-colors disabled:opacity-50"
-            >
-              <span className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-primary" />
-                Acessar última atualização
-              </span>
-              <span className="text-[11px] text-muted-foreground mt-1">
-                Salvo em {new Date(meta.saved_at).toLocaleString("pt-BR", {
-                  day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
-                })} • {meta.row_count_inc} incidentes{meta.row_count_m300 > 0 ? ` + ${meta.row_count_m300} M300` : ""}
-              </span>
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={handleLoadSaved}
+                disabled={loading}
+                className="w-full flex flex-col items-center justify-center py-3 px-4 border border-border rounded-lg text-sm font-medium text-foreground bg-secondary/50 hover:bg-secondary/80 transition-colors disabled:opacity-50"
+              >
+                <span className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-primary" />
+                  Acessar última atualização
+                </span>
+                <span className="text-[11px] text-muted-foreground mt-1">
+                  Salvo em {new Date(meta.saved_at).toLocaleString("pt-BR", {
+                    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+                  })} • {meta.row_count_inc} incidentes{meta.row_count_m300 > 0 ? ` + ${meta.row_count_m300} M300` : ""}
+                </span>
+              </button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-destructive/30 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Limpar base mensal
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Limpar base mensal?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Isso vai apagar todos os dados salvos (incidentes, M300 e cache processado). 
+                      Essa ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearData}>
+                      Sim, limpar tudo
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ) : null}
+
+          {isSaving && saveProgress && (
+            <div className="flex items-center justify-center py-2 text-muted-foreground text-xs">
+              <Loader2 className="animate-spin mr-2 h-3 w-3" />
+              {saveProgress}
+            </div>
+          )}
         </div>
       </div>
     </div>
