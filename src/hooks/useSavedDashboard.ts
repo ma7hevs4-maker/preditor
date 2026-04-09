@@ -129,10 +129,13 @@ async function batchUpsert(
   const deduped = new Map<string, any>();
   for (const row of rows) {
     const hash = generateRowHash(row, type);
-    // Skip rows with empty key fields (would all collide on same hash)
-    const parts = hash.split(":");
-    const meaningful = parts.slice(1).filter(p => p.length > 0);
-    if (meaningful.length < 2) continue;
+    const parts = hash.split(":").slice(1).filter((part) => part.length > 0);
+
+    const hasRequiredKey = type === "inc"
+      ? parts.length >= 1
+      : parts.length >= 3;
+
+    if (!hasRequiredKey) continue;
     deduped.set(hash, row);
   }
   const uniqueRows = Array.from(deduped.entries());
