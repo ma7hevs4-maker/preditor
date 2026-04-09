@@ -19,6 +19,21 @@ import * as XLSX from "xlsx";
 
 const ADMIN_PASSWORD = "dys";
 
+const SHORT_NAMES: Record<string, string> = {
+  "Emergência": "Emerg.",
+  "Gestores": "Gest.",
+  "Cesto Manutenção": "Cesto Man.",
+  "Cesto Obras": "Cesto Obr.",
+  "LV Manutenção": "LV Man.",
+  "LV Obras": "LV Obr.",
+  "MK Manutenção": "MK Man.",
+  "MK Obras": "MK Obr.",
+  "Apoio UTS": "Ap. UTS",
+  "Apoio UTN": "Ap. UTN",
+  "Corte e Religa": "Corte/Rel.",
+  "Reguladas": "Regul.",
+};
+
 const Estrutura = () => {
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
