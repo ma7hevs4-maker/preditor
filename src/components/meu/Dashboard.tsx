@@ -519,7 +519,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   // Tempos ideais (em minutos)
   const IDEAL_PLATFORM_MIN = 25;
   const IDEAL_INTERVAL_MIN = 60;
-  const IDEAL_RETURN_BASE_MIN = 30;
+  const IDEAL_RETURN_BASE_MIN = 40;
 
   const getShiftDurationMinutes = (dayData: any[]): number => {
     const firstRow = dayData[0] || {};

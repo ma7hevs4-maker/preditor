@@ -708,7 +708,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     if (shift.returnToBaseDuration !== undefined && shift.lastLogOff !== undefined) {
                                       const returnStart = shift.lastLogOff - shift.returnToBaseDuration;
                                       const totalDurHrs = shift.returnToBaseDuration;
-                                      const idealHrs = 30 / 60;
+                                      const idealHrs = 40 / 60;
                                       const hasExcess = totalDurHrs > idealHrs;
                                       const excessStart = hasExcess ? returnStart + idealHrs : shift.lastLogOff;
                                       return (
