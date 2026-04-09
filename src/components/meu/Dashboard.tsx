@@ -516,8 +516,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
-  const calculateOccupancyDetails = (eqData: any[]): { pct: number; idleMinutes: number } => {
-    if (eqData.length === 0) return { pct: 0, idleMinutes: 0 };
+  const calculateOccupancy = (eqData: any[]) => {
+    if (eqData.length === 0) return 0;
     
     const dataByDate: Record<string, any[]> = {};
     eqData.forEach(d => {
@@ -561,13 +561,70 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       totalDenominator += duracaoTurno;
     });
     
-    const pct = totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
-    const idleMinutes = Math.max(0, totalDenominator - totalNumerator);
-    return { pct, idleMinutes };
+    return totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
   };
 
-  // Backward-compatible wrapper
-  const calculateOccupancy = (eqData: any[]) => calculateOccupancyDetails(eqData).pct;
+  // Calcula minutos ociosos reais: gaps entre incidentes (tempo logado sem atividade)
+  // Fórmula: (último incidente fim - primeiro despacho) - soma(TMD+TME) - intervalo
+  const calculateIdleMinutes = (eqData: any[]): number => {
+    if (eqData.length === 0) return 0;
+
+    const dataByDate: Record<string, any[]> = {};
+    eqData.forEach(d => {
+      const date = d["Data Turno"] || d["Data Ação"];
+      if (!dataByDate[date]) dataByDate[date] = [];
+      dataByDate[date].push(d);
+    });
+
+    let totalIdle = 0;
+
+    Object.values(dataByDate).forEach(dayData => {
+      // First dispatch time (decimal hours)
+      const firstDispatch = getFirstDispatch(dayData);
+      if (firstDispatch == null) return;
+
+      // Last incident end (decimal hours) = last hora_aux + TMD/60 + TME/60
+      const sorted = dayData
+        .filter(d => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
+        .sort((a, b) => {
+          const endA = (a.hora_aux_ordenacao || 0) + (Number(a.TMD) || 0) / 60 + (Number(a.TME) || 0) / 60;
+          const endB = (b.hora_aux_ordenacao || 0) + (Number(b.TMD) || 0) / 60 + (Number(b.TME) || 0) / 60;
+          return endB - endA;
+        });
+
+      if (sorted.length === 0) return;
+
+      const lastIncEnd = sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60;
+
+      // Total span in minutes from first dispatch to last incident end
+      let spanMinutes = (lastIncEnd - firstDispatch) * 60;
+      if (spanMinutes <= 0) spanMinutes += 1440;
+
+      // Sum TMD+TME of counted incidents
+      const incidentsToCount = dayData.filter(d => (Number(d.TMDE) || 0) <= 150 || d.possivelO2 || d.possivelAnomalia);
+      const sumTmdTme = incidentsToCount.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
+
+      // Interval duration (only if it falls within the dispatch-to-last-incident window)
+      const firstRow = dayData[0] || {};
+      const { intervalStart } = getIntervalBounds(dayData);
+      let duracaoIntervalo = 0;
+      if (intervalStart != null && intervalStart >= firstDispatch && intervalStart <= lastIncEnd) {
+        const inicioIntervalo = getValMinutes(firstRow["Inicio Intervalo"]);
+        const fimIntervalo = getValMinutes(firstRow["Fim Intervalo"]);
+        if (inicioIntervalo !== null && fimIntervalo !== null) {
+          duracaoIntervalo = fimIntervalo - inicioIntervalo;
+          if (duracaoIntervalo <= 0) duracaoIntervalo += 1440;
+        } else {
+          duracaoIntervalo = 60;
+        }
+      }
+
+      const idle = spanMinutes - sumTmdTme - duracaoIntervalo;
+      totalIdle += Math.max(0, idle);
+    });
+
+    return totalIdle;
+  };
 
   // KPIs
   const numDays = useMemo(() => {
@@ -634,9 +691,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      const details = calculateOccupancyDetails(eqData);
-      somaOcupacao += details.pct;
-      somaIdleMinutes += details.idleMinutes;
+      somaOcupacao += calculateOccupancy(eqData);
+      somaIdleMinutes += calculateIdleMinutes(eqData);
     });
 
     const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
@@ -719,9 +775,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   );
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    const details = calculateOccupancyDetails(eqData);
-    somaOcupacaoGeral += details.pct;
-    somaIdleMinutesGeral += details.idleMinutes;
+    somaOcupacaoGeral += calculateOccupancy(eqData);
+    somaIdleMinutesGeral += calculateIdleMinutes(eqData);
   });
   const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
   const avgIdleMinutesGeral = equipesPresentesGeral.length > 0 ? somaIdleMinutesGeral / equipesPresentesGeral.length : 0;
@@ -869,9 +924,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
       // Ocupação e Ociosidade
-      const occDetails = calculateOccupancyDetails(eqData);
-      const ocupacao = occDetails.pct;
-      const idleMinutes = occDetails.idleMinutes;
+      const ocupacao = calculateOccupancy(eqData);
+      const idleMinutes = calculateIdleMinutes(eqData);
 
       // Login
       let maxLoginVal: number | null = null;
