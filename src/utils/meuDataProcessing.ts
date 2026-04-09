@@ -151,7 +151,13 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     const status = String(row["Status"] || "")
       .trim()
       .toUpperCase();
-    return status === "FECHADO";
+    if (status !== "FECHADO") return false;
+
+    // Excluir incidentes com causa "PROGRAMADA"
+    const causa = String(row["Causa"] || "").trim().toUpperCase();
+    if (causa.includes("PROGRAMADA")) return false;
+
+    return true;
   });
 
   const parseFullDateTime = (val: any): Date | null => {
