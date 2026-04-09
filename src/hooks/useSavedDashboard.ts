@@ -125,11 +125,24 @@ async function batchUpsert(
 ): Promise<{ inserted: number; updated: number }> {
   let inserted = 0;
   let updated = 0;
-  
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE).map((row: any) => ({
+
+  // Deduplicate all rows by hash first — keep last occurrence
+  const deduped = new Map<string, any>();
+  for (const row of rows) {
+    const hash = generateRowHash(row, type);
+    // Skip rows with empty key fields (would all collide on same hash)
+    const parts = hash.split(":");
+    const meaningful = parts.slice(1).filter(p => p.length > 0);
+    if (meaningful.length < 2) continue;
+    deduped.set(hash, row);
+  }
+  const uniqueRows = Array.from(deduped.entries());
+  const total = uniqueRows.length;
+
+  for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
+    const batch = uniqueRows.slice(i, i + BATCH_SIZE).map(([hash, row]) => ({
       row_data: stripRow(row, type),
-      row_hash: generateRowHash(row, type),
+      row_hash: hash,
     }));
     
     const { error } = await supabase
@@ -138,7 +151,7 @@ async function batchUpsert(
     if (error) throw error;
     
     inserted += batch.length;
-    onProgress?.(Math.min(i + BATCH_SIZE, rows.length), rows.length);
+    onProgress?.(Math.min(i + BATCH_SIZE, total), total);
   }
   
   return { inserted, updated };
