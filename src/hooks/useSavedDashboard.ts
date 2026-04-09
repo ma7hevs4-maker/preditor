@@ -203,7 +203,7 @@ export const useSavedDashboard = () => {
     }
   };
 
-  // Save raw rows using upsert (accumulates, no delete)
+  // Save raw rows: clear old data first, then insert with hashes
   const saveRawData = async (params: {
     incRaw: any[];
     m300Raw: any[];
@@ -213,6 +213,13 @@ export const useSavedDashboard = () => {
   }) => {
     setIsSaving(true);
     try {
+      // Clear existing rows to prevent duplicates from old NULL-hash rows
+      setSaveProgress("Limpando dados antigos...");
+      await Promise.all([
+        supabase.from("saved_inc_rows").delete().gte("id", 0),
+        supabase.from("saved_m300_rows").delete().gte("id", 0),
+      ]);
+
       setSaveProgress(`Salvando incidentes (0/${params.incRaw.length})...`);
       await batchUpsert("saved_inc_rows", params.incRaw, "inc", (done, total) => {
         setSaveProgress(`Salvando incidentes (${done}/${total})...`);
