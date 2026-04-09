@@ -516,8 +516,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
-  const calculateOccupancy = (eqData: any[]) => {
-    if (eqData.length === 0) return 0;
+  const calculateOccupancyDetails = (eqData: any[]): { pct: number; idleMinutes: number } => {
+    if (eqData.length === 0) return { pct: 0, idleMinutes: 0 };
     
     const dataByDate: Record<string, any[]> = {};
     eqData.forEach(d => {
@@ -561,8 +561,13 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       totalDenominator += duracaoTurno;
     });
     
-    return totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+    const pct = totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+    const idleMinutes = Math.max(0, totalDenominator - totalNumerator);
+    return { pct, idleMinutes };
   };
+
+  // Backward-compatible wrapper
+  const calculateOccupancy = (eqData: any[]) => calculateOccupancyDetails(eqData).pct;
 
   // KPIs
   const numDays = useMemo(() => {
