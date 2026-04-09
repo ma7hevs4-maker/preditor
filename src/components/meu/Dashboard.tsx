@@ -1362,25 +1362,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform ${isPeriodMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                       </button>
                     </div>
-                    {isPeriodMode && (
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => setSelectedPeriod("periodo")}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "periodo" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
-                        >
-                          PERÍODO
-                        </button>
-                        <button
-                          onClick={() => setSelectedPeriod("mes")}
-                          className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${selectedPeriod === "mes" ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'}`}
-                        >
-                          MÊS
-                        </button>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Data / Período / Mês */}
+                  {/* Data / Período */}
                   {!isPeriodMode && (
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -1400,7 +1384,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     </div>
                   )}
 
-                  {isPeriodMode && selectedPeriod === "periodo" && (
+                  {isPeriodMode && (
                     <div className="space-y-2">
                       <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
@@ -1432,24 +1416,6 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                           </select>
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {isPeriodMode && selectedPeriod === "mes" && (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        Mês
-                      </label>
-                      <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
-                      >
-                        {availableMonths.map((m) => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
                     </div>
                   )}
 
