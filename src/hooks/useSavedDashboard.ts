@@ -180,21 +180,27 @@ async function saveProcessedCache(processedData: any[], incFileName?: string, m3
     return;
   }
 
-  const insertPromise = supabase
-    .from("saved_processed_cache")
-    .insert({
-      processed_data: processedData,
-      inc_file_name: incFileName || null,
-      m300_file_name: m300FileName || null,
-      row_count_inc: rowCountInc,
-      row_count_m300: rowCountM300,
-    } as never)
-    .then(({ error }) => ({ error }))
-    .catch((error: unknown) => ({
-      error: error instanceof Error ? error : new Error("Unknown processed cache error"),
-    }));
+  const insertPromise = (async (): Promise<{ error: Error | null }> => {
+    try {
+      const { error } = await supabase.from("saved_processed_cache").insert({
+        processed_data: processedData,
+        inc_file_name: incFileName || null,
+        m300_file_name: m300FileName || null,
+        row_count_inc: rowCountInc,
+        row_count_m300: rowCountM300,
+      } as never);
 
-  const timeoutPromise = new Promise<{ error: Error }>((resolve) => {
+      return {
+        error: error ? new Error(error.message) : null,
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error : new Error("Unknown processed cache error"),
+      };
+    }
+  })();
+
+  const timeoutPromise = new Promise<{ error: Error | null }>((resolve) => {
     setTimeout(() => {
       resolve({ error: new Error("Processed cache save timeout") });
     }, CACHE_SAVE_TIMEOUT_MS);
