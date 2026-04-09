@@ -627,17 +627,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const equipesCount = uniqueTeamsInProc.size;
 
     let somaOcupacao = 0;
+    let somaIdleMinutes = 0;
     const equipesPresentesNoProcesso = Array.from(
       new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
     );
     
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      const ocupacaoEquipe = calculateOccupancy(eqData);
-      somaOcupacao += ocupacaoEquipe;
+      const details = calculateOccupancyDetails(eqData);
+      somaOcupacao += details.pct;
+      somaIdleMinutes += details.idleMinutes;
     });
 
     const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
+    const avgIdleMinutes = equipesPresentesNoProcesso.length > 0 ? somaIdleMinutes / equipesPresentesNoProcesso.length : 0;
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
 
