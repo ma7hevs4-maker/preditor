@@ -674,13 +674,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
     );
     
+    let countOcupacaoValidas = 0;
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      somaOcupacao += calculateOccupancy(eqData);
+      const occ = calculateOccupancy(eqData);
       somaIdleMinutes += calculateIdleMinutes(eqData);
+      if (occ <= 120) {
+        somaOcupacao += occ;
+        countOcupacaoValidas++;
+      }
     });
 
-    const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
+    const ocupacao = countOcupacaoValidas > 0 ? somaOcupacao / countOcupacaoValidas : 0;
     const avgIdleMinutes = equipesPresentesNoProcesso.length > 0 ? somaIdleMinutes / equipesPresentesNoProcesso.length : 0;
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
@@ -758,12 +763,17 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const equipesPresentesGeral = Array.from(
     new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean))
   );
+  let countOcupacaoValidasGeral = 0;
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    somaOcupacaoGeral += calculateOccupancy(eqData);
+    const occ = calculateOccupancy(eqData);
     somaIdleMinutesGeral += calculateIdleMinutes(eqData);
+    if (occ <= 120) {
+      somaOcupacaoGeral += occ;
+      countOcupacaoValidasGeral++;
+    }
   });
-  const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
+  const ocupacaoMediaGeral = countOcupacaoValidasGeral > 0 ? somaOcupacaoGeral / countOcupacaoValidasGeral : 0;
   const avgIdleMinutesGeral = equipesPresentesGeral.length > 0 ? somaIdleMinutesGeral / equipesPresentesGeral.length : 0;
 
   // Averages for Login and Tempo Plataforma in total row
