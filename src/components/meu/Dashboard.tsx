@@ -1592,19 +1592,19 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                       {row.Processos}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
+                      {row.Incidentes}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Equipes}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
+                      {row.Improdutivos}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
+                      {row["Ordem 2"]}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
+                      {row["Reincidentes causados"]}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.TMDE.toFixed(1)}
@@ -1730,16 +1730,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <span className="truncate">{row.Equipe}</span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row.Incidentes.toFixed(1) : row.Incidentes}
+                        {row.Incidentes}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row.Improdutivos.toFixed(1) : row.Improdutivos}
+                        {row.Improdutivos}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row["Ordem 2"].toFixed(1) : row["Ordem 2"]}
+                        {row["Ordem 2"]}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {isPeriodMode ? row["Reincidentes causados"].toFixed(1) : row["Reincidentes causados"]}
+                        {row["Reincidentes causados"]}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.TMDE.toFixed(1)}
