@@ -2,6 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const BATCH_SIZE = 500;
+const CACHE_ROW_LIMIT = 4000;
+const CACHE_SAVE_TIMEOUT_MS = 8000;
 
 export interface SavedMeta {
   id: string;
@@ -116,6 +118,15 @@ async function deleteAll() {
   ]);
 }
 
+async function clearProcessedCache() {
+  const { error } = await supabase
+    .from("saved_processed_cache")
+    .delete()
+    .gte("created_at", "1970-01-01");
+
+  if (error) throw error;
+}
+
 async function batchUpsert(
   table: "saved_inc_rows" | "saved_m300_rows",
   rows: any[],
@@ -160,18 +171,45 @@ async function batchUpsert(
 }
 
 async function saveProcessedCache(processedData: any[], incFileName?: string, m300FileName?: string, rowCountInc = 0, rowCountM300 = 0) {
-  // Delete old cache
-  await supabase.from("saved_processed_cache").delete().gte("created_at", "1970-01-01");
-  
-  const { error } = await supabase.from("saved_processed_cache").insert({
-    processed_data: processedData,
-    inc_file_name: incFileName || null,
-    m300_file_name: m300FileName || null,
-    row_count_inc: rowCountInc,
-    row_count_m300: rowCountM300,
-  } as never);
-  if (error) {
-    console.error("Error saving processed cache:", error);
+  if (!Array.isArray(processedData) || processedData.length === 0) return;
+
+  if (processedData.length > CACHE_ROW_LIMIT) {
+    console.warn(
+      `Skipping processed cache save: dataset too large (${processedData.length} rows).`
+    );
+    return;
+  }
+
+  const insertPromise = (async (): Promise<{ error: Error | null }> => {
+    try {
+      const { error } = await supabase.from("saved_processed_cache").insert({
+        processed_data: processedData,
+        inc_file_name: incFileName || null,
+        m300_file_name: m300FileName || null,
+        row_count_inc: rowCountInc,
+        row_count_m300: rowCountM300,
+      } as never);
+
+      return {
+        error: error ? new Error(error.message) : null,
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error : new Error("Unknown processed cache error"),
+      };
+    }
+  })();
+
+  const timeoutPromise = new Promise<{ error: Error | null }>((resolve) => {
+    setTimeout(() => {
+      resolve({ error: new Error("Processed cache save timeout") });
+    }, CACHE_SAVE_TIMEOUT_MS);
+  });
+
+  const result = await Promise.race([insertPromise, timeoutPromise]);
+
+  if (result.error) {
+    console.error("Error saving processed cache:", result.error);
     // Non-fatal: cache is optional optimization
   }
 }
@@ -244,10 +282,11 @@ export const useSavedDashboard = () => {
       } as never);
       if (error) throw error;
 
-      // Save processed cache if provided
+      setSaveProgress("Finalizando salvamento...");
+      await clearProcessedCache();
+
       if (params.processedData) {
-        setSaveProgress("Salvando cache processado...");
-        await saveProcessedCache(
+        void saveProcessedCache(
           params.processedData,
           params.incFileName,
           params.m300FileName,
