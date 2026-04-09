@@ -516,8 +516,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
-  const calculateOccupancy = (eqData: any[]) => {
-    if (eqData.length === 0) return 0;
+  const calculateOccupancyDetails = (eqData: any[]): { pct: number; idleMinutes: number } => {
+    if (eqData.length === 0) return { pct: 0, idleMinutes: 0 };
     
     const dataByDate: Record<string, any[]> = {};
     eqData.forEach(d => {
@@ -561,8 +561,13 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       totalDenominator += duracaoTurno;
     });
     
-    return totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+    const pct = totalDenominator > 0 ? (totalNumerator / totalDenominator) * 100 : 0;
+    const idleMinutes = Math.max(0, totalDenominator - totalNumerator);
+    return { pct, idleMinutes };
   };
+
+  // Backward-compatible wrapper
+  const calculateOccupancy = (eqData: any[]) => calculateOccupancyDetails(eqData).pct;
 
   // KPIs
   const numDays = useMemo(() => {
@@ -622,17 +627,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const equipesCount = uniqueTeamsInProc.size;
 
     let somaOcupacao = 0;
+    let somaIdleMinutes = 0;
     const equipesPresentesNoProcesso = Array.from(
       new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
     );
     
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      const ocupacaoEquipe = calculateOccupancy(eqData);
-      somaOcupacao += ocupacaoEquipe;
+      const details = calculateOccupancyDetails(eqData);
+      somaOcupacao += details.pct;
+      somaIdleMinutes += details.idleMinutes;
     });
 
     const ocupacao = equipesPresentesNoProcesso.length > 0 ? somaOcupacao / equipesPresentesNoProcesso.length : 0;
+    const avgIdleMinutes = equipesPresentesNoProcesso.length > 0 ? somaIdleMinutes / equipesPresentesNoProcesso.length : 0;
     const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
     const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
 
@@ -680,7 +688,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       "Reincidentes causados": isPeriodMode ? reinc / numDays : reinc,
       TMDE: tmde,
       Ocupação: ocupacao,
-      Ociosidade: 100 - ocupacao,
+      "Ociosidade (min)": avgIdleMinutes,
+      "Inc. Ociosid.": Math.round(avgIdleMinutes / 60 * 1.5),
       Produtividade: displayProdutividade,
       Login: avgLogin,
       Despacho: avgDespacho,
@@ -704,15 +713,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const totalEquipesGeralCount = uniqueTeamsGeral.size;
 
   let somaOcupacaoGeral = 0;
+  let somaIdleMinutesGeral = 0;
   const equipesPresentesGeral = Array.from(
     new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean))
   );
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    const ocupacaoEquipe = calculateOccupancy(eqData);
-    somaOcupacaoGeral += ocupacaoEquipe;
+    const details = calculateOccupancyDetails(eqData);
+    somaOcupacaoGeral += details.pct;
+    somaIdleMinutesGeral += details.idleMinutes;
   });
   const ocupacaoMediaGeral = equipesPresentesGeral.length > 0 ? somaOcupacaoGeral / equipesPresentesGeral.length : 0;
+  const avgIdleMinutesGeral = equipesPresentesGeral.length > 0 ? somaIdleMinutesGeral / equipesPresentesGeral.length : 0;
 
   // Averages for Login and Tempo Plataforma in total row
   const allLoginVals: number[] = [];
@@ -753,7 +765,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     "Reincidentes causados": resumoProcessos.reduce((acc, curr) => acc + curr["Reincidentes causados"], 0),
     TMDE: tmdeMedio,
     Ocupação: ocupacaoMediaGeral,
-    Ociosidade: 100 - ocupacaoMediaGeral,
+    "Ociosidade (min)": avgIdleMinutesGeral,
+    "Inc. Ociosid.": Math.round(avgIdleMinutesGeral / 60 * 1.5),
     Produtividade: isPeriodMode ? (totalIncProdutivos / totalEquipesGeralCount) / numDays : totalIncProdutivos / totalEquipesGeralCount,
     Login: allLoginVals.length > 0 ? allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length : null,
     Despacho: allDespachoVals.length > 0 ? allDespachoVals.reduce((a, b) => a + b, 0) / allDespachoVals.length : null,
@@ -855,8 +868,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       // Ordem 2
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
-      // Ocupação
-      const ocupacao = calculateOccupancy(eqData);
+      // Ocupação e Ociosidade
+      const occDetails = calculateOccupancyDetails(eqData);
+      const ocupacao = occDetails.pct;
+      const idleMinutes = occDetails.idleMinutes;
 
       // Login
       let maxLoginVal: number | null = null;
@@ -892,7 +907,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         TMDE: tmde,
         "Ordem 2": isPeriodMode ? ord2 / eqDays : ord2,
         Ocupação: ocupacao,
-        Ociosidade: 100 - ocupacao,
+        "Ociosidade (min)": idleMinutes,
+        "Inc. Ociosid.": Math.round(idleMinutes / 60 * 1.5),
         Login: primeiroLogin,
         Despacho: despacho,
         "Tempo de plataforma": tempoPlataforma,
@@ -1536,7 +1552,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Reinc.",
                     "TMDE",
                     "Ocup.",
-                    "Ociosid.",
+                    "Ociosid.(min)",
+                    "Inc. Ociosid.",
                     "Prod.",
                     "Login",
                     "Desp.",
@@ -1587,7 +1604,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                       {row.Ocupação.toFixed(1)}%
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                      {row.Ociosidade.toFixed(1)}%
+                      {row["Ociosidade (min)"].toFixed(0)}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {row["Inc. Ociosid."]}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                       {row.Produtividade.toFixed(2)}
@@ -1649,13 +1669,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Reinc.",
                     "TMDE",
                     "Ocup.",
-                    "Ociosid.",
+                    "Ociosid.(min)",
+                    "Inc. Ociosid.",
                     "Login",
                     "Desp.",
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
@@ -1718,7 +1739,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         {row.Ocupação.toFixed(1)}%
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                        {row.Ociosidade.toFixed(1)}%
+                        {row["Ociosidade (min)"].toFixed(0)}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                        {row["Inc. Ociosid."]}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Login}
