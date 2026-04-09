@@ -87,7 +87,14 @@ export default function Meu() {
   };
 
   const handleClearData = async () => {
+    if (clearPassword !== "dys") {
+      setClearPasswordError(true);
+      return;
+    }
     setLoading(true);
+    setShowClearDialog(false);
+    setClearPassword("");
+    setClearPasswordError(false);
     try {
       await clearAllData();
     } catch (err) {
