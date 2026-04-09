@@ -194,32 +194,39 @@ export default function Meu() {
                 </span>
               </button>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-destructive/30 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Limpar base mensal
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Limpar base mensal?</AlertDialogTitle>
-                    <AlertDialogDescription>
+              <button
+                onClick={() => { setShowClearDialog(true); setClearPassword(""); setClearPasswordError(false); }}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-destructive/30 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Limpar base mensal
+              </button>
+
+              <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Limpar base mensal?</DialogTitle>
+                    <DialogDescription>
                       Isso vai apagar todos os dados salvos (incidentes, M300 e cache processado). 
-                      Essa ação não pode ser desfeita.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearData}>
-                      Sim, limpar tudo
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                      Essa ação não pode ser desfeita. Digite a senha para confirmar.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Input
+                    type="password"
+                    placeholder="Senha"
+                    value={clearPassword}
+                    onChange={(e) => { setClearPassword(e.target.value); setClearPasswordError(false); }}
+                  />
+                  {clearPasswordError && (
+                    <p className="text-destructive text-sm">Senha incorreta.</p>
+                  )}
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowClearDialog(false)}>Cancelar</Button>
+                    <Button variant="destructive" onClick={handleClearData}>Sim, limpar tudo</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : null}
 
