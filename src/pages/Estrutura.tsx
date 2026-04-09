@@ -684,18 +684,18 @@ const Estrutura = () => {
                     </div>
                   </div>
 
-                  {/* Scrollable horizontal grid */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[11px]">
+                  {/* Fixed grid - no horizontal scroll */}
+                  <div className="overflow-hidden">
+                    <table className="w-full text-[11px] table-fixed">
                       <thead>
                         <tr>
-                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium sticky left-0 bg-card z-10 min-w-[75px]">Tipo</th>
+                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium w-[72px]">Tipo</th>
                           {turno.hours.map(h => (
-                            <th key={h} className={`text-center py-0.5 px-0.5 font-mono min-w-[38px] ${turnoColors.text}`}>
-                              {String(h).padStart(2, "0")}h
+                            <th key={h} className={`text-center py-0.5 font-mono ${turnoColors.text}`}>
+                              {String(h).padStart(2, "0")}
                             </th>
                           ))}
-                          <th className="py-0.5 pl-0.5 w-[40px]"></th>
+                          <th className="py-0.5 w-[36px]"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -703,29 +703,29 @@ const Estrutura = () => {
                           const isBTOnly = BT_ONLY_TYPES.includes(type as any);
                           return (
                             <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                              <td className={`py-0.5 pr-1 sticky left-0 bg-card z-10 truncate text-[11px] whitespace-nowrap ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
+                              <td className={`py-0.5 pr-1 truncate text-[10px] whitespace-nowrap ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
                                 {SHORT_NAMES[type] ?? type}
                               </td>
                               {turno.hours.map(h => (
-                                <td key={h} className="py-0.5 px-0.5">
+                                <td key={h} className="py-0.5 px-px">
                                   <Input
                                     type="number"
                                     min={0}
                                     value={typeData[type]?.[h] ?? 0}
                                     onChange={(e) => handleTypeChange(type, h, parseInt(e.target.value) || 0)}
-                                    className={`h-6 text-center text-[11px] font-mono w-full px-0.5 ${isBTOnly ? "border-orange-500/30" : ""}`}
+                                    className={`h-5 text-center text-[10px] font-mono w-full p-0 ${isBTOnly ? "border-orange-500/30" : ""}`}
                                     disabled={isLocked}
                                     readOnly={isLocked}
                                   />
                                 </td>
                               ))}
-                              <td className="py-0.5 pl-0.5">
-                                <div className="flex gap-0">
+                              <td className="py-0.5">
+                                <div className="flex gap-0 justify-center">
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`h-6 w-5 ${turnoColors.icon} hover:bg-muted/40`}
-                                    title={`Copiar 1ª hora de ${type} para todo o turno`}
+                                    className={`h-5 w-4 ${turnoColors.icon} hover:bg-muted/40`}
+                                    title={`Copiar 1ª hora de ${type}`}
                                     onClick={() => copiarTipoParaTurno(type, turnoIdx)}
                                     disabled={isLocked}
                                   >
@@ -734,8 +734,8 @@ const Estrutura = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`h-6 w-5 ${turnoColors.icon} hover:bg-muted/40`}
-                                    title={`Apagar ${type} neste turno`}
+                                    className={`h-5 w-4 ${turnoColors.icon} hover:bg-muted/40`}
+                                    title={`Apagar ${type}`}
                                     onClick={() => apagarTipoNoTurno(type, turnoIdx)}
                                     disabled={isLocked}
                                   >
