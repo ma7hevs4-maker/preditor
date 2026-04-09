@@ -4,13 +4,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-type Section = "simulacao" | "clima" | "estrutura" | "visao" | "config";
+type Section = "simulacao" | "clima" | "estrutura" | "visao" | "meu" | "config";
 
 const sections: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "simulacao", label: "Simulação", icon: Zap },
   { id: "clima", label: "Central Climática", icon: CloudSun },
   { id: "estrutura", label: "Estrutura", icon: Users },
   { id: "visao", label: "Visão", icon: Eye },
+  { id: "meu", label: "Dashboard Operacional", icon: BarChart3 },
   { id: "config", label: "Configurações", icon: Settings },
 ];
 
