@@ -77,6 +77,7 @@ const COLORS = {
   interval: "hsl(25 95% 53%)",
   platform: "hsl(142 71% 45%)",
   returnBase: "hsl(0 65% 60%)",
+  excessIdle: "hsl(var(--muted-foreground) / 0.5)",
   foreground: "hsl(var(--foreground))",
   mutedForeground: "hsl(var(--muted-foreground))",
   border: "hsl(var(--border))",
