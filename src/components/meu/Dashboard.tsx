@@ -1274,6 +1274,42 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     );
   }
 
+  if (showPoloAnalysis) {
+    return (
+      <>
+        <PoloAnalysisView
+          filteredData={filteredData}
+          onBack={() => setShowPoloAnalysis(false)}
+          weights={rankingWeights}
+          isPeriodMode={isPeriodMode}
+          numDays={numDays}
+          calculateOccupancy={calculateOccupancy}
+          calculateIdleMinutes={calculateIdleMinutes}
+          calcTempoPlataforma={calcTempoPlataforma}
+          calcRetornoBase={calcRetornoBase}
+          getValMinutes={getValMinutes}
+          onTeamClick={(team) => setTeamDetailModal(team)}
+        />
+        {teamDetailModal && (
+          <TeamDetailModal
+            team={teamDetailModal}
+            allData={filteredData}
+            isPeriodMode={isPeriodMode}
+            convertToDecimalHours={convertToDecimalHours}
+            getValMinutes={getValMinutes}
+            calcTempoPlataforma={calcTempoPlataforma}
+            calcRetornoBase={calcRetornoBase}
+            calculateOccupancy={calculateOccupancy}
+            calculateIdleMinutes={calculateIdleMinutes}
+            normalizeIncidentNumber={normalizeIncidentNumber}
+            data={data}
+            onClose={() => setTeamDetailModal(null)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
