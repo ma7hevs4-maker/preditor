@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ArrowLeft, Trophy, Star, AlertTriangle, Clock, BarChart3, XCircle } from "lucide-react";
+import { ArrowLeft, Trophy, AlertTriangle, Clock, BarChart3, XCircle, LogIn, Navigation, Timer, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UTS_POLOS, UTN_POLOS, POLO_TO_UT, calculateRankingScores, RankingWeights, TeamRankingData } from "@/utils/rankingScoring";
@@ -10,29 +10,24 @@ interface PoloAnalysisViewProps {
   weights: RankingWeights;
   isPeriodMode: boolean;
   numDays: number;
-  // Calculation helpers passed from parent
   calculateOccupancy: (eqData: any[]) => number;
   calculateIdleMinutes: (eqData: any[]) => number;
   calcTempoPlataforma: (eqData: any[]) => number | null;
   calcRetornoBase: (eqData: any[]) => number | null;
   getValMinutes: (val: any) => number | null;
   onTeamClick: (team: any) => void;
+  filterTrigger?: React.ReactNode;
+  activeFilterCount?: number;
 }
 
 type UT = "UTS" | "UTN";
 
 const processosOrdem = ["Emergência", "Comercial", "Perdas", "Poda", "Linha Viva"];
 
-/**
- * Match a data Polo value to one of the known polo names.
- * Handles cases like "Polo Magé", "Regional Magé", or just "Magé".
- */
 function matchPoloName(rawPolo: string): string | null {
   if (!rawPolo || rawPolo === "Não informado") return null;
   const allPolos = [...UTS_POLOS, ...UTN_POLOS];
-  // Exact match
   if (allPolos.includes(rawPolo)) return rawPolo;
-  // Partial match: check if any known polo name is contained in the raw value
   const normalized = rawPolo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   for (const polo of allPolos) {
     const poloNorm = polo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -40,7 +35,7 @@ function matchPoloName(rawPolo: string): string | null {
       return polo;
     }
   }
-  return rawPolo; // Return as-is if no match found
+  return rawPolo;
 }
 
 export function PoloAnalysisView({
@@ -55,10 +50,11 @@ export function PoloAnalysisView({
   calcRetornoBase,
   getValMinutes,
   onTeamClick,
+  filterTrigger,
+  activeFilterCount,
 }: PoloAnalysisViewProps) {
   const [selectedUT, setSelectedUT] = useState<UT>("UTS");
 
-  // Group data by matched polo name
   const dataByPolo = useMemo(() => {
     const map: Record<string, any[]> = {};
     filteredData.forEach((d) => {
@@ -71,7 +67,6 @@ export function PoloAnalysisView({
     return map;
   }, [filteredData]);
 
-  // Show known polos plus any unmatched ones that belong to this UT
   const knownPolos = selectedUT === "UTS" ? UTS_POLOS : UTN_POLOS;
   const extraPolos = Object.keys(dataByPolo).filter(p => {
     if (knownPolos.includes(p)) return false;
@@ -93,21 +88,26 @@ export function PoloAnalysisView({
           </h1>
         </div>
 
-        {/* UTS/UTN Toggle */}
-        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1">
-          {(["UTS", "UTN"] as UT[]).map((ut) => (
-            <button
-              key={ut}
-              onClick={() => setSelectedUT(ut)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                selectedUT === ut
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-              }`}
-            >
-              {ut}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {/* Filter trigger from parent */}
+          {filterTrigger}
+
+          {/* UTS/UTN Toggle */}
+          <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1">
+            {(["UTS", "UTN"] as UT[]).map((ut) => (
+              <button
+                key={ut}
+                onClick={() => setSelectedUT(ut)}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  selectedUT === ut
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                }`}
+              >
+                {ut}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -183,6 +183,41 @@ function PoloCard({
   const tmdeMedio = data.length > 0 ? data.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / data.length : 0;
   const reincTotal = data.filter((d) => d["Reincidente Causado"]).length;
   const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
+  const improdTotal = data.filter((d) => d.Improdutivo).length;
+  const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
+
+  // Compute avg Login, Despacho, T. Plataforma, Retorno Base across teams
+  const equipesPresentes = Array.from(new Set(data.map((d) => d["Equipe Desl."]).filter(Boolean))).filter(eq => eq !== "Não informado" && eq !== "---");
+  const loginVals: number[] = [];
+  const despachoVals: number[] = [];
+  const platVals: number[] = [];
+  const retVals: number[] = [];
+  equipesPresentes.forEach(eq => {
+    const eqData = data.filter(d => d["Equipe Desl."] === eq);
+    let maxLogin: number | null = null;
+    eqData.forEach(d => {
+      const val = getValMinutes(d["1º Login Corrigido"]);
+      if (val != null && (maxLogin === null || val > maxLogin)) maxLogin = val;
+    });
+    if (maxLogin !== null) loginVals.push(maxLogin);
+
+    let maxDespacho: number | null = null;
+    eqData.forEach(d => {
+      const val = getValMinutes(d["1º Despacho"]);
+      if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+    });
+    if (maxDespacho !== null) despachoVals.push(maxDespacho);
+
+    const plat = calcTempoPlataforma(eqData);
+    if (plat !== null) platVals.push(plat);
+    const ret = calcRetornoBase(eqData);
+    if (ret !== null) retVals.push(ret);
+  });
+
+  const avgLogin = loginVals.length > 0 ? loginVals.reduce((a, b) => a + b, 0) / loginVals.length : null;
+  const avgDespacho = despachoVals.length > 0 ? despachoVals.reduce((a, b) => a + b, 0) / despachoVals.length : null;
+  const avgPlat = platVals.length > 0 ? platVals.reduce((a, b) => a + b, 0) / platVals.length : null;
+  const avgRet = retVals.length > 0 ? retVals.reduce((a, b) => a + b, 0) / retVals.length : null;
 
   // Resultado por Processo
   const resumoProcessos = processosOrdem.map((proc) => {
@@ -215,10 +250,6 @@ function PoloCard({
 
   // Ranking
   const rankingEquipes = useMemo(() => {
-    const equipesPresentes = Array.from(
-      new Set(data.map((d) => d["Equipe Desl."]).filter(Boolean))
-    ).filter((eq) => eq !== "Não informado" && eq !== "---");
-
     const baseRanking: TeamRankingData[] = equipesPresentes.map((eq) => {
       const eqData = data.filter((d) => d["Equipe Desl."] === eq);
       const inc = new Set(eqData.map((d) => d.Número)).size;
@@ -285,21 +316,41 @@ function PoloCard({
 
   return (
     <div className="glass-card overflow-hidden">
-      {/* Polo Header */}
+      {/* Polo Header with 8 KPIs */}
       <div className="px-4 py-3 border-b border-border bg-secondary/30">
-        <h2 className="text-lg font-bold text-foreground">{polo}</h2>
-        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
+        <h2 className="text-lg font-bold text-foreground mb-2">{polo}</h2>
+        <div className="grid grid-cols-4 gap-x-4 gap-y-1 text-[11px]">
+          <span className="flex items-center gap-1 text-muted-foreground">
             <AlertTriangle className="h-3 w-3 text-warning" />
-            {totalInc} inc.
+            <span className="font-medium text-foreground">{totalInc}</span> inc.
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-3 w-3 text-primary" />
-            TMDE {tmdeMedio.toFixed(1)}
+            TMDE <span className="font-medium text-foreground">{tmdeMedio.toFixed(1)}</span>
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 text-muted-foreground">
             <BarChart3 className="h-3 w-3 text-accent" />
-            Reinc. {(taxaReinc * 100).toFixed(1)}%
+            Reinc. <span className="font-medium text-foreground">{(taxaReinc * 100).toFixed(1)}%</span>
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <XCircle className="h-3 w-3 text-destructive" />
+            Improd. <span className="font-medium text-foreground">{(taxaImprod * 100).toFixed(1)}%</span>
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <LogIn className="h-3 w-3 text-success" />
+            Login <span className="font-medium text-foreground">{avgLogin != null ? avgLogin.toFixed(1) : "-"}</span>
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Navigation className="h-3 w-3 text-primary" />
+            Desp. <span className="font-medium text-foreground">{avgDespacho != null ? avgDespacho.toFixed(1) : "-"}</span>
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Timer className="h-3 w-3 text-success" />
+            T.Plat. <span className="font-medium text-foreground">{avgPlat != null ? avgPlat.toFixed(1) : "-"}</span>
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <RotateCcw className="h-3 w-3 text-destructive" />
+            Ret.Base <span className="font-medium text-foreground">{avgRet != null ? avgRet.toFixed(1) : "-"}</span>
           </span>
         </div>
       </div>
