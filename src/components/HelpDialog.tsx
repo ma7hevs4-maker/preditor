@@ -384,6 +384,40 @@ const MeuHelp = () => (
         <li>• <strong>Incidentes M300:</strong> Exibidos com borda tracejada (presentes apenas no M300, ausentes da base principal).</li>
       </ul>
     </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+        <BarChart3 className="w-4 h-4 text-primary" /> Análise de Polos
+      </h3>
+      <div className="space-y-2 text-xs text-muted-foreground">
+        <p>Acesse pelo botão <strong>"Análise Polos"</strong> no topo do dashboard. Os filtros ativos (data, polo, processo, turno, equipe) continuam valendo.</p>
+        <p>Use o alternador <strong>UTS / UTN</strong> para visualizar os polos de cada Unidade Técnica. Cada polo exibe:</p>
+        <ul className="list-disc list-inside pl-2 space-y-1">
+          <li><strong>KPIs:</strong> Total de incidentes, TMDE médio e taxa de reincidência.</li>
+          <li><strong>Resultado por Processo:</strong> Incidentes, equipes, improdutivos, reincidentes e produtividade por processo.</li>
+          <li><strong>Ranking:</strong> Equipes classificadas por pontuação composta (0–100).</li>
+        </ul>
+        <p>Clique em uma equipe no ranking para abrir o <strong>modal de detalhes</strong> com todos os indicadores e a timeline individual.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+        <BarChart3 className="w-4 h-4 text-primary" /> Sistema de Ranking (Pontuação)
+      </h3>
+      <div className="space-y-2 text-xs text-muted-foreground">
+        <p>A pontuação de cada equipe é calculada com base em métricas normalizadas com pesos configuráveis:</p>
+        <ul className="list-disc list-inside pl-2 space-y-1">
+          <li><strong>Pontos positivos:</strong> Mais incidentes e maior ocupação.</li>
+          <li><strong>Pontos negativos:</strong> Improdutivos, reincidentes, ociosidade, inc. ociosidade, login, despacho, tempo de plataforma e retorno à base.</li>
+        </ul>
+        <p>Equipes sem dados em login, despacho, T. plataforma ou retorno à base são sinalizadas com <strong>asterisco (*)</strong> — essas métricas são ignoradas no cálculo.</p>
+        <p>Os pesos podem ser ajustados em <strong>Configurações → aba Ranking</strong> (senha requerida).</p>
+        <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
+          Pontuação = Σ(métrica_normalizada × peso) / Σ(pesos_ativos) × 100
+        </code>
+      </div>
+    </div>
   </div>
 );
 
