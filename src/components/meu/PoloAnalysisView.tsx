@@ -71,7 +71,14 @@ export function PoloAnalysisView({
     return map;
   }, [filteredData]);
 
-  return (
+  // Show known polos plus any unmatched ones that belong to this UT
+  const knownPolos = selectedUT === "UTS" ? UTS_POLOS : UTN_POLOS;
+  const extraPolos = Object.keys(dataByPolo).filter(p => {
+    if (knownPolos.includes(p)) return false;
+    return POLO_TO_UT[p] === selectedUT;
+  });
+  const polosToShow = [...knownPolos, ...extraPolos];
+
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Header */}
       <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-3 sm:px-6 py-3 flex items-center justify-between gap-2 z-10">
