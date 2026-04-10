@@ -82,7 +82,7 @@ export function TeamDetailModal({
       (a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0)
     );
 
-    if (equipeData.length === 0) return [{ equipe, events: [] }];
+    if (equipeData.length === 0) return [{ equipe, events: [], turno: "B", shiftStartHour: 0, shiftStart: undefined, shiftEnd: undefined, platformStart: undefined, platformEnd: undefined, platformDuration: undefined, firstLogin: undefined, intervalStart: undefined, intervalEnd: undefined, returnToBaseDuration: undefined, lastLogOff: undefined }];
 
     const firstRow = equipeData[0] || {};
     const teamTurno = firstRow.Turno || "B";
