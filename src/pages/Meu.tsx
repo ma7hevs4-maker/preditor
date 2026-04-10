@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FeedbackDialog } from "@/components/meu/FeedbackDialog";
 
 export default function Meu() {
   const [incFile, setIncFile] = useState<File | null>(null);
