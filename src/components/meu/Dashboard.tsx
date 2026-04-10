@@ -1729,7 +1729,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
               <thead className="bg-secondary/30 sticky top-0">
                 <tr>
                   {[
+                    "Pos",
                     "Equipe",
+                    "Pts",
                     "Inc.",
                     "Improd.",
                     "Ord.2",
@@ -1743,7 +1745,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["pontuacao","Equipe","pontuacao","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
@@ -1764,7 +1766,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                 </tr>
               </thead>
               <tbody className="bg-card divide-y divide-border">
-                {rankingEquipes.map((row) => {
+                {rankingEquipes.map((row, idx) => {
                   const isSelected = selectedEquipesDetalhe.includes(row.Equipe);
                   return (
                     <tr 
@@ -1777,7 +1779,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                             : [...prev, row.Equipe]
                         );
                       }}
+                      onDoubleClick={() => setTeamDetailModal(row)}
                     >
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-mono text-muted-foreground">
+                        {idx + 1}
+                      </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-foreground flex items-center truncate">
                         <input 
                           type="checkbox" 
@@ -1786,6 +1792,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                           readOnly
                         />
                         <span className="truncate">{row.Equipe}</span>
+                        {row.hasIncompleteData && <span className="text-warning ml-0.5 text-xs">*</span>}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-primary">
+                        {row.pontuacao}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Incidentes}
