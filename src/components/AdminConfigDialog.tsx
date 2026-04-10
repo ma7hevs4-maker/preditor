@@ -1413,6 +1413,47 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 <ContingencyLevelsConfig />
               </TabsContent>
 
+              {/* RANKING TAB */}
+              <TabsContent value="ranking" className="space-y-4 mt-4">
+                <div className="border border-border rounded-lg p-4 space-y-4">
+                  <h4 className="font-semibold text-foreground">Pesos do Ranking de Equipes</h4>
+                  <p className="text-xs text-muted-foreground">Configure o peso de cada métrica na pontuação do ranking. Valores maiores = mais influência.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { key: "ranking_weight_incidentes", label: "Incidentes (↑ melhor)", desc: "Mais incidentes = melhor" },
+                      { key: "ranking_weight_improdutivos", label: "Improdutivos (↓ melhor)", desc: "Menos = melhor" },
+                      { key: "ranking_weight_reincidentes", label: "Reincidentes (↓ melhor)", desc: "Menos = melhor" },
+                      { key: "ranking_weight_ocupacao", label: "Ocupação (↑ melhor)", desc: "Maior = melhor" },
+                      { key: "ranking_weight_ociosidade", label: "Ociosidade (↓ melhor)", desc: "Menos = melhor" },
+                      { key: "ranking_weight_inc_ociosidade", label: "Inc. Ociosid. (↓ melhor)", desc: "Menos = melhor" },
+                      { key: "ranking_weight_login", label: "Login (↓ melhor)", desc: "Menor tempo = melhor" },
+                      { key: "ranking_weight_despacho", label: "Despacho (↓ melhor)", desc: "Menor tempo = melhor" },
+                      { key: "ranking_weight_plataforma", label: "T. Plataforma (↓ melhor)", desc: "Menor tempo = melhor" },
+                      { key: "ranking_weight_retorno", label: "Retorno Base (↓ melhor)", desc: "Menor tempo = melhor" },
+                    ].map(({ key, label, desc }) => {
+                      const setting = systemSettings?.find(s => s.key === key);
+                      const currentValue = setting?.value || "0";
+                      return (
+                        <div key={key} className="space-y-1">
+                          <Label className="text-xs">{label}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={currentValue}
+                            onChange={(e) => {
+                              updateSystemSetting.mutate({ key, value: e.target.value });
+                            }}
+                            className="h-8 text-sm"
+                          />
+                          <p className="text-[10px] text-muted-foreground">{desc}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
+
               {/* GENERAL SETTINGS TAB */}
               <TabsContent value="settings" className="space-y-4 mt-4">
                 <div className="border border-border rounded-lg p-4 space-y-4">
