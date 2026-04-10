@@ -843,6 +843,33 @@ export type Database = {
           },
         ]
       }
+      user_feedback: {
+        Row: {
+          attachments: string[] | null
+          category: string
+          created_at: string
+          id: string
+          message: string
+          polo: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          category: string
+          created_at?: string
+          id?: string
+          message: string
+          polo: string
+        }
+        Update: {
+          attachments?: string[] | null
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          polo?: string
+        }
+        Relationships: []
+      }
       weather_triggers: {
         Row: {
           active: boolean
