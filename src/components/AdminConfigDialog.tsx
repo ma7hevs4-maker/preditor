@@ -595,7 +595,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
             </DialogHeader>
             
             <Tabs defaultValue="bases" className="mt-4">
-              <TabsList className="grid w-full grid-cols-6 bg-secondary">
+              <TabsList className="grid w-full grid-cols-7 bg-secondary">
                 <TabsTrigger value="bases" className="gap-1 text-xs">
                   <MapPin className="w-3 h-3" />
                   Bases
@@ -615,6 +615,10 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 <TabsTrigger value="contingency" className="gap-1 text-xs">
                   <Gauge className="w-3 h-3" />
                   Contingência
+                </TabsTrigger>
+                <TabsTrigger value="ranking" className="gap-1 text-xs">
+                  🏆
+                  Ranking
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="gap-1 text-xs">
                   <Percent className="w-3 h-3" />
