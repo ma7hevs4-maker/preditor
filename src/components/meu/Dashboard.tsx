@@ -103,8 +103,12 @@ interface DashboardProps {
 export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
+  const { data: systemSettings } = useSystemSettings();
+  const rankingWeights = useMemo(() => parseWeightsFromSettings(systemSettings), [systemSettings]);
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | null>(null);
+  const [showPoloAnalysis, setShowPoloAnalysis] = useState(false);
+  const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
