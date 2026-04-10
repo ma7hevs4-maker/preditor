@@ -2097,6 +2097,24 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           </div>
         </div>
       )}
+
+      {/* Team Detail Modal */}
+      {teamDetailModal && (
+        <TeamDetailModal
+          team={teamDetailModal}
+          allData={filteredData}
+          isPeriodMode={isPeriodMode}
+          convertToDecimalHours={convertToDecimalHours}
+          getValMinutes={getValMinutes}
+          calcTempoPlataforma={calcTempoPlataforma}
+          calcRetornoBase={calcRetornoBase}
+          calculateOccupancy={calculateOccupancy}
+          calculateIdleMinutes={calculateIdleMinutes}
+          normalizeIncidentNumber={normalizeIncidentNumber}
+          data={data}
+          onClose={() => setTeamDetailModal(null)}
+        />
+      )}
     </div>
   );
 }
