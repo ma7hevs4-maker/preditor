@@ -887,7 +887,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   };
 
   // Ranking das Equipes
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({ key: "Incidentes", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({ key: "pontuacao", direction: "desc" });
 
   const rankingEquipes = React.useMemo(() => {
     const equipesPresentes = Array.from(
