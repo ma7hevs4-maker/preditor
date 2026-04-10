@@ -16,6 +16,8 @@ import {
   RotateCcw,
   Save,
   Loader2,
+  Trophy,
+  Star,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +27,10 @@ import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
 import { useSavedDashboard } from "@/hooks/useSavedDashboard";
 import { toast } from "sonner";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { calculateRankingScores, parseWeightsFromSettings, TeamRankingData } from "@/utils/rankingScoring";
+import { PoloAnalysisView } from "./PoloAnalysisView";
+import { TeamDetailModal } from "./TeamDetailModal";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -97,8 +103,12 @@ interface DashboardProps {
 export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
+  const { data: systemSettings } = useSystemSettings();
+  const rankingWeights = useMemo(() => parseWeightsFromSettings(systemSettings), [systemSettings]);
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | null>(null);
+  const [showPoloAnalysis, setShowPoloAnalysis] = useState(false);
+  const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
@@ -877,7 +887,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   };
 
   // Ranking das Equipes
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({ key: "Incidentes", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" }>({ key: "pontuacao", direction: "desc" });
 
   const rankingEquipes = React.useMemo(() => {
     const equipesPresentes = Array.from(
@@ -946,7 +956,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       };
     });
 
-    baseRanking.sort((a, b) => {
+    const scored = calculateRankingScores(baseRanking, rankingWeights);
+
+    scored.sort((a, b) => {
       let aValue: any = a[sortConfig.key as keyof typeof a];
       let bValue: any = b[sortConfig.key as keyof typeof b];
 
@@ -964,8 +976,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       return 0;
     });
 
-    return baseRanking;
-  }, [filteredData, sortConfig]);
+    return scored;
+  }, [filteredData, sortConfig, rankingWeights]);
 
   const handleSort = (key: string) => {
     setSortConfig((prev) => {
@@ -1262,6 +1274,42 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     );
   }
 
+  if (showPoloAnalysis) {
+    return (
+      <>
+        <PoloAnalysisView
+          filteredData={filteredData}
+          onBack={() => setShowPoloAnalysis(false)}
+          weights={rankingWeights}
+          isPeriodMode={isPeriodMode}
+          numDays={numDays}
+          calculateOccupancy={calculateOccupancy}
+          calculateIdleMinutes={calculateIdleMinutes}
+          calcTempoPlataforma={calcTempoPlataforma}
+          calcRetornoBase={calcRetornoBase}
+          getValMinutes={getValMinutes}
+          onTeamClick={(team) => setTeamDetailModal(team)}
+        />
+        {teamDetailModal && (
+          <TeamDetailModal
+            team={teamDetailModal}
+            allData={filteredData}
+            isPeriodMode={isPeriodMode}
+            convertToDecimalHours={convertToDecimalHours}
+            getValMinutes={getValMinutes}
+            calcTempoPlataforma={calcTempoPlataforma}
+            calcRetornoBase={calcRetornoBase}
+            calculateOccupancy={calculateOccupancy}
+            calculateIdleMinutes={calculateIdleMinutes}
+            normalizeIncidentNumber={normalizeIncidentNumber}
+            data={data}
+            onClose={() => setTeamDetailModal(null)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
@@ -1277,6 +1325,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Análise Polos */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setShowPoloAnalysis(true)}
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            Análise Polos
+          </Button>
           {/* Active filter badges */}
           {activeFilterCount > 0 && (
             <div className="flex items-center gap-1.5 mr-2">
@@ -1671,7 +1729,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
               <thead className="bg-secondary/30 sticky top-0">
                 <tr>
                   {[
+                    "Pos",
                     "Equipe",
+                    "Pts",
                     "Inc.",
                     "Improd.",
                     "Ord.2",
@@ -1685,7 +1745,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["Equipe","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["pontuacao","Equipe","pontuacao","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
@@ -1706,7 +1766,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                 </tr>
               </thead>
               <tbody className="bg-card divide-y divide-border">
-                {rankingEquipes.map((row) => {
+                {rankingEquipes.map((row, idx) => {
                   const isSelected = selectedEquipesDetalhe.includes(row.Equipe);
                   return (
                     <tr 
@@ -1719,7 +1779,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                             : [...prev, row.Equipe]
                         );
                       }}
+                      onDoubleClick={() => setTeamDetailModal(row)}
                     >
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-mono text-muted-foreground">
+                        {idx + 1}
+                      </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-foreground flex items-center truncate">
                         <input 
                           type="checkbox" 
@@ -1728,6 +1792,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                           readOnly
                         />
                         <span className="truncate">{row.Equipe}</span>
+                        {row.hasIncompleteData && <span className="text-warning ml-0.5 text-xs">*</span>}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-primary">
+                        {row.pontuacao}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Incidentes}
@@ -2028,6 +2096,24 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Team Detail Modal */}
+      {teamDetailModal && (
+        <TeamDetailModal
+          team={teamDetailModal}
+          allData={filteredData}
+          isPeriodMode={isPeriodMode}
+          convertToDecimalHours={convertToDecimalHours}
+          getValMinutes={getValMinutes}
+          calcTempoPlataforma={calcTempoPlataforma}
+          calcRetornoBase={calcRetornoBase}
+          calculateOccupancy={calculateOccupancy}
+          calculateIdleMinutes={calculateIdleMinutes}
+          normalizeIncidentNumber={normalizeIncidentNumber}
+          data={data}
+          onClose={() => setTeamDetailModal(null)}
+        />
       )}
     </div>
   );
