@@ -956,7 +956,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       };
     });
 
-    baseRanking.sort((a, b) => {
+    const scored = calculateRankingScores(baseRanking, rankingWeights);
+
+    scored.sort((a, b) => {
       let aValue: any = a[sortConfig.key as keyof typeof a];
       let bValue: any = b[sortConfig.key as keyof typeof b];
 
@@ -974,8 +976,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       return 0;
     });
 
-    return baseRanking;
-  }, [filteredData, sortConfig]);
+    return scored;
+  }, [filteredData, sortConfig, rankingWeights]);
 
   const handleSort = (key: string) => {
     setSortConfig((prev) => {
