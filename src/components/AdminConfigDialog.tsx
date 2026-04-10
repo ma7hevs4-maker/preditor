@@ -26,6 +26,7 @@ import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSett
 import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
 import { toast } from "sonner";
+import { FeedbacksTab } from "@/components/admin/FeedbacksTab";
 import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "dys";
