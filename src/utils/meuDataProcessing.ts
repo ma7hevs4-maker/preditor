@@ -207,13 +207,14 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     const dataFimKey = rowKeys.find(k => k.toLowerCase().includes('data fim')) || "Data Fim";
     const dataInicioKey = rowKeys.find(k => k.toLowerCase().includes('data início') || k.toLowerCase().includes('data inicio')) || "Data Início";
     
+    // IMPORTANT: parse full datetime BEFORE overwriting with date-only strings
+    const fullDataFim = parseFullDateTime(row[dataFimKey]);
+    const fullDataInicio = parseFullDateTime(row[dataInicioKey]);
+    
     const dataFim = parseDate(row[dataFimKey]);
     row["Data Fim"] = dataFim;
     const dataInicio = parseDate(row[dataInicioKey]);
     row["Data Início"] = dataInicio;
-    
-    const fullDataFim = parseFullDateTime(row[dataFimKey]);
-    const fullDataInicio = parseFullDateTime(row[dataInicioKey]);
     let horaAcao = horaParaDecimalSeguro(row["Hora da ação equipe"]);
 
     const dataAcaoKey = rowKeys.find(k => k.toLowerCase().includes('data ação') || k.toLowerCase().includes('data acao'));
