@@ -1275,6 +1275,84 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   }
 
   if (showPoloAnalysis) {
+    const filterButton = (
+      <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 gap-2">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
+          <SheetHeader className="p-4 border-b border-border bg-secondary/30">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
+              Filtros
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Modo de Análise</label>
+                  <button
+                    onClick={() => setIsPeriodMode(!isPeriodMode)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isPeriodMode ? 'bg-primary' : 'bg-muted'}`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform ${isPeriodMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+              </div>
+              {!isPeriodMode && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    Dia
+                  </label>
+                  <select value={selectedData} onChange={(e) => setSelectedData(e.target.value)} className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none">
+                    <option value="">Todos</option>
+                    {datas.map((d) => (<option key={d} value={d}>{d}</option>))}
+                  </select>
+                </div>
+              )}
+              {isPeriodMode && (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    Período
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">De</span>
+                      <select value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none">
+                        {datas.map((d) => (<option key={d} value={d}>{d}</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">Até</span>
+                      <select value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none">
+                        {datas.filter(d => d >= periodStart).map((d) => (<option key={d} value={d}>{d}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <FilterMultiSelect label="Polo" options={polos} selected={selectedPolos} onChange={setSelectedPolos} />
+              <FilterMultiSelect label="Processo" options={processos} selected={selectedProcessos} onChange={setSelectedProcessos} />
+              <FilterMultiSelect label="Insourcing / Outsourcing" options={tiposEquipe} selected={selectedTiposEquipe} onChange={setSelectedTiposEquipe} />
+              <FilterMultiSelect label="Turno" options={turnos} selected={selectedTurnos} onChange={setSelectedTurnos} />
+              <FilterMultiSelect label="Equipe" options={equipes} selected={selectedEquipes} onChange={setSelectedEquipes} searchable={true} />
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+    );
+
     return (
       <>
         <PoloAnalysisView
@@ -1289,6 +1367,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           calcRetornoBase={calcRetornoBase}
           getValMinutes={getValMinutes}
           onTeamClick={(team) => setTeamDetailModal(team)}
+          filterTrigger={filterButton}
+          activeFilterCount={activeFilterCount}
         />
         {teamDetailModal && (
           <TeamDetailModal
