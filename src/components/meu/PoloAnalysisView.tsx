@@ -23,6 +23,26 @@ type UT = "UTS" | "UTN";
 
 const processosOrdem = ["Emergência", "Comercial", "Perdas", "Poda", "Linha Viva"];
 
+/**
+ * Match a data Polo value to one of the known polo names.
+ * Handles cases like "Polo Magé", "Regional Magé", or just "Magé".
+ */
+function matchPoloName(rawPolo: string): string | null {
+  if (!rawPolo || rawPolo === "Não informado") return null;
+  const allPolos = [...UTS_POLOS, ...UTN_POLOS];
+  // Exact match
+  if (allPolos.includes(rawPolo)) return rawPolo;
+  // Partial match: check if any known polo name is contained in the raw value
+  const normalized = rawPolo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const polo of allPolos) {
+    const poloNorm = polo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (normalized.includes(poloNorm) || poloNorm.includes(normalized)) {
+      return polo;
+    }
+  }
+  return rawPolo; // Return as-is if no match found
+}
+
 export function PoloAnalysisView({
   filteredData,
   onBack,
@@ -38,13 +58,12 @@ export function PoloAnalysisView({
 }: PoloAnalysisViewProps) {
   const [selectedUT, setSelectedUT] = useState<UT>("UTS");
 
-  const polosToShow = selectedUT === "UTS" ? UTS_POLOS : UTN_POLOS;
-
-  // Group data by polo
+  // Group data by matched polo name
   const dataByPolo = useMemo(() => {
     const map: Record<string, any[]> = {};
     filteredData.forEach((d) => {
-      const polo = d.Polo;
+      const rawPolo = d.Polo;
+      const polo = matchPoloName(rawPolo);
       if (!polo) return;
       if (!map[polo]) map[polo] = [];
       map[polo].push(d);
