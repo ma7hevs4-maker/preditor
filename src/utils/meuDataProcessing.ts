@@ -63,7 +63,7 @@ export function horaParaDecimalSeguro(valor: any): number | null {
 
 export function getShiftStartHour(turno: string): number {
   const t = String(turno).toUpperCase();
-  if (t === "A") return 16;
+  if (t === "A") return 0;
   if (t === "B") return 0;
   if (t === "C") return 12;
   return 0; // Default to 0 for "Outros"
