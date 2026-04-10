@@ -239,6 +239,7 @@ export default function Meu() {
           )}
         </div>
       </div>
+      <FeedbackDialog />
     </div>
   );
 }
