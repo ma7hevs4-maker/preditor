@@ -79,6 +79,7 @@ export function PoloAnalysisView({
   });
   const polosToShow = [...knownPolos, ...extraPolos];
 
+  return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Header */}
       <div className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm px-3 sm:px-6 py-3 flex items-center justify-between gap-2 z-10">
