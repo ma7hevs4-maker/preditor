@@ -16,6 +16,8 @@ import {
   RotateCcw,
   Save,
   Loader2,
+  Trophy,
+  Star,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +27,10 @@ import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
 import { useSavedDashboard } from "@/hooks/useSavedDashboard";
 import { toast } from "sonner";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { calculateRankingScores, parseWeightsFromSettings, TeamRankingData } from "@/utils/rankingScoring";
+import { PoloAnalysisView } from "./PoloAnalysisView";
+import { TeamDetailModal } from "./TeamDetailModal";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
