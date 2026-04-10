@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
@@ -26,6 +26,7 @@ import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSett
 import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
 import { toast } from "sonner";
+import { FeedbacksTab } from "@/components/admin/FeedbacksTab";
 import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "dys";
@@ -595,7 +596,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
             </DialogHeader>
             
             <Tabs defaultValue="bases" className="mt-4">
-              <TabsList className="grid w-full grid-cols-7 bg-secondary">
+              <TabsList className="grid w-full grid-cols-8 bg-secondary">
                 <TabsTrigger value="bases" className="gap-1 text-xs">
                   <MapPin className="w-3 h-3" />
                   Bases
@@ -623,6 +624,10 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 <TabsTrigger value="settings" className="gap-1 text-xs">
                   <Percent className="w-3 h-3" />
                   Geral
+                </TabsTrigger>
+                <TabsTrigger value="feedbacks" className="gap-1 text-xs">
+                  <MessageSquare className="w-3 h-3" />
+                  Feedbacks
                 </TabsTrigger>
               </TabsList>
 
@@ -1525,6 +1530,9 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                   )}
                 </div>
               </TabsContent>
+
+              {/* FEEDBACKS TAB */}
+              <FeedbacksTab />
             </Tabs>
           </>
         )}
