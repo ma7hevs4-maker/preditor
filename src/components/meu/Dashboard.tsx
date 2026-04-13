@@ -18,6 +18,7 @@ import {
   Loader2,
   Trophy,
   Star,
+  Eye,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { calculateRankingScores, parseWeightsFromSettings, TeamRankingData } from "@/utils/rankingScoring";
 import { PoloAnalysisView } from "./PoloAnalysisView";
 import { TeamDetailModal } from "./TeamDetailModal";
+import { GestaoAVistaView } from "./GestaoAVistaView";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -108,6 +110,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | null>(null);
   const [showPoloAnalysis, setShowPoloAnalysis] = useState(false);
+  const [showGestaoAVista, setShowGestaoAVista] = useState(false);
   const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
@@ -1390,6 +1393,22 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     );
   }
 
+  if (showGestaoAVista) {
+    return (
+      <GestaoAVistaView
+        filteredData={filteredData}
+        onBack={() => setShowGestaoAVista(false)}
+        isPeriodMode={isPeriodMode}
+        numDays={numDays}
+        calculateOccupancy={calculateOccupancy}
+        calculateIdleMinutes={calculateIdleMinutes}
+        calcTempoPlataforma={calcTempoPlataforma}
+        calcRetornoBase={calcRetornoBase}
+        getValMinutes={getValMinutes}
+      />
+    );
+  }
+
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
@@ -1414,6 +1433,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           >
             <Trophy className="h-3.5 w-3.5" />
             Análise Polos
+          </Button>
+          {/* Gestão à Vista */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setShowGestaoAVista(true)}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Gestão à Vista
           </Button>
           {/* Active filter badges */}
           {activeFilterCount > 0 && (
