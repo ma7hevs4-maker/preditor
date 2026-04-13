@@ -469,9 +469,11 @@ export function GestaoAVistaView({
 
       const kpiValue = getKpiValue(config);
       const kpiFormatted = config.format(kpiValue);
+      const metaValue = config.meta ?? config.metaPerTeam;
       let metaClass = "";
-      if (config.meta != null) {
-        const isGood = config.metaDirection === "lower" ? kpiValue <= config.meta : kpiValue >= config.meta;
+      if (metaValue != null) {
+        const compareValue = config.metaPerTeam != null ? kpiValue / (sorted.length || 1) : kpiValue;
+        const isGood = config.metaDirection === "lower" ? compareValue <= metaValue : compareValue >= metaValue;
         metaClass = isGood ? "good" : "bad";
       }
 
@@ -485,7 +487,7 @@ export function GestaoAVistaView({
             <div class="kpi-item">
               <div class="value">${kpiFormatted}</div>
               <div class="label">${config.kpiLabel}</div>
-              ${config.meta != null ? `<div class="meta ${metaClass}">Meta: ${config.metaLabel}</div>` : ""}
+              ${metaValue != null ? `<div class="meta ${metaClass}">Meta: ${config.metaLabel}</div>` : ""}
             </div>
             <div class="kpi-item">
               <div class="value">${sorted.length}</div>
