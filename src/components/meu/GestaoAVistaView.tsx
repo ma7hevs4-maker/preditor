@@ -755,11 +755,16 @@ export function GestaoAVistaView({
               });
 
             const kpiValue = getKpiValue(config);
+            const effectiveMeta = config.meta ?? (config.metaPerTeam != null ? config.metaPerTeam * numDays : undefined);
+            const effectiveMetaLabel = config.metaPerTeam != null
+              ? (numDays > 1 ? `≥ ${(config.metaPerTeam * numDays).toFixed(1).replace('.', ',')} inc (${config.metaPerTeam} × ${numDays}d)` : `≥ ${config.metaPerTeam} inc/dia`)
+              : config.metaLabel;
             let metaStatus: "good" | "bad" | "neutral" = "neutral";
-            if (config.meta != null) {
+            if (effectiveMeta != null) {
+              const compareValue = config.metaPerTeam != null ? kpiValue / (sorted.length || 1) : kpiValue;
               metaStatus = config.metaDirection === "lower"
-                ? kpiValue <= config.meta ? "good" : "bad"
-                : kpiValue >= config.meta ? "good" : "bad";
+                ? compareValue <= effectiveMeta ? "good" : "bad"
+                : compareValue >= effectiveMeta ? "good" : "bad";
             }
 
             return (
@@ -778,9 +783,9 @@ export function GestaoAVistaView({
                       <span className="text-2xl font-bold text-foreground">{config.format(kpiValue)}</span>
                       <span className="text-[10px] text-muted-foreground ml-2">{config.kpiLabel}</span>
                     </div>
-                    {config.meta != null && (
+                    {effectiveMeta != null && (
                       <div className={`text-xs font-medium ${metaStatus === "good" ? "text-green-600" : "text-red-500"}`}>
-                        Meta: {config.metaLabel}
+                        Meta: {effectiveMetaLabel}
                         {metaStatus === "good" ? (
                           <Check className="inline h-3 w-3 ml-1" />
                         ) : null}
