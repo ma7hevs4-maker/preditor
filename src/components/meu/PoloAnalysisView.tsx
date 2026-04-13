@@ -234,9 +234,31 @@ function PoloCard({
       equipeStr.split(/[/;+]| e /).map((t) => t.trim()).filter((t) => t.length > 0 && t !== "---").forEach((t) => uniqueTeams.add(t));
     });
     const equipesCount = uniqueTeams.size;
-    const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
 
-    return { Processos: proc, Incidentes: inc, Equipes: equipesCount, Improdutivos: imp, Reinc: reinc, Prod: isPeriodMode ? produtividade / numDays : produtividade };
+    let prodValue: number;
+    if (isPeriodMode) {
+      const byDate: Record<string, any[]> = {};
+      procData.forEach(d => {
+        const dt = d["Data Turno"] || d["Data Ação"] || "unknown";
+        if (!byDate[dt]) byDate[dt] = [];
+        byDate[dt].push(d);
+      });
+      const dailyProds = Object.values(byDate).map(dayData => {
+        const dayIncProd = new Set(dayData.filter((dd: any) => !dd.Improdutivo).map((dd: any) => dd.Número)).size;
+        const dayTeams = new Set<string>();
+        dayData.forEach((dd: any) => {
+          const eq = String(dd["Equipe Desl."] || "");
+          if (!eq || eq === "Não informado") return;
+          eq.split(/[/;+]| e /).map((t: string) => t.trim()).filter((t: string) => t.length > 0 && t !== "---").forEach((t: string) => dayTeams.add(t));
+        });
+        return dayTeams.size > 0 ? dayIncProd / dayTeams.size : 0;
+      });
+      prodValue = dailyProds.length > 0 ? dailyProds.reduce((a, b) => a + b, 0) / dailyProds.length : 0;
+    } else {
+      prodValue = equipesCount > 0 ? incProdutivos / equipesCount : 0;
+    }
+
+    return { Processos: proc, Incidentes: inc, Equipes: equipesCount, Improdutivos: imp, Reinc: reinc, Prod: prodValue };
   });
 
   // Total row
