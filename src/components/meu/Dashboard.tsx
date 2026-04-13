@@ -18,6 +18,7 @@ import {
   Loader2,
   Trophy,
   Star,
+  Eye,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
