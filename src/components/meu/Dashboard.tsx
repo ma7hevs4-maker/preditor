@@ -31,6 +31,7 @@ import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { calculateRankingScores, parseWeightsFromSettings, TeamRankingData } from "@/utils/rankingScoring";
 import { PoloAnalysisView } from "./PoloAnalysisView";
 import { TeamDetailModal } from "./TeamDetailModal";
+import { GestaoAVistaView } from "./GestaoAVistaView";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
