@@ -159,6 +159,7 @@ interface RankingConfig {
   kpiLabel: string;
   kpiAggregation: "sum" | "avg";
   meta?: number;
+  metaPerTeam?: number;
   metaLabel?: string;
   metaDirection?: "higher" | "lower";
 }
