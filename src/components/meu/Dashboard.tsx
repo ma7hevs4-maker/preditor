@@ -109,6 +109,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [passwordInput, setPasswordInput] = useState("");
   const [pendingAction, setPendingAction] = useState<"save" | null>(null);
   const [showPoloAnalysis, setShowPoloAnalysis] = useState(false);
+  const [showGestaoAVista, setShowGestaoAVista] = useState(false);
   const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
