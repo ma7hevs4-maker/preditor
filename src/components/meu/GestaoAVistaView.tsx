@@ -173,7 +173,8 @@ const RANKING_CONFIGS: RankingConfig[] = [
     format: (v) => String(v),
     kpiLabel: "Total de Incidentes",
     kpiAggregation: "sum",
-    meta: undefined,
+    metaPerTeam: 4.4,
+    metaLabel: "≥ 4,4 inc/dia",
     metaDirection: "higher",
   },
   {
@@ -185,6 +186,8 @@ const RANKING_CONFIGS: RankingConfig[] = [
     format: (v) => v.toFixed(1),
     kpiLabel: "Média Login",
     kpiAggregation: "avg",
+    meta: 8,
+    metaLabel: "≤ 8 min",
     metaDirection: "lower",
   },
   {
@@ -244,6 +247,8 @@ const RANKING_CONFIGS: RankingConfig[] = [
     format: (v) => v.toFixed(1) + "%",
     kpiLabel: "Média Ocupação",
     kpiAggregation: "avg",
+    meta: 85,
+    metaLabel: "≥ 85%",
     metaDirection: "higher",
   },
   {
