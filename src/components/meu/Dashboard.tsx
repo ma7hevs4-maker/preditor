@@ -1405,6 +1405,22 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         calcTempoPlataforma={calcTempoPlataforma}
         calcRetornoBase={calcRetornoBase}
         getValMinutes={getValMinutes}
+        filterState={{
+          isPeriodMode, setIsPeriodMode,
+          selectedData, setSelectedData,
+          periodStart, setPeriodStart,
+          periodEnd, setPeriodEnd,
+          selectedPolos, setSelectedPolos,
+          selectedProcessos, setSelectedProcessos,
+          selectedTiposEquipe, setSelectedTiposEquipe,
+          selectedTurnos, setSelectedTurnos,
+          selectedEquipes, setSelectedEquipes,
+          selectedIncidents, setSelectedIncidents,
+          tmdeAbove150Filter, setTmdeAbove150Filter,
+          o2AnomaliaFilter, setO2AnomaliaFilter,
+          datas, polos, processos, tiposEquipe, turnos, equipes, incidents,
+          activeFilterCount,
+        }}
       />
     );
   }
