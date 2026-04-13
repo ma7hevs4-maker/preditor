@@ -469,11 +469,21 @@ export function GestaoAVistaView({
 
       const kpiValue = getKpiValue(config);
       const kpiFormatted = config.format(kpiValue);
-      const metaValue = config.meta ?? config.metaPerTeam;
+      
+      // For production, scale meta by number of days
+      let effectiveMeta = config.meta ?? (config.metaPerTeam != null ? config.metaPerTeam * numDays : undefined);
+      let effectiveMetaLabel = config.metaLabel;
+      if (config.metaPerTeam != null) {
+        const totalMeta = (config.metaPerTeam * numDays);
+        effectiveMetaLabel = numDays > 1 
+          ? `≥ ${totalMeta.toFixed(1).replace('.', ',')} inc (${config.metaPerTeam} × ${numDays}d)`
+          : `≥ ${config.metaPerTeam} inc/dia`;
+      }
+      
       let metaClass = "";
-      if (metaValue != null) {
+      if (effectiveMeta != null) {
         const compareValue = config.metaPerTeam != null ? kpiValue / (sorted.length || 1) : kpiValue;
-        const isGood = config.metaDirection === "lower" ? compareValue <= metaValue : compareValue >= metaValue;
+        const isGood = config.metaDirection === "lower" ? compareValue <= effectiveMeta : compareValue >= effectiveMeta;
         metaClass = isGood ? "good" : "bad";
       }
 
@@ -487,7 +497,7 @@ export function GestaoAVistaView({
             <div class="kpi-item">
               <div class="value">${kpiFormatted}</div>
               <div class="label">${config.kpiLabel}</div>
-              ${metaValue != null ? `<div class="meta ${metaClass}">Meta: ${config.metaLabel}</div>` : ""}
+              ${effectiveMeta != null ? `<div class="meta ${metaClass}">Meta: ${effectiveMetaLabel}</div>` : ""}
             </div>
             <div class="kpi-item">
               <div class="value">${sorted.length}</div>
