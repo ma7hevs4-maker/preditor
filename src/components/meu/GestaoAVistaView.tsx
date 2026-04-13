@@ -11,9 +11,17 @@ import {
   XCircle,
   Activity,
   Clock,
+  LogIn,
+  SlidersHorizontal,
+  Filter,
+  Calendar,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -22,6 +30,101 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UTS_POLOS, UTN_POLOS } from "@/utils/rankingScoring";
+
+const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
+  const [search, setSearch] = useState("");
+  const filteredOptions = searchable 
+    ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+          {label}
+          {selected.length > 0 && (
+            <span className="ml-1.5 text-primary font-mono">({selected.length})</span>
+          )}
+        </label>
+        <div className="flex gap-2">
+          <button onClick={() => onChange(filteredOptions)} className="text-[10px] text-primary hover:underline">Todos</button>
+          <button onClick={() => onChange([])} className="text-[10px] text-muted-foreground hover:underline">Limpar</button>
+        </div>
+      </div>
+      {searchable && (
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Pesquisar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-1.5 pl-7 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+          />
+        </div>
+      )}
+      <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+        {filteredOptions.map((opt: string) => {
+          const isSelected = selected.includes(opt);
+          return (
+            <button
+              key={opt}
+              onClick={() => {
+                if (isSelected) {
+                  onChange(selected.filter((s: string) => s !== opt));
+                } else {
+                  onChange([...selected, opt]);
+                }
+              }}
+              className={`px-2 py-0.5 rounded-md text-[10px] border transition-colors ${
+                isSelected
+                  ? "bg-primary/15 border-primary/40 text-foreground font-medium"
+                  : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
+              }`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export interface FilterState {
+  isPeriodMode: boolean;
+  setIsPeriodMode: (v: boolean) => void;
+  selectedData: string;
+  setSelectedData: (v: string) => void;
+  periodStart: string;
+  setPeriodStart: (v: string) => void;
+  periodEnd: string;
+  setPeriodEnd: (v: string) => void;
+  selectedPolos: string[];
+  setSelectedPolos: (v: string[]) => void;
+  selectedProcessos: string[];
+  setSelectedProcessos: (v: string[]) => void;
+  selectedTiposEquipe: string[];
+  setSelectedTiposEquipe: (v: string[]) => void;
+  selectedTurnos: string[];
+  setSelectedTurnos: (v: string[]) => void;
+  selectedEquipes: string[];
+  setSelectedEquipes: (v: string[]) => void;
+  selectedIncidents: string[];
+  setSelectedIncidents: (v: string[]) => void;
+  tmdeAbove150Filter: string;
+  setTmdeAbove150Filter: (v: string) => void;
+  o2AnomaliaFilter: string;
+  setO2AnomaliaFilter: (v: string) => void;
+  datas: string[];
+  polos: string[];
+  processos: string[];
+  tiposEquipe: string[];
+  turnos: string[];
+  equipes: string[];
+  incidents: string[];
+  activeFilterCount: number;
+}
 
 interface GestaoAVistaViewProps {
   filteredData: any[];
@@ -33,10 +136,12 @@ interface GestaoAVistaViewProps {
   calcTempoPlataforma: (eqData: any[]) => number | null;
   calcRetornoBase: (eqData: any[]) => number | null;
   getValMinutes: (val: any) => number | null;
+  filterState: FilterState;
 }
 
 type RankingType =
   | "producao"
+  | "login"
   | "plataforma"
   | "retorno"
   | "reincidentes"
@@ -55,7 +160,7 @@ interface RankingConfig {
   kpiAggregation: "sum" | "avg";
   meta?: number;
   metaLabel?: string;
-  metaDirection?: "higher" | "lower"; // higher = green when above meta, lower = green when below
+  metaDirection?: "higher" | "lower";
 }
 
 const RANKING_CONFIGS: RankingConfig[] = [
@@ -70,6 +175,17 @@ const RANKING_CONFIGS: RankingConfig[] = [
     kpiAggregation: "sum",
     meta: undefined,
     metaDirection: "higher",
+  },
+  {
+    key: "login",
+    label: "Login (min)",
+    icon: <LogIn className="h-4 w-4" />,
+    sortField: "login",
+    direction: "asc",
+    format: (v) => v.toFixed(1),
+    kpiLabel: "Média Login",
+    kpiAggregation: "avg",
+    metaDirection: "lower",
   },
   {
     key: "plataforma",
@@ -162,8 +278,29 @@ interface TeamData {
   reincidentes: number;
   ocupacao: number;
   ociosidade: number;
+  login: number | null;
   plataforma: number | null;
   retorno: number | null;
+}
+
+/**
+ * Get a raw M300 value for a team, deduplicated (take the single unique value per team/day).
+ * M300 columns repeat per incident row but the value is the same for the whole team/day.
+ */
+function getRawM300Value(eqData: any[], columnName: string, getValMinutes: (val: any) => number | null): number | null {
+  // Get distinct non-null values
+  const seen = new Set<number>();
+  for (const d of eqData) {
+    const raw = d[columnName];
+    const val = getValMinutes(raw);
+    if (val != null && val > 0) {
+      seen.add(val);
+    }
+  }
+  if (seen.size === 0) return null;
+  // If multiple distinct values (e.g. period mode with multiple days), average them
+  const values = Array.from(seen);
+  return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 export function GestaoAVistaView({
@@ -176,7 +313,10 @@ export function GestaoAVistaView({
   calcTempoPlataforma,
   calcRetornoBase,
   getValMinutes,
+  filterState,
 }: GestaoAVistaViewProps) {
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
   const allPolos = useMemo(() => {
     const poloSet = new Set<string>();
     filteredData.forEach((d) => {
@@ -211,8 +351,11 @@ export function GestaoAVistaView({
       const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
       const ocupacao = calculateOccupancy(eqData);
       const ociosidade = calculateIdleMinutes(eqData);
-      const plataforma = calcTempoPlataforma(eqData);
-      const retorno = calcRetornoBase(eqData);
+
+      // Raw M300 values (deduplicated)
+      const login = getRawM300Value(eqData, "1º Login Corrigido", getValMinutes);
+      const plataforma = getRawM300Value(eqData, "1º Desloc", getValMinutes);
+      const retorno = getRawM300Value(eqData, "Retorno a base", getValMinutes);
 
       return {
         equipe: eq,
@@ -221,11 +364,12 @@ export function GestaoAVistaView({
         reincidentes: reinc,
         ocupacao,
         ociosidade,
+        login,
         plataforma,
         retorno,
       };
     });
-  }, [poloData, calculateOccupancy, calculateIdleMinutes, calcTempoPlataforma, calcRetornoBase]);
+  }, [poloData, calculateOccupancy, calculateIdleMinutes, getValMinutes]);
 
   const toggleRanking = (key: RankingType) => {
     setSelectedRankings((prev) => {
@@ -243,6 +387,7 @@ export function GestaoAVistaView({
       case "reincidentes": return team.reincidentes;
       case "ocupacao": return team.ocupacao;
       case "ociosidade": return team.ociosidade;
+      case "login": return team.login ?? 999;
       case "plataforma": return team.plataforma ?? 999;
       case "retorno": return team.retorno ?? 999;
       default: return 0;
@@ -373,6 +518,8 @@ export function GestaoAVistaView({
     setTimeout(() => printWindow.print(), 500);
   };
 
+  const fs = filterState;
+
   return (
     <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
       {/* Header */}
@@ -405,6 +552,147 @@ export function GestaoAVistaView({
             <Printer className="h-3.5 w-3.5" />
             Imprimir ({selectedRankings.size})
           </Button>
+
+          {/* Filter badges */}
+          {fs.activeFilterCount > 0 && (
+            <Badge variant="secondary" className="text-[10px] font-mono gap-1">
+              <Filter className="h-3 w-3" />
+              {fs.activeFilterCount} filtro{fs.activeFilterCount > 1 ? 's' : ''}
+            </Badge>
+          )}
+
+          {/* Filter Sheet */}
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-2">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Filtros
+                {fs.activeFilterCount > 0 && (
+                  <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+                    {fs.activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
+              <SheetHeader className="p-4 border-b border-border bg-secondary/30">
+                <SheetTitle className="flex items-center gap-2 text-base">
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  Filtros
+                </SheetTitle>
+              </SheetHeader>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-5">
+                  {/* Modo de Análise */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                        Modo de Análise
+                      </label>
+                      <button
+                        onClick={() => fs.setIsPeriodMode(!fs.isPeriodMode)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${fs.isPeriodMode ? 'bg-primary' : 'bg-muted'}`}
+                      >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card transition-transform ${fs.isPeriodMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Data / Período */}
+                  {!fs.isPeriodMode && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        Dia
+                      </label>
+                      <select
+                        value={fs.selectedData}
+                        onChange={(e) => fs.setSelectedData(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="">Todos</option>
+                        {fs.datas.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {fs.isPeriodMode && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        Período
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">De</span>
+                          <select
+                            value={fs.periodStart}
+                            onChange={(e) => fs.setPeriodStart(e.target.value)}
+                            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                          >
+                            {fs.datas.map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-muted-foreground">Até</span>
+                          <select
+                            value={fs.periodEnd}
+                            onChange={(e) => fs.setPeriodEnd(e.target.value)}
+                            className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                          >
+                            {fs.datas.filter(d => d >= fs.periodStart).map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quick Filters */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">TMDE &gt; 150</label>
+                      <select
+                        value={fs.tmdeAbove150Filter}
+                        onChange={(e) => fs.setTmdeAbove150Filter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">O2 / Anomalia</label>
+                      <select
+                        value={fs.o2AnomaliaFilter}
+                        onChange={(e) => fs.setO2AnomaliaFilter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="o2">Possível O2</option>
+                        <option value="anomalia">Possível Anomalia</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <FilterMultiSelect label="Polo" options={fs.polos} selected={fs.selectedPolos} onChange={fs.setSelectedPolos} />
+                    <FilterMultiSelect label="Processo" options={fs.processos} selected={fs.selectedProcessos} onChange={fs.setSelectedProcessos} />
+                    <FilterMultiSelect label="Insourcing / Outsourcing" options={fs.tiposEquipe} selected={fs.selectedTiposEquipe} onChange={fs.setSelectedTiposEquipe} />
+                    <FilterMultiSelect label="Turno" options={fs.turnos} selected={fs.selectedTurnos} onChange={fs.setSelectedTurnos} />
+                    <FilterMultiSelect label="Equipe" options={fs.equipes} selected={fs.selectedEquipes} onChange={fs.setSelectedEquipes} searchable={true} />
+                    <FilterMultiSelect label="Incidente" options={fs.incidents} selected={fs.selectedIncidents} onChange={fs.setSelectedIncidents} searchable={true} />
+                  </div>
+                </div>
+              </ScrollArea>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
