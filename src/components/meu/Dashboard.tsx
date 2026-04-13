@@ -1433,6 +1433,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             <Trophy className="h-3.5 w-3.5" />
             Análise Polos
           </Button>
+          {/* Gestão à Vista */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setShowGestaoAVista(true)}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Gestão à Vista
+          </Button>
           {/* Active filter badges */}
           {activeFilterCount > 0 && (
             <div className="flex items-center gap-1.5 mr-2">
