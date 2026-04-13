@@ -159,6 +159,7 @@ interface RankingConfig {
   kpiLabel: string;
   kpiAggregation: "sum" | "avg";
   meta?: number;
+  metaPerTeam?: number;
   metaLabel?: string;
   metaDirection?: "higher" | "lower";
 }
@@ -173,7 +174,8 @@ const RANKING_CONFIGS: RankingConfig[] = [
     format: (v) => String(v),
     kpiLabel: "Total de Incidentes",
     kpiAggregation: "sum",
-    meta: undefined,
+    metaPerTeam: 4.4,
+    metaLabel: "≥ 4,4 inc/dia",
     metaDirection: "higher",
   },
   {
@@ -185,6 +187,8 @@ const RANKING_CONFIGS: RankingConfig[] = [
     format: (v) => v.toFixed(1),
     kpiLabel: "Média Login",
     kpiAggregation: "avg",
+    meta: 8,
+    metaLabel: "≤ 8 min",
     metaDirection: "lower",
   },
   {
@@ -244,6 +248,8 @@ const RANKING_CONFIGS: RankingConfig[] = [
     format: (v) => v.toFixed(1) + "%",
     kpiLabel: "Média Ocupação",
     kpiAggregation: "avg",
+    meta: 85,
+    metaLabel: "≥ 85%",
     metaDirection: "higher",
   },
   {
@@ -463,9 +469,11 @@ export function GestaoAVistaView({
 
       const kpiValue = getKpiValue(config);
       const kpiFormatted = config.format(kpiValue);
+      const metaValue = config.meta ?? config.metaPerTeam;
       let metaClass = "";
-      if (config.meta != null) {
-        const isGood = config.metaDirection === "lower" ? kpiValue <= config.meta : kpiValue >= config.meta;
+      if (metaValue != null) {
+        const compareValue = config.metaPerTeam != null ? kpiValue / (sorted.length || 1) : kpiValue;
+        const isGood = config.metaDirection === "lower" ? compareValue <= metaValue : compareValue >= metaValue;
         metaClass = isGood ? "good" : "bad";
       }
 
@@ -479,7 +487,7 @@ export function GestaoAVistaView({
             <div class="kpi-item">
               <div class="value">${kpiFormatted}</div>
               <div class="label">${config.kpiLabel}</div>
-              ${config.meta != null ? `<div class="meta ${metaClass}">Meta: ${config.metaLabel}</div>` : ""}
+              ${metaValue != null ? `<div class="meta ${metaClass}">Meta: ${config.metaLabel}</div>` : ""}
             </div>
             <div class="kpi-item">
               <div class="value">${sorted.length}</div>
