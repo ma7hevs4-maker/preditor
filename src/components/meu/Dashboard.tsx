@@ -681,8 +681,30 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     const ocupacao = countOcupacaoValidas > 0 ? somaOcupacao / countOcupacaoValidas : 0;
     const avgIdleMinutes = equipesPresentesNoProcesso.length > 0 ? somaIdleMinutes / equipesPresentesNoProcesso.length : 0;
-    const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
-    const displayProdutividade = isPeriodMode ? produtividade / numDays : produtividade;
+    // In period mode: average daily productivities instead of total/uniqueTeams/days
+    let displayProdutividade: number;
+    if (isPeriodMode) {
+      const byDate: Record<string, any[]> = {};
+      procData.forEach(d => {
+        const dt = d["Data Turno"] || d["Data Ação"] || "unknown";
+        if (!byDate[dt]) byDate[dt] = [];
+        byDate[dt].push(d);
+      });
+      const dailyProds = Object.values(byDate).map(dayData => {
+        const dayIncProd = new Set(dayData.filter(d => !d.Improdutivo).map(d => d.Número)).size;
+        const dayTeams = new Set<string>();
+        dayData.forEach(d => {
+          const eq = String(d["Equipe Desl."] || "");
+          if (!eq || eq === "Não informado") return;
+          eq.split(/[/;+]| e /).map(t => t.trim()).filter(t => t.length > 0 && t !== "---").forEach(t => dayTeams.add(t));
+        });
+        return dayTeams.size > 0 ? dayIncProd / dayTeams.size : 0;
+      });
+      displayProdutividade = dailyProds.length > 0 ? dailyProds.reduce((a, b) => a + b, 0) / dailyProds.length : 0;
+    } else {
+      const produtividade = equipesCount > 0 ? incProdutivos / equipesCount : 0;
+      displayProdutividade = produtividade;
+    }
 
     // Login, Despacho, Tempo de Plataforma, Retorno a Base médios por processo
     const loginValues: number[] = [];
@@ -730,7 +752,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       Ocupação: ocupacao,
       "Ociosidade (min)": avgIdleMinutes,
       "Inc. Ociosid.": Math.round(avgIdleMinutes / 60 * 1.5),
-      Produtividade: isPeriodMode ? produtividade / numDays : produtividade,
+      Produtividade: displayProdutividade,
       Login: avgLogin,
       Despacho: avgDespacho,
       "Tempo Plataforma": avgPlataforma,
@@ -811,7 +833,26 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     Ocupação: ocupacaoMediaGeral,
     "Ociosidade (min)": avgIdleMinutesGeral,
     "Inc. Ociosid.": Math.round(avgIdleMinutesGeral / 60 * 1.5),
-    Produtividade: isPeriodMode ? (totalIncProdutivos / totalEquipesGeralCount) / numDays : totalIncProdutivos / totalEquipesGeralCount,
+    Produtividade: (() => {
+      if (!isPeriodMode) return totalEquipesGeralCount > 0 ? totalIncProdutivos / totalEquipesGeralCount : 0;
+      const byDate: Record<string, any[]> = {};
+      filteredData.forEach(d => {
+        const dt = d["Data Turno"] || d["Data Ação"] || "unknown";
+        if (!byDate[dt]) byDate[dt] = [];
+        byDate[dt].push(d);
+      });
+      const dailyProds = Object.values(byDate).map(dayData => {
+        const dayIncProd = new Set(dayData.filter((d: any) => !d.Improdutivo).map((d: any) => d.Número)).size;
+        const dayTeams = new Set<string>();
+        dayData.forEach((d: any) => {
+          const eq = String(d["Equipe Desl."] || "");
+          if (!eq || eq === "Não informado") return;
+          eq.split(/[/;+]| e /).map((t: string) => t.trim()).filter((t: string) => t.length > 0 && t !== "---").forEach((t: string) => dayTeams.add(t));
+        });
+        return dayTeams.size > 0 ? dayIncProd / dayTeams.size : 0;
+      });
+      return dailyProds.length > 0 ? dailyProds.reduce((a, b) => a + b, 0) / dailyProds.length : 0;
+    })(),
     Login: allLoginVals.length > 0 ? allLoginVals.reduce((a, b) => a + b, 0) / allLoginVals.length : null,
     Despacho: allDespachoVals.length > 0 ? allDespachoVals.reduce((a, b) => a + b, 0) / allDespachoVals.length : null,
     "Tempo Plataforma": allPlatVals.length > 0 ? allPlatVals.reduce((a, b) => a + b, 0) / allPlatVals.length : null,
