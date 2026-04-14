@@ -487,42 +487,50 @@ export function GestaoAVistaView({
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
+    const hasGeral = selectedRankings.has("geral");
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Gestão à Vista - ${selectedPolo}</title>
         <style>
-          @page { size: A4 portrait; margin: 12mm; }
+          @page { size: A4 portrait; margin: 8mm 6mm; }
+          @page.landscape { size: A4 landscape; margin: 8mm 6mm; }
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #fff; }
-          .ranking-page { page-break-after: always; padding: 8mm 0; }
+          .ranking-page { page-break-after: always; padding: 4mm 0; }
           .ranking-page:last-child { page-break-after: auto; }
-          .ranking-header { text-align: center; margin-bottom: 6mm; border-bottom: 3px solid #1a1a2e; padding-bottom: 4mm; }
-          .ranking-header h1 { font-size: 22pt; font-weight: 800; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px; }
-          .ranking-header .polo { font-size: 14pt; color: #4a4a6a; font-weight: 600; margin-top: 2mm; }
-          .kpi-bar { display: flex; justify-content: center; gap: 12mm; margin-bottom: 6mm; padding: 4mm 0; background: #f0f0f8; border-radius: 3mm; }
+          .ranking-page.landscape { page: landscape; }
+          .ranking-header { text-align: center; margin-bottom: 3mm; border-bottom: 2px solid #1a1a2e; padding-bottom: 2mm; }
+          .ranking-header h1 { font-size: 14pt; font-weight: 800; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px; }
+          .ranking-header .polo { font-size: 10pt; color: #4a4a6a; font-weight: 600; margin-top: 1mm; }
+          .kpi-bar { display: flex; justify-content: center; gap: 8mm; margin-bottom: 3mm; padding: 2mm 0; background: #f0f0f8; border-radius: 2mm; }
           .kpi-item { text-align: center; }
-          .kpi-item .value { font-size: 20pt; font-weight: 800; color: #1a1a2e; }
-          .kpi-item .label { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1mm; }
-          .kpi-item .meta { font-size: 8pt; color: #888; margin-top: 0.5mm; }
+          .kpi-item .value { font-size: 14pt; font-weight: 800; color: #1a1a2e; }
+          .kpi-item .label { font-size: 6pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.5mm; }
+          .kpi-item .meta { font-size: 6pt; color: #888; margin-top: 0.5mm; }
           .kpi-item .meta.good { color: #16a34a; }
           .kpi-item .meta.bad { color: #dc2626; }
-          table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-          thead th { background: #1a1a2e; color: #fff; padding: 3mm 4mm; text-align: left; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 9pt; }
-          thead th:first-child { width: 10%; text-align: center; }
-          thead th:nth-child(2) { width: 55%; }
-          thead th:last-child { width: 35%; text-align: right; }
-          tbody tr { border-bottom: 1px solid #e0e0e0; }
+          table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+          thead th { background: #1a1a2e; color: #fff; padding: 1.5mm 2mm; text-align: left; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; font-size: 6pt; }
+          thead th:first-child { text-align: center; }
+          tbody tr { border-bottom: 0.5px solid #e0e0e0; }
           tbody tr:nth-child(even) { background: #f8f8fc; }
           tbody tr:nth-child(1) td { font-weight: 700; }
-          tbody tr:nth-child(1) td:first-child { color: #d4a017; font-size: 14pt; }
-          tbody tr:nth-child(2) td:first-child { color: #888; font-size: 12pt; }
-          tbody tr:nth-child(3) td:first-child { color: #b87333; font-size: 12pt; }
-          tbody td { padding: 2.5mm 4mm; }
-          tbody td:first-child { text-align: center; font-weight: 700; font-size: 11pt; color: #555; }
-          tbody td:last-child { text-align: right; font-weight: 600; font-family: 'Consolas', monospace; font-size: 11pt; }
-          .footer { text-align: center; font-size: 7pt; color: #999; margin-top: 4mm; border-top: 1px solid #ddd; padding-top: 2mm; }
+          tbody tr:nth-child(1) td:first-child { color: #d4a017; }
+          tbody tr:nth-child(2) td:first-child { color: #888; }
+          tbody tr:nth-child(3) td:first-child { color: #b87333; }
+          tbody td { padding: 1mm 2mm; line-height: 1.3; }
+          tbody td:first-child { text-align: center; font-weight: 700; color: #555; }
+          .simple-table thead th:nth-child(2) { width: 50%; }
+          .simple-table thead th:last-child { text-align: right; }
+          .simple-table tbody td:last-child { text-align: right; font-weight: 600; font-family: 'Consolas', monospace; }
+          .geral-table thead th { font-size: 5.5pt; padding: 1mm 1mm; white-space: nowrap; }
+          .geral-table tbody td { font-size: 6.5pt; padding: 0.8mm 1mm; white-space: nowrap; }
+          .geral-table .pts { font-weight: 700; color: #2563eb; }
+          .geral-table .num { text-align: right; font-family: 'Consolas', monospace; }
+          .footer { text-align: center; font-size: 6pt; color: #999; margin-top: 2mm; border-top: 1px solid #ddd; padding-top: 1mm; }
           @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>
       </head>
@@ -532,7 +540,65 @@ export function GestaoAVistaView({
     const activeRankings = RANKING_CONFIGS.filter((c) => selectedRankings.has(c.key));
 
     activeRankings.forEach((config) => {
-      const sorted = [...teamsData]
+      if (config.key === "geral") {
+        // Full general ranking with all columns
+        const sorted = [...scoredTeamsData].sort((a, b) => (b.pontuacao ?? 0) - (a.pontuacao ?? 0));
+
+        printWindow.document.write(`
+          <div class="ranking-page">
+            <div class="ranking-header">
+              <h1>Ranking Geral</h1>
+              <div class="polo">${selectedPolo} • ${sorted.length} equipes</div>
+            </div>
+            <table class="geral-table">
+              <thead>
+                <tr>
+                  <th>Pos</th>
+                  <th>Equipe</th>
+                  <th>Pts</th>
+                  <th>Inc.</th>
+                  <th>Improd.</th>
+                  <th>Ord.2</th>
+                  <th>Reinc.</th>
+                  <th>TMDE</th>
+                  <th>Ocup.</th>
+                  <th>Ociosid.</th>
+                  <th>Inc.Oc.</th>
+                  <th>Login</th>
+                  <th>Desp.</th>
+                  <th>T.Plat.</th>
+                  <th>Ret.Base</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sorted.map((team, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td>${team.equipe}${team.hasIncompleteData ? '*' : ''}</td>
+                    <td class="pts">${(team.pontuacao ?? 0).toFixed(1)}</td>
+                    <td class="num">${team.incidentes}</td>
+                    <td class="num">${team.improdutivos}</td>
+                    <td class="num">${team.ordem2}</td>
+                    <td class="num">${team.reincidentes}</td>
+                    <td class="num">${team.tmde.toFixed(1)}</td>
+                    <td class="num">${team.ocupacao.toFixed(1)}%</td>
+                    <td class="num">${team.ociosidade.toFixed(0)}</td>
+                    <td class="num">${team.incOciosidade}</td>
+                    <td class="num">${team.login != null ? team.login.toFixed(1) : '-'}</td>
+                    <td class="num">${team.despacho != null ? team.despacho.toFixed(1) : '-'}</td>
+                    <td class="num">${team.plataforma != null ? team.plataforma.toFixed(1) : '-'}</td>
+                    <td class="num">${team.retorno != null ? team.retorno.toFixed(1) : '-'}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+            <div class="footer">Gestão à Vista • ${selectedPolo} • Gerado em ${new Date().toLocaleString("pt-BR")}</div>
+          </div>
+        `);
+        return;
+      }
+
+      const sorted = [...scoredTeamsData]
         .filter((t) => getTeamValue(t, config.sortField) !== 999)
         .sort((a, b) => {
           const va = getTeamValue(a, config.sortField);
@@ -543,7 +609,6 @@ export function GestaoAVistaView({
       const kpiValue = getKpiValue(config);
       const kpiFormatted = config.format(kpiValue);
       
-      // For production, scale meta by number of days
       let effectiveMeta = config.meta ?? (config.metaPerTeam != null ? config.metaPerTeam * numDays : undefined);
       let effectiveMetaLabel = config.metaLabel;
       if (config.metaPerTeam != null) {
@@ -577,7 +642,7 @@ export function GestaoAVistaView({
               <div class="label">Equipes</div>
             </div>
           </div>
-          <table>
+          <table class="simple-table">
             <thead>
               <tr>
                 <th>Pos.</th>
