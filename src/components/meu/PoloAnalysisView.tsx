@@ -306,7 +306,7 @@ function PoloCard({
         "Ordem 2": ord2,
         Ocupação: ocupacao,
         "Ociosidade (min)": idleMinutes,
-        "Inc. Ociosid.": Math.round(idleMinutes / 60 * 1.5),
+        "Inc. Ociosid.": Math.round(idleMinutes / 60),
         Login: maxLoginVal != null ? maxLoginVal.toFixed(1) : "-",
         Despacho: maxDespachoVal != null ? maxDespachoVal.toFixed(1) : "-",
         "Tempo de plataforma": platVal != null ? platVal.toFixed(1) : "-",
