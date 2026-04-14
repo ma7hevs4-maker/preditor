@@ -540,6 +540,45 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return 0; // sem intervalo registrado
   };
 
+  // Helper: calculate capped TMD+TME sum for a day, excluding ATENDIMENTO REMOTO
+  // and capping incident time at shift end
+  const calcCappedTmdTme = (dayData: any[]): number => {
+    const firstRow = dayData[0] || {};
+    const shiftEndMin = getValMinutes(firstRow["Fim Calendario"]);
+    const shiftStartMin = getValMinutes(firstRow["Inicio Calendario"]);
+
+    return dayData.reduce((acc, d) => {
+      // Exclude ATENDIMENTO REMOTO from time calculations
+      const causa = String(d["Causa"] || "").trim().toUpperCase();
+      if (causa === "ATENDIMENTO REMOTO") return acc;
+
+      let tmd = Number(d.TMD) || 0;
+      let tme = Number(d.TME) || 0;
+
+      // Cap incident time at shift end
+      if (shiftEndMin != null && shiftStartMin != null && d.hora_aux_ordenacao != null) {
+        const incStartMin = d.hora_aux_ordenacao * 60;
+        let shiftEndAbs = shiftEndMin;
+        // Handle overnight shifts
+        if (shiftEndAbs <= shiftStartMin) shiftEndAbs += 1440;
+        let adjustedIncStart = incStartMin;
+        if (adjustedIncStart < shiftStartMin && shiftEndAbs > 1440) adjustedIncStart += 1440;
+
+        const incEndMin = adjustedIncStart + tmd + tme;
+        if (incEndMin > shiftEndAbs) {
+          const overflow = incEndMin - shiftEndAbs;
+          // Reduce TME first, then TMD
+          const tmeReduction = Math.min(overflow, tme);
+          tme -= tmeReduction;
+          const remaining = overflow - tmeReduction;
+          if (remaining > 0) tmd = Math.max(0, tmd - remaining);
+        }
+      }
+
+      return acc + tmd + tme;
+    }, 0);
+  };
+
   const calculateOccupancy = (eqData: any[]) => {
     if (eqData.length === 0) return 0;
     
@@ -554,7 +593,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     let totalDenominator = 0;
     
     Object.values(dataByDate).forEach(dayData => {
-      const sumTmdTme = dayData.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
+      const sumTmdTme = calcCappedTmdTme(dayData);
       
       const tempoPlataforma = calcTempoPlataforma(dayData) ?? IDEAL_PLATFORM_MIN;
       const retornoBase = calcRetornoBase(dayData) ?? IDEAL_RETURN_BASE_MIN;
@@ -587,7 +626,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     let totalIdle = 0;
 
     Object.values(dataByDate).forEach(dayData => {
-      const sumTmdTme = dayData.reduce((acc, d) => acc + (Number(d.TMD) || 0) + (Number(d.TME) || 0), 0);
+      const sumTmdTme = calcCappedTmdTme(dayData);
       
       const tempoPlataforma = calcTempoPlataforma(dayData) ?? IDEAL_PLATFORM_MIN;
       const retornoBase = calcRetornoBase(dayData) ?? IDEAL_RETURN_BASE_MIN;
