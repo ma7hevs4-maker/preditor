@@ -143,6 +143,7 @@ interface GestaoAVistaViewProps {
 }
 
 type RankingType =
+  | "geral"
   | "producao"
   | "login"
   | "plataforma"
