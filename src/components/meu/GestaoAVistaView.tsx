@@ -138,6 +138,7 @@ interface GestaoAVistaViewProps {
   calcTempoPlataforma: (eqData: any[]) => number | null;
   calcRetornoBase: (eqData: any[]) => number | null;
   getValMinutes: (val: any) => number | null;
+  calcDespacho?: (eqData: any[]) => number | null;
   filterState: FilterState;
 }
 
