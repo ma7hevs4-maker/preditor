@@ -511,6 +511,31 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
+  // Check if a day's shift is complete (has Logoff recorded)
+  const isDayShiftComplete = (dayData: any[]): boolean => {
+    return dayData.some(d => {
+      const logoff = d["Log Off Corrigido"] || d["Log Off"];
+      return logoff != null && logoff !== "" && logoff !== "-";
+    });
+  };
+
+  // Filter out incomplete shift days from data
+  const filterCompleteDays = (eqData: any[]): any[] => {
+    const dataByDate: Record<string, any[]> = {};
+    eqData.forEach(d => {
+      const date = d["Data Turno"] || d["Data Ação"];
+      if (!dataByDate[date]) dataByDate[date] = [];
+      dataByDate[date].push(d);
+    });
+    const completeDays: any[] = [];
+    Object.values(dataByDate).forEach(dayData => {
+      if (isDayShiftComplete(dayData)) {
+        completeDays.push(...dayData);
+      }
+    });
+    return completeDays;
+  };
+
   // Tempos ideais (em minutos)
   const IDEAL_PLATFORM_MIN = 25;
   const IDEAL_INTERVAL_MIN = 60;
@@ -710,8 +735,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     let countOcupacaoValidas = 0;
     equipesPresentesNoProcesso.forEach(eq => {
       const eqData = procData.filter(d => d["Equipe Desl."] === eq);
-      const occ = calculateOccupancy(eqData);
-      somaIdleMinutes += calculateIdleMinutes(eqData);
+      const completeData = filterCompleteDays(eqData);
+      if (completeData.length === 0) return;
+      const occ = calculateOccupancy(completeData);
+      somaIdleMinutes += calculateIdleMinutes(completeData);
       if (occ <= 120) {
         somaOcupacao += occ;
         countOcupacaoValidas++;
@@ -821,8 +848,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   let countOcupacaoValidasGeral = 0;
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    const occ = calculateOccupancy(eqData);
-    somaIdleMinutesGeral += calculateIdleMinutes(eqData);
+    const completeData = filterCompleteDays(eqData);
+    if (completeData.length === 0) return;
+    const occ = calculateOccupancy(completeData);
+    somaIdleMinutesGeral += calculateIdleMinutes(completeData);
     if (occ <= 120) {
       somaOcupacaoGeral += occ;
       countOcupacaoValidasGeral++;
@@ -979,7 +1008,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     const baseRanking = equipesPresentes.map((eq) => {
       const eqData = filteredData.filter((d) => d["Equipe Desl."] === eq);
-      const eqDays = new Set(eqData.map(d => d["Data Turno"] || d["Data Ação"])).size || 1;
+      const allDays = new Set(eqData.map(d => d["Data Turno"] || d["Data Ação"]));
+      const eqDays = allDays.size || 1;
+      
+      // Detect incomplete shift days
+      const completeDayData = filterCompleteDays(eqData);
+      const dataByDate: Record<string, any[]> = {};
+      eqData.forEach(d => {
+        const date = d["Data Turno"] || d["Data Ação"];
+        if (!dataByDate[date]) dataByDate[date] = [];
+        dataByDate[date].push(d);
+      });
+      const completeDays = Object.keys(dataByDate).filter(date => isDayShiftComplete(dataByDate[date]));
+      const diasCompletos = completeDays.length;
+      const temTurnoEmAndamento = diasCompletos < eqDays;
       
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
@@ -992,9 +1034,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       // Ordem 2
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
-      // Ocupação e Ociosidade
-      const ocupacao = calculateOccupancy(eqData);
-      const idleMinutes = calculateIdleMinutes(eqData);
+      // Ocupação e Ociosidade - use only complete days
+      const ocupacao = completeDayData.length > 0 ? calculateOccupancy(completeDayData) : 0;
+      const idleMinutes = completeDayData.length > 0 ? calculateIdleMinutes(completeDayData) : 0;
 
       // Login
       let maxLoginVal: number | null = null;
@@ -1036,8 +1078,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         Despacho: despacho,
         "Tempo de plataforma": tempoPlataforma,
         "Retorno Base": retornoBase,
+        diasTrabalhados: eqDays,
+        diasCompletos,
+        turnoEmAndamento: temTurnoEmAndamento,
       };
-    });
+    }).filter(eq => eq.diasCompletos > 0 || !eq.turnoEmAndamento); // Exclude teams with ONLY incomplete days
 
     const scored = calculateRankingScores(baseRanking, rankingWeights);
 
@@ -1945,6 +1990,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Pos",
                     "Equipe",
                     "Pts",
+                    "Dias",
                     "Inc.",
                     "Improd.",
                     "Ord.2",
@@ -1958,7 +2004,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["pontuacao","Equipe","pontuacao","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["pontuacao","Equipe","pontuacao","diasTrabalhados","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
@@ -2006,9 +2052,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         />
                         <span className="truncate">{row.Equipe}</span>
                         {row.hasIncompleteData && <span className="text-warning ml-0.5 text-xs">*</span>}
+                        {(row as any).turnoEmAndamento && <span className="ml-1 text-[10px] text-amber-500" title="Turno em andamento (dias incompletos excluídos do cálculo de ocupação)">⏳</span>}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-primary">
                         {row.pontuacao}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground" title={`${(row as any).diasCompletos} completo(s) de ${(row as any).diasTrabalhados}`}>
+                        {(row as any).diasTrabalhados}
+                        {(row as any).turnoEmAndamento && <span className="text-amber-500 text-[10px] ml-0.5">({(row as any).diasCompletos}✓)</span>}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Incidentes}
