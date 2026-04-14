@@ -848,8 +848,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   let countOcupacaoValidasGeral = 0;
   equipesPresentesGeral.forEach(eq => {
     const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
-    const occ = calculateOccupancy(eqData);
-    somaIdleMinutesGeral += calculateIdleMinutes(eqData);
+    const completeData = filterCompleteDays(eqData);
+    if (completeData.length === 0) return;
+    const occ = calculateOccupancy(completeData);
+    somaIdleMinutesGeral += calculateIdleMinutes(completeData);
     if (occ <= 120) {
       somaOcupacaoGeral += occ;
       countOcupacaoValidasGeral++;
