@@ -884,7 +884,58 @@ export function GestaoAVistaView({
         {/* Preview */}
         <div ref={printRef} className="space-y-6">
           {RANKING_CONFIGS.filter((c) => selectedRankings.has(c.key)).map((config) => {
-            const sorted = [...teamsData]
+            if (config.key === "geral") {
+              const sorted = [...scoredTeamsData].sort((a, b) => (b.pontuacao ?? 0) - (a.pontuacao ?? 0));
+              return (
+                <div key={config.key} className="bg-card rounded-xl border border-border overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-secondary/30">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-primary" />
+                      Ranking Geral
+                      <span className="text-[10px] text-muted-foreground font-normal ml-auto">{sorted.length} equipes</span>
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="bg-secondary/20 border-b border-border">
+                          {["Pos","Equipe","Pts","Inc.","Improd.","Ord.2","Reinc.","TMDE","Ocup.","Ociosid.","Inc.Oc.","Login","Desp.","T.Plat.","Ret.Base"].map(h => (
+                            <th key={h} className="px-2 py-1.5 text-left font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {sorted.map((team, idx) => (
+                          <tr key={team.equipe} className={`${idx < 3 ? "font-semibold" : ""} ${idx === 0 ? "bg-yellow-500/5" : ""}`}>
+                            <td className="px-2 py-1 text-center text-muted-foreground">
+                              {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}
+                            </td>
+                            <td className="px-2 py-1 text-foreground whitespace-nowrap">
+                              {team.equipe}{team.hasIncompleteData ? <span className="text-amber-500 ml-0.5">*</span> : null}
+                            </td>
+                            <td className="px-2 py-1 font-bold text-primary">{(team.pontuacao ?? 0).toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.incidentes}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.improdutivos}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ordem2}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.reincidentes}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.tmde.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ocupacao.toFixed(1)}%</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ociosidade.toFixed(0)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.incOciosidade}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.login != null ? team.login.toFixed(1) : '-'}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.despacho != null ? team.despacho.toFixed(1) : '-'}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.plataforma != null ? team.plataforma.toFixed(1) : '-'}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.retorno != null ? team.retorno.toFixed(1) : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            }
+
+            const sorted = [...scoredTeamsData]
               .filter((t) => getTeamValue(t, config.sortField) !== 999)
               .sort((a, b) => {
                 const va = getTeamValue(a, config.sortField);
@@ -907,7 +958,6 @@ export function GestaoAVistaView({
 
             return (
               <div key={config.key} className="bg-card rounded-xl border border-border overflow-hidden">
-                {/* Ranking Title + KPIs */}
                 <div className="px-4 py-3 border-b border-border bg-secondary/30">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -932,7 +982,6 @@ export function GestaoAVistaView({
                   </div>
                 </div>
 
-                {/* Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
@@ -965,7 +1014,7 @@ export function GestaoAVistaView({
           })}
         </div>
 
-        {teamsData.length === 0 && (
+        {scoredTeamsData.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Eye className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">Sem dados para o polo selecionado no período atual.</p>
