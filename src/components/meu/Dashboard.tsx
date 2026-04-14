@@ -751,7 +751,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       TMDE: tmde,
       Ocupação: ocupacao,
       "Ociosidade (min)": avgIdleMinutes,
-      "Inc. Ociosid.": Math.round(avgIdleMinutes / 60),
+      "Inc. Ociosid.": Math.floor(avgIdleMinutes / 60),
       Produtividade: displayProdutividade,
       Login: avgLogin,
       Despacho: avgDespacho,
@@ -832,7 +832,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     TMDE: tmdeMedio,
     Ocupação: ocupacaoMediaGeral,
     "Ociosidade (min)": avgIdleMinutesGeral,
-    "Inc. Ociosid.": Math.round(avgIdleMinutesGeral / 60),
+    "Inc. Ociosid.": Math.floor(avgIdleMinutesGeral / 60),
     Produtividade: (() => {
       if (!isPeriodMode) return totalEquipesGeralCount > 0 ? totalIncProdutivos / totalEquipesGeralCount : 0;
       const byDate: Record<string, any[]> = {};
@@ -992,7 +992,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         "Ordem 2": ord2,
         Ocupação: ocupacao,
         "Ociosidade (min)": idleMinutes,
-        "Inc. Ociosid.": Math.round(idleMinutes / 60),
+        "Inc. Ociosid.": Math.floor(idleMinutes / 60),
         Login: primeiroLogin,
         Despacho: despacho,
         "Tempo de plataforma": tempoPlataforma,

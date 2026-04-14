@@ -4,6 +4,7 @@ import {
   Eye,
   Printer,
   Check,
+  Trophy,
   BarChart3,
   Timer,
   RotateCcw,
@@ -29,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UTS_POLOS, UTN_POLOS } from "@/utils/rankingScoring";
+import { UTS_POLOS, UTN_POLOS, calculateRankingScores, parseWeightsFromSettings, TeamRankingData } from "@/utils/rankingScoring";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -136,10 +138,12 @@ interface GestaoAVistaViewProps {
   calcTempoPlataforma: (eqData: any[]) => number | null;
   calcRetornoBase: (eqData: any[]) => number | null;
   getValMinutes: (val: any) => number | null;
+  calcDespacho?: (eqData: any[]) => number | null;
   filterState: FilterState;
 }
 
 type RankingType =
+  | "geral"
   | "producao"
   | "login"
   | "plataforma"
@@ -165,6 +169,16 @@ interface RankingConfig {
 }
 
 const RANKING_CONFIGS: RankingConfig[] = [
+  {
+    key: "geral",
+    label: "Ranking Geral",
+    icon: <Trophy className="h-4 w-4" />,
+    sortField: "pontuacao",
+    direction: "desc",
+    format: (v) => v.toFixed(1),
+    kpiLabel: "Equipes",
+    kpiAggregation: "sum",
+  },
   {
     key: "producao",
     label: "Produção (Incidentes)",
@@ -282,11 +296,17 @@ interface TeamData {
   incidentes: number;
   improdutivos: number;
   reincidentes: number;
+  tmde: number;
+  ordem2: number;
   ocupacao: number;
   ociosidade: number;
+  incOciosidade: number;
   login: number | null;
+  despacho: number | null;
   plataforma: number | null;
   retorno: number | null;
+  pontuacao?: number;
+  hasIncompleteData?: boolean;
 }
 
 /**
@@ -355,27 +375,75 @@ export function GestaoAVistaView({
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
       const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const ord2 = eqData.filter((d) => d.ordem2).length;
+      const tmde = eqData.length > 0
+        ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
+        : 0;
       const ocupacao = calculateOccupancy(eqData);
       const ociosidade = calculateIdleMinutes(eqData);
+      const incOciosidade = Math.floor(ociosidade / 60);
 
       // Raw M300 values (deduplicated)
       const login = getRawM300Value(eqData, "1º Login Corrigido", getValMinutes);
       const plataforma = getRawM300Value(eqData, "1º Desloc", getValMinutes);
       const retorno = getRawM300Value(eqData, "Retorno a base", getValMinutes);
 
+      // Despacho
+      let maxDespacho: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Despacho"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+      });
+
       return {
         equipe: eq,
         incidentes: inc,
         improdutivos: imp,
         reincidentes: reinc,
+        tmde,
+        ordem2: ord2,
         ocupacao,
         ociosidade,
+        incOciosidade,
         login,
+        despacho: maxDespacho,
         plataforma,
         retorno,
       };
     });
   }, [poloData, calculateOccupancy, calculateIdleMinutes, getValMinutes]);
+
+  // Calculate ranking scores (pontuação)
+  const { data: systemSettings } = useSystemSettings();
+  const rankingWeights = useMemo(() => parseWeightsFromSettings(systemSettings), [systemSettings]);
+
+  const scoredTeamsData: TeamData[] = useMemo(() => {
+    // Build TeamRankingData for the scoring function
+    const rankingInput: TeamRankingData[] = teamsData.map(t => ({
+      Equipe: t.equipe,
+      Incidentes: t.incidentes,
+      Improdutivos: t.improdutivos,
+      "Reincidentes causados": t.reincidentes,
+      TMDE: t.tmde,
+      "Ordem 2": t.ordem2,
+      Ocupação: t.ocupacao,
+      "Ociosidade (min)": t.ociosidade,
+      "Inc. Ociosid.": t.incOciosidade,
+      Login: t.login != null ? t.login.toFixed(1) : "-",
+      Despacho: t.despacho != null ? t.despacho.toFixed(1) : "-",
+      "Tempo de plataforma": t.plataforma != null ? t.plataforma.toFixed(1) : "-",
+      "Retorno Base": t.retorno != null ? t.retorno.toFixed(1) : "-",
+    }));
+
+    const scored = calculateRankingScores(rankingInput, rankingWeights);
+
+    return teamsData.map((t, i) => ({
+      ...t,
+      pontuacao: scored[i].pontuacao,
+      hasIncompleteData: scored[i].hasIncompleteData,
+    }));
+  }, [teamsData, rankingWeights]);
 
   const toggleRanking = (key: RankingType) => {
     setSelectedRankings((prev) => {
@@ -391,17 +459,22 @@ export function GestaoAVistaView({
       case "incidentes": return team.incidentes;
       case "improdutivos": return team.improdutivos;
       case "reincidentes": return team.reincidentes;
+      case "tmde": return team.tmde;
+      case "ordem2": return team.ordem2;
       case "ocupacao": return team.ocupacao;
       case "ociosidade": return team.ociosidade;
+      case "incOciosidade": return team.incOciosidade;
       case "login": return team.login ?? 999;
+      case "despacho": return team.despacho ?? 999;
       case "plataforma": return team.plataforma ?? 999;
       case "retorno": return team.retorno ?? 999;
+      case "pontuacao": return team.pontuacao ?? 0;
       default: return 0;
     }
   };
 
   const getKpiValue = (config: RankingConfig): number => {
-    const values = teamsData.map((t) => getTeamValue(t, config.sortField)).filter((v) => v !== 999);
+    const values = scoredTeamsData.map((t) => getTeamValue(t, config.sortField)).filter((v) => v !== 999);
     if (values.length === 0) return 0;
     if (config.kpiAggregation === "sum") return values.reduce((a, b) => a + b, 0);
     return values.reduce((a, b) => a + b, 0) / values.length;
@@ -414,42 +487,50 @@ export function GestaoAVistaView({
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
+    const hasGeral = selectedRankings.has("geral");
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
         <title>Gestão à Vista - ${selectedPolo}</title>
         <style>
-          @page { size: A4 portrait; margin: 12mm; }
+          @page { size: A4 portrait; margin: 8mm 6mm; }
+          @page.landscape { size: A4 landscape; margin: 8mm 6mm; }
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a2e; background: #fff; }
-          .ranking-page { page-break-after: always; padding: 8mm 0; }
+          .ranking-page { page-break-after: always; padding: 4mm 0; }
           .ranking-page:last-child { page-break-after: auto; }
-          .ranking-header { text-align: center; margin-bottom: 6mm; border-bottom: 3px solid #1a1a2e; padding-bottom: 4mm; }
-          .ranking-header h1 { font-size: 22pt; font-weight: 800; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px; }
-          .ranking-header .polo { font-size: 14pt; color: #4a4a6a; font-weight: 600; margin-top: 2mm; }
-          .kpi-bar { display: flex; justify-content: center; gap: 12mm; margin-bottom: 6mm; padding: 4mm 0; background: #f0f0f8; border-radius: 3mm; }
+          .ranking-page.landscape { page: landscape; }
+          .ranking-header { text-align: center; margin-bottom: 3mm; border-bottom: 2px solid #1a1a2e; padding-bottom: 2mm; }
+          .ranking-header h1 { font-size: 14pt; font-weight: 800; color: #1a1a2e; text-transform: uppercase; letter-spacing: 1px; }
+          .ranking-header .polo { font-size: 10pt; color: #4a4a6a; font-weight: 600; margin-top: 1mm; }
+          .kpi-bar { display: flex; justify-content: center; gap: 8mm; margin-bottom: 3mm; padding: 2mm 0; background: #f0f0f8; border-radius: 2mm; }
           .kpi-item { text-align: center; }
-          .kpi-item .value { font-size: 20pt; font-weight: 800; color: #1a1a2e; }
-          .kpi-item .label { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1mm; }
-          .kpi-item .meta { font-size: 8pt; color: #888; margin-top: 0.5mm; }
+          .kpi-item .value { font-size: 14pt; font-weight: 800; color: #1a1a2e; }
+          .kpi-item .label { font-size: 6pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.5mm; }
+          .kpi-item .meta { font-size: 6pt; color: #888; margin-top: 0.5mm; }
           .kpi-item .meta.good { color: #16a34a; }
           .kpi-item .meta.bad { color: #dc2626; }
-          table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-          thead th { background: #1a1a2e; color: #fff; padding: 3mm 4mm; text-align: left; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 9pt; }
-          thead th:first-child { width: 10%; text-align: center; }
-          thead th:nth-child(2) { width: 55%; }
-          thead th:last-child { width: 35%; text-align: right; }
-          tbody tr { border-bottom: 1px solid #e0e0e0; }
+          table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+          thead th { background: #1a1a2e; color: #fff; padding: 1.5mm 2mm; text-align: left; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; font-size: 6pt; }
+          thead th:first-child { text-align: center; }
+          tbody tr { border-bottom: 0.5px solid #e0e0e0; }
           tbody tr:nth-child(even) { background: #f8f8fc; }
           tbody tr:nth-child(1) td { font-weight: 700; }
-          tbody tr:nth-child(1) td:first-child { color: #d4a017; font-size: 14pt; }
-          tbody tr:nth-child(2) td:first-child { color: #888; font-size: 12pt; }
-          tbody tr:nth-child(3) td:first-child { color: #b87333; font-size: 12pt; }
-          tbody td { padding: 2.5mm 4mm; }
-          tbody td:first-child { text-align: center; font-weight: 700; font-size: 11pt; color: #555; }
-          tbody td:last-child { text-align: right; font-weight: 600; font-family: 'Consolas', monospace; font-size: 11pt; }
-          .footer { text-align: center; font-size: 7pt; color: #999; margin-top: 4mm; border-top: 1px solid #ddd; padding-top: 2mm; }
+          tbody tr:nth-child(1) td:first-child { color: #d4a017; }
+          tbody tr:nth-child(2) td:first-child { color: #888; }
+          tbody tr:nth-child(3) td:first-child { color: #b87333; }
+          tbody td { padding: 1mm 2mm; line-height: 1.3; }
+          tbody td:first-child { text-align: center; font-weight: 700; color: #555; }
+          .simple-table thead th:nth-child(2) { width: 50%; }
+          .simple-table thead th:last-child { text-align: right; }
+          .simple-table tbody td:last-child { text-align: right; font-weight: 600; font-family: 'Consolas', monospace; }
+          .geral-table thead th { font-size: 5.5pt; padding: 1mm 1mm; white-space: nowrap; }
+          .geral-table tbody td { font-size: 6.5pt; padding: 0.8mm 1mm; white-space: nowrap; }
+          .geral-table .pts { font-weight: 700; color: #2563eb; }
+          .geral-table .num { text-align: right; font-family: 'Consolas', monospace; }
+          .footer { text-align: center; font-size: 6pt; color: #999; margin-top: 2mm; border-top: 1px solid #ddd; padding-top: 1mm; }
           @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style>
       </head>
@@ -459,7 +540,65 @@ export function GestaoAVistaView({
     const activeRankings = RANKING_CONFIGS.filter((c) => selectedRankings.has(c.key));
 
     activeRankings.forEach((config) => {
-      const sorted = [...teamsData]
+      if (config.key === "geral") {
+        // Full general ranking with all columns
+        const sorted = [...scoredTeamsData].sort((a, b) => (b.pontuacao ?? 0) - (a.pontuacao ?? 0));
+
+        printWindow.document.write(`
+          <div class="ranking-page">
+            <div class="ranking-header">
+              <h1>Ranking Geral</h1>
+              <div class="polo">${selectedPolo} • ${sorted.length} equipes</div>
+            </div>
+            <table class="geral-table">
+              <thead>
+                <tr>
+                  <th>Pos</th>
+                  <th>Equipe</th>
+                  <th>Pts</th>
+                  <th>Inc.</th>
+                  <th>Improd.</th>
+                  <th>Ord.2</th>
+                  <th>Reinc.</th>
+                  <th>TMDE</th>
+                  <th>Ocup.</th>
+                  <th>Ociosid.</th>
+                  <th>Inc.Oc.</th>
+                  <th>Login</th>
+                  <th>Desp.</th>
+                  <th>T.Plat.</th>
+                  <th>Ret.Base</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sorted.map((team, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td>${team.equipe}${team.hasIncompleteData ? '*' : ''}</td>
+                    <td class="pts">${(team.pontuacao ?? 0).toFixed(1)}</td>
+                    <td class="num">${team.incidentes}</td>
+                    <td class="num">${team.improdutivos}</td>
+                    <td class="num">${team.ordem2}</td>
+                    <td class="num">${team.reincidentes}</td>
+                    <td class="num">${team.tmde.toFixed(1)}</td>
+                    <td class="num">${team.ocupacao.toFixed(1)}%</td>
+                    <td class="num">${team.ociosidade.toFixed(0)}</td>
+                    <td class="num">${team.incOciosidade}</td>
+                    <td class="num">${team.login != null ? team.login.toFixed(1) : '-'}</td>
+                    <td class="num">${team.despacho != null ? team.despacho.toFixed(1) : '-'}</td>
+                    <td class="num">${team.plataforma != null ? team.plataforma.toFixed(1) : '-'}</td>
+                    <td class="num">${team.retorno != null ? team.retorno.toFixed(1) : '-'}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+            <div class="footer">Gestão à Vista • ${selectedPolo} • Gerado em ${new Date().toLocaleString("pt-BR")}</div>
+          </div>
+        `);
+        return;
+      }
+
+      const sorted = [...scoredTeamsData]
         .filter((t) => getTeamValue(t, config.sortField) !== 999)
         .sort((a, b) => {
           const va = getTeamValue(a, config.sortField);
@@ -470,7 +609,6 @@ export function GestaoAVistaView({
       const kpiValue = getKpiValue(config);
       const kpiFormatted = config.format(kpiValue);
       
-      // For production, scale meta by number of days
       let effectiveMeta = config.meta ?? (config.metaPerTeam != null ? config.metaPerTeam * numDays : undefined);
       let effectiveMetaLabel = config.metaLabel;
       if (config.metaPerTeam != null) {
@@ -504,7 +642,7 @@ export function GestaoAVistaView({
               <div class="label">Equipes</div>
             </div>
           </div>
-          <table>
+          <table class="simple-table">
             <thead>
               <tr>
                 <th>Pos.</th>
@@ -746,7 +884,58 @@ export function GestaoAVistaView({
         {/* Preview */}
         <div ref={printRef} className="space-y-6">
           {RANKING_CONFIGS.filter((c) => selectedRankings.has(c.key)).map((config) => {
-            const sorted = [...teamsData]
+            if (config.key === "geral") {
+              const sorted = [...scoredTeamsData].sort((a, b) => (b.pontuacao ?? 0) - (a.pontuacao ?? 0));
+              return (
+                <div key={config.key} className="bg-card rounded-xl border border-border overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-secondary/30">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-primary" />
+                      Ranking Geral
+                      <span className="text-[10px] text-muted-foreground font-normal ml-auto">{sorted.length} equipes</span>
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px]">
+                      <thead>
+                        <tr className="bg-secondary/20 border-b border-border">
+                          {["Pos","Equipe","Pts","Inc.","Improd.","Ord.2","Reinc.","TMDE","Ocup.","Ociosid.","Inc.Oc.","Login","Desp.","T.Plat.","Ret.Base"].map(h => (
+                            <th key={h} className="px-2 py-1.5 text-left font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {sorted.map((team, idx) => (
+                          <tr key={team.equipe} className={`${idx < 3 ? "font-semibold" : ""} ${idx === 0 ? "bg-yellow-500/5" : ""}`}>
+                            <td className="px-2 py-1 text-center text-muted-foreground">
+                              {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}
+                            </td>
+                            <td className="px-2 py-1 text-foreground whitespace-nowrap">
+                              {team.equipe}{team.hasIncompleteData ? <span className="text-amber-500 ml-0.5">*</span> : null}
+                            </td>
+                            <td className="px-2 py-1 font-bold text-primary">{(team.pontuacao ?? 0).toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.incidentes}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.improdutivos}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ordem2}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.reincidentes}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.tmde.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ocupacao.toFixed(1)}%</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ociosidade.toFixed(0)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.incOciosidade}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.login != null ? team.login.toFixed(1) : '-'}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.despacho != null ? team.despacho.toFixed(1) : '-'}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.plataforma != null ? team.plataforma.toFixed(1) : '-'}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.retorno != null ? team.retorno.toFixed(1) : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            }
+
+            const sorted = [...scoredTeamsData]
               .filter((t) => getTeamValue(t, config.sortField) !== 999)
               .sort((a, b) => {
                 const va = getTeamValue(a, config.sortField);
@@ -769,7 +958,6 @@ export function GestaoAVistaView({
 
             return (
               <div key={config.key} className="bg-card rounded-xl border border-border overflow-hidden">
-                {/* Ranking Title + KPIs */}
                 <div className="px-4 py-3 border-b border-border bg-secondary/30">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -794,7 +982,6 @@ export function GestaoAVistaView({
                   </div>
                 </div>
 
-                {/* Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
@@ -827,7 +1014,7 @@ export function GestaoAVistaView({
           })}
         </div>
 
-        {teamsData.length === 0 && (
+        {scoredTeamsData.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Eye className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">Sem dados para o polo selecionado no período atual.</p>
