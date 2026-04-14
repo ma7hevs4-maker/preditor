@@ -30,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UTS_POLOS, UTN_POLOS } from "@/utils/rankingScoring";
+import { UTS_POLOS, UTN_POLOS, calculateRankingScores, parseWeightsFromSettings, TeamRankingData } from "@/utils/rankingScoring";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
