@@ -414,6 +414,37 @@ export function GestaoAVistaView({
     });
   }, [poloData, calculateOccupancy, calculateIdleMinutes, getValMinutes]);
 
+  // Calculate ranking scores (pontuação)
+  const { data: systemSettings } = useSystemSettings();
+  const rankingWeights = useMemo(() => parseWeightsFromSettings(systemSettings), [systemSettings]);
+
+  const scoredTeamsData: TeamData[] = useMemo(() => {
+    // Build TeamRankingData for the scoring function
+    const rankingInput: TeamRankingData[] = teamsData.map(t => ({
+      Equipe: t.equipe,
+      Incidentes: t.incidentes,
+      Improdutivos: t.improdutivos,
+      "Reincidentes causados": t.reincidentes,
+      TMDE: t.tmde,
+      "Ordem 2": t.ordem2,
+      Ocupação: t.ocupacao,
+      "Ociosidade (min)": t.ociosidade,
+      "Inc. Ociosid.": t.incOciosidade,
+      Login: t.login != null ? t.login.toFixed(1) : "-",
+      Despacho: t.despacho != null ? t.despacho.toFixed(1) : "-",
+      "Tempo de plataforma": t.plataforma != null ? t.plataforma.toFixed(1) : "-",
+      "Retorno Base": t.retorno != null ? t.retorno.toFixed(1) : "-",
+    }));
+
+    const scored = calculateRankingScores(rankingInput, rankingWeights);
+
+    return teamsData.map((t, i) => ({
+      ...t,
+      pontuacao: scored[i].pontuacao,
+      hasIncompleteData: scored[i].hasIncompleteData,
+    }));
+  }, [teamsData, rankingWeights]);
+
   const toggleRanking = (key: RankingType) => {
     setSelectedRankings((prev) => {
       const next = new Set(prev);
@@ -428,11 +459,16 @@ export function GestaoAVistaView({
       case "incidentes": return team.incidentes;
       case "improdutivos": return team.improdutivos;
       case "reincidentes": return team.reincidentes;
+      case "tmde": return team.tmde;
+      case "ordem2": return team.ordem2;
       case "ocupacao": return team.ocupacao;
       case "ociosidade": return team.ociosidade;
+      case "incOciosidade": return team.incOciosidade;
       case "login": return team.login ?? 999;
+      case "despacho": return team.despacho ?? 999;
       case "plataforma": return team.plataforma ?? 999;
       case "retorno": return team.retorno ?? 999;
+      case "pontuacao": return team.pontuacao ?? 0;
       default: return 0;
     }
   };
