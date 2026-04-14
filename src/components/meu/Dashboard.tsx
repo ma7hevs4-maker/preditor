@@ -511,6 +511,31 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
+  // Check if a day's shift is complete (has Logoff recorded)
+  const isDayShiftComplete = (dayData: any[]): boolean => {
+    return dayData.some(d => {
+      const logoff = d["Log Off Corrigido"] || d["Log Off"];
+      return logoff != null && logoff !== "" && logoff !== "-";
+    });
+  };
+
+  // Filter out incomplete shift days from data
+  const filterCompleteDays = (eqData: any[]): any[] => {
+    const dataByDate: Record<string, any[]> = {};
+    eqData.forEach(d => {
+      const date = d["Data Turno"] || d["Data Ação"];
+      if (!dataByDate[date]) dataByDate[date] = [];
+      dataByDate[date].push(d);
+    });
+    const completeDays: any[] = [];
+    Object.values(dataByDate).forEach(dayData => {
+      if (isDayShiftComplete(dayData)) {
+        completeDays.push(...dayData);
+      }
+    });
+    return completeDays;
+  };
+
   // Tempos ideais (em minutos)
   const IDEAL_PLATFORM_MIN = 25;
   const IDEAL_INTERVAL_MIN = 60;
