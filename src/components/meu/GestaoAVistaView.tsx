@@ -296,11 +296,17 @@ interface TeamData {
   incidentes: number;
   improdutivos: number;
   reincidentes: number;
+  tmde: number;
+  ordem2: number;
   ocupacao: number;
   ociosidade: number;
+  incOciosidade: number;
   login: number | null;
+  despacho: number | null;
   plataforma: number | null;
   retorno: number | null;
+  pontuacao?: number;
+  hasIncompleteData?: boolean;
 }
 
 /**
