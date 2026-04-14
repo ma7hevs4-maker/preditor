@@ -1064,9 +1064,17 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   const equipeDetalheData = useMemo(() => {
     return filteredData
-      .filter((d) => selectedEquipesDetalhe.includes(d["Equipe Desl."]))
+      .filter((d) => {
+        if (!selectedEquipesDetalhe.includes(d["Equipe Desl."])) return false;
+        // In period mode, filter by selected timeline day
+        if (isPeriodMode && selectedTimelineDay) {
+          const dt = d["Data Turno"] || d["Data Ação"];
+          if (dt !== selectedTimelineDay) return false;
+        }
+        return true;
+      })
       .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0));
-  }, [filteredData, selectedEquipesDetalhe]);
+  }, [filteredData, selectedEquipesDetalhe, isPeriodMode, selectedTimelineDay]);
 
   // Available days for selected teams (used in period mode timeline dropdown)
   const availableTimelineDays = useMemo(() => {
