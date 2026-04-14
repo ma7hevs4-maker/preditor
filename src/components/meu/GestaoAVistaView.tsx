@@ -4,6 +4,7 @@ import {
   Eye,
   Printer,
   Check,
+  Trophy,
   BarChart3,
   Timer,
   RotateCcw,
