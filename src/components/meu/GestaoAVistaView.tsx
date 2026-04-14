@@ -170,6 +170,16 @@ interface RankingConfig {
 
 const RANKING_CONFIGS: RankingConfig[] = [
   {
+    key: "geral",
+    label: "Ranking Geral",
+    icon: <Trophy className="h-4 w-4" />,
+    sortField: "pontuacao",
+    direction: "desc",
+    format: (v) => v.toFixed(1),
+    kpiLabel: "Equipes",
+    kpiAggregation: "sum",
+  },
+  {
     key: "producao",
     label: "Produção (Incidentes)",
     icon: <BarChart3 className="h-4 w-4" />,
