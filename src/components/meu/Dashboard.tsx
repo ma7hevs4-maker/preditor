@@ -1004,7 +1004,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     const baseRanking = equipesPresentes.map((eq) => {
       const eqData = filteredData.filter((d) => d["Equipe Desl."] === eq);
-      const eqDays = new Set(eqData.map(d => d["Data Turno"] || d["Data Ação"])).size || 1;
+      const allDays = new Set(eqData.map(d => d["Data Turno"] || d["Data Ação"]));
+      const eqDays = allDays.size || 1;
+      
+      // Detect incomplete shift days
+      const completeDayData = filterCompleteDays(eqData);
+      const dataByDate: Record<string, any[]> = {};
+      eqData.forEach(d => {
+        const date = d["Data Turno"] || d["Data Ação"];
+        if (!dataByDate[date]) dataByDate[date] = [];
+        dataByDate[date].push(d);
+      });
+      const completeDays = Object.keys(dataByDate).filter(date => isDayShiftComplete(dataByDate[date]));
+      const diasCompletos = completeDays.length;
+      const temTurnoEmAndamento = diasCompletos < eqDays;
       
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
@@ -1017,9 +1030,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       // Ordem 2
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
-      // Ocupação e Ociosidade
-      const ocupacao = calculateOccupancy(eqData);
-      const idleMinutes = calculateIdleMinutes(eqData);
+      // Ocupação e Ociosidade - use only complete days
+      const ocupacao = completeDayData.length > 0 ? calculateOccupancy(completeDayData) : 0;
+      const idleMinutes = completeDayData.length > 0 ? calculateIdleMinutes(completeDayData) : 0;
 
       // Login
       let maxLoginVal: number | null = null;
@@ -1061,8 +1074,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         Despacho: despacho,
         "Tempo de plataforma": tempoPlataforma,
         "Retorno Base": retornoBase,
+        diasTrabalhados: eqDays,
+        diasCompletos,
+        turnoEmAndamento: temTurnoEmAndamento,
       };
-    });
+    }).filter(eq => eq.diasCompletos > 0 || !eq.turnoEmAndamento); // Exclude teams with ONLY incomplete days
 
     const scored = calculateRankingScores(baseRanking, rankingWeights);
 
