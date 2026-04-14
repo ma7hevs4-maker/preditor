@@ -785,6 +785,15 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
         merged["TMDE"] = tme + tmd;
       }
 
+      // Post-merge anomaly detection: if TMDE > 150 after merge, flag accordingly
+      const finalTmde = Number(merged["TMDE"]) || 0;
+      if (finalTmde > 150 && !merged.possivelAnomalia && !merged.possivelO2) {
+        merged.possivelAnomalia = true;
+        merged.origTMD = incRow["TMD"];
+        merged.origTME = incRow["TME"];
+        merged.origTMDE = incRow["TMDE"];
+      }
+
       merged["Turno fechamento"] = String(
         merged["Turno fechamento"] || "Sem turno",
       );
