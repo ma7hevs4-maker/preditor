@@ -474,7 +474,7 @@ export function GestaoAVistaView({
   };
 
   const getKpiValue = (config: RankingConfig): number => {
-    const values = teamsData.map((t) => getTeamValue(t, config.sortField)).filter((v) => v !== 999);
+    const values = scoredTeamsData.map((t) => getTeamValue(t, config.sortField)).filter((v) => v !== 999);
     if (values.length === 0) return 0;
     if (config.kpiAggregation === "sum") return values.reduce((a, b) => a + b, 0);
     return values.reduce((a, b) => a + b, 0) / values.length;
