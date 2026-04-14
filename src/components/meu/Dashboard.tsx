@@ -2048,9 +2048,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         />
                         <span className="truncate">{row.Equipe}</span>
                         {row.hasIncompleteData && <span className="text-warning ml-0.5 text-xs">*</span>}
+                        {(row as any).turnoEmAndamento && <span className="ml-1 text-[10px] text-amber-500" title="Turno em andamento (dias incompletos excluídos do cálculo de ocupação)">⏳</span>}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-primary">
                         {row.pontuacao}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground" title={`${(row as any).diasCompletos} completo(s) de ${(row as any).diasTrabalhados}`}>
+                        {(row as any).diasTrabalhados}
+                        {(row as any).turnoEmAndamento && <span className="text-amber-500 text-[10px] ml-0.5">({(row as any).diasCompletos}✓)</span>}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-muted-foreground">
                         {row.Incidentes}
