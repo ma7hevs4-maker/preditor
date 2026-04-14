@@ -1986,6 +1986,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "Pos",
                     "Equipe",
                     "Pts",
+                    "Dias",
                     "Inc.",
                     "Improd.",
                     "Ord.2",
@@ -1999,7 +2000,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                     "T. Plat.",
                     "Ret. Base",
                   ].map((h, i) => {
-                    const sortKeys = ["pontuacao","Equipe","pontuacao","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
+                    const sortKeys = ["pontuacao","Equipe","pontuacao","diasTrabalhados","Incidentes","Improdutivos","Ordem 2","Reincidentes causados","TMDE","Ocupação","Ociosidade (min)","Inc. Ociosid.","Login","Despacho","Tempo de plataforma","Retorno Base"];
                     return (
                     <th
                       key={h}
