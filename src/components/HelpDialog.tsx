@@ -348,7 +348,7 @@ const MeuHelp = () => (
         <div>
           <p className="font-medium text-foreground">Inc. Ociosidade:</p>
           <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
-            Inc. Ociosid. = round(minutos ociosos / 60 × 1.5)
+            Inc. Ociosid. = round(minutos ociosos / 60)
           </code>
           <p className="text-xs text-muted-foreground mt-1">Quantidade de incidentes potenciais perdidos no tempo ocioso.</p>
         </div>
