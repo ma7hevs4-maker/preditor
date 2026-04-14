@@ -375,22 +375,39 @@ export function GestaoAVistaView({
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
       const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const ord2 = eqData.filter((d) => d.ordem2).length;
+      const tmde = eqData.length > 0
+        ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
+        : 0;
       const ocupacao = calculateOccupancy(eqData);
       const ociosidade = calculateIdleMinutes(eqData);
+      const incOciosidade = Math.floor(ociosidade / 60);
 
       // Raw M300 values (deduplicated)
       const login = getRawM300Value(eqData, "1º Login Corrigido", getValMinutes);
       const plataforma = getRawM300Value(eqData, "1º Desloc", getValMinutes);
       const retorno = getRawM300Value(eqData, "Retorno a base", getValMinutes);
 
+      // Despacho
+      let maxDespacho: number | null = null;
+      eqData.forEach(d => {
+        const raw = d["1º Despacho"];
+        const val = getValMinutes(raw);
+        if (val != null && (maxDespacho === null || val > maxDespacho)) maxDespacho = val;
+      });
+
       return {
         equipe: eq,
         incidentes: inc,
         improdutivos: imp,
         reincidentes: reinc,
+        tmde,
+        ordem2: ord2,
         ocupacao,
         ociosidade,
+        incOciosidade,
         login,
+        despacho: maxDespacho,
         plataforma,
         retorno,
       };
