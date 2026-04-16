@@ -1095,19 +1095,17 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
       const planIds = regionalPlans.map(p => p.id);
       const entries = allTypeEntries.filter(e => planIds.includes(e.daily_plan_id));
 
-      // Compute avg teams per hour (same logic as Visão)
-      const teamsPerHour = Array(24).fill(0);
+      // Sum of turno averages (excluding LV/MK/Reguladas)
+      const countedPerHour = Array(24).fill(0);
+      const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
       entries.forEach(e => {
-        if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) teamsPerHour[e.hour] += e.quantity;
+        if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+          countedPerHour[e.hour] += e.quantity;
+        }
       });
-      const btPerHour = Array(24).fill(0);
-      entries.forEach(e => {
-        if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) btPerHour[e.hour] += e.quantity;
-      });
-      const allHours = Array.from({ length: 24 }, (_, i) => i);
-      const avgTotal = avgArr(teamsPerHour, allHours);
-      const avgBT = avgArr(btPerHour, allHours);
-      result[regional.label] = avgTotal + avgBT;
+      // Sum of turno averages = avg_A + avg_B + avg_C
+      const sumTurnoAvgs = TURNOS.reduce((sum, turno) => sum + avgArr(countedPerHour, turno.hours), 0);
+      result[regional.label] = sumTurnoAvgs;
     });
     return result;
   }, [basesInGroup, plans, allTypeEntries]);
