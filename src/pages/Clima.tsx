@@ -1114,7 +1114,10 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
 
   return (
     <>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div className={cn(
+        "grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+        regionais.length >= 5 && "xl:grid-cols-5"
+      )}>
         {basesInGroup.map(({ regional, bases }) => (
           <div key={regional.label} className="space-y-2 min-w-0">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
