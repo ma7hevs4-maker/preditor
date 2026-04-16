@@ -19,6 +19,7 @@ import {
   Trophy,
   Star,
   Eye,
+  Table2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import { calculateRankingScores, parseWeightsFromSettings, TeamRankingData } fro
 import { PoloAnalysisView } from "./PoloAnalysisView";
 import { TeamDetailModal } from "./TeamDetailModal";
 import { GestaoAVistaView } from "./GestaoAVistaView";
+import { M300SummaryDialog } from "./M300SummaryDialog";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -112,6 +114,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [showPoloAnalysis, setShowPoloAnalysis] = useState(false);
   const [showGestaoAVista, setShowGestaoAVista] = useState(false);
   const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
+  const [showM300Summary, setShowM300Summary] = useState(false);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
@@ -1593,6 +1596,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             <Eye className="h-3.5 w-3.5" />
             Gestão à Vista
           </Button>
+          {/* Resumo M300 */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setShowM300Summary(true)}
+            title="Resumo M300 por Polo"
+          >
+            <Table2 className="h-3.5 w-3.5" />
+          </Button>
           {/* Active filter badges */}
           {activeFilterCount > 0 && (
             <div className="flex items-center gap-1.5 mr-2">
@@ -2379,6 +2392,28 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           onClose={() => setTeamDetailModal(null)}
         />
       )}
+      <M300SummaryDialog
+        open={showM300Summary}
+        onOpenChange={setShowM300Summary}
+        filteredData={filteredData}
+        getValMinutes={getValMinutes}
+        filterState={{
+          isPeriodMode, setIsPeriodMode,
+          selectedData, setSelectedData,
+          periodStart, setPeriodStart,
+          periodEnd, setPeriodEnd,
+          selectedPolos, setSelectedPolos,
+          selectedProcessos, setSelectedProcessos,
+          selectedTiposEquipe, setSelectedTiposEquipe,
+          selectedTurnos, setSelectedTurnos,
+          selectedEquipes, setSelectedEquipes,
+          selectedIncidents, setSelectedIncidents,
+          tmdeAbove150Filter, setTmdeAbove150Filter,
+          o2AnomaliaFilter, setO2AnomaliaFilter,
+          datas, polos, processos, tiposEquipe, turnos, equipes, incidents,
+          activeFilterCount,
+        }}
+      />
     </div>
   );
 }
