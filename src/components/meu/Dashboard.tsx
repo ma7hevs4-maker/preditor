@@ -2392,6 +2392,28 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           onClose={() => setTeamDetailModal(null)}
         />
       )}
+      <M300SummaryDialog
+        open={showM300Summary}
+        onOpenChange={setShowM300Summary}
+        filteredData={filteredData}
+        getValMinutes={getValMinutes}
+        filterState={{
+          isPeriodMode, setIsPeriodMode,
+          selectedData, setSelectedData,
+          periodStart, setPeriodStart,
+          periodEnd, setPeriodEnd,
+          selectedPolos, setSelectedPolos,
+          selectedProcessos, setSelectedProcessos,
+          selectedTiposEquipe, setSelectedTiposEquipe,
+          selectedTurnos, setSelectedTurnos,
+          selectedEquipes, setSelectedEquipes,
+          selectedIncidents, setSelectedIncidents,
+          tmdeAbove150Filter, setTmdeAbove150Filter,
+          o2AnomaliaFilter, setO2AnomaliaFilter,
+          datas, polos, processos, tiposEquipe, turnos, equipes, incidents,
+          activeFilterCount,
+        }}
+      />
     </div>
   );
 }
