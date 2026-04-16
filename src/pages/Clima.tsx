@@ -107,7 +107,7 @@ const useAllPlansForDate = (date: string) =>
     enabled: !!date,
   });
 
-// ---------- Structure Detail Dialog (reused from Visão logic) ----------
+// ---------- Structure Detail Dialog (consolidated first, then hour-by-hour) ----------
 interface StructureDetailDialogProps {
   open: boolean;
   onClose: () => void;
@@ -120,6 +120,7 @@ interface StructureDetailDialogProps {
 
 const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTypeEntries, selectedDate }: StructureDetailDialogProps) => {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
+  const [showHourly, setShowHourly] = useState(false);
   const hasSucursais = regional.sucursais.length > 0;
 
   const regionalBaseIds = useMemo(() => {
@@ -145,14 +146,6 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
   const filteredPlanIds = filteredPlans.map(p => p.id);
   const filteredEntries = useMemo(() => allTypeEntries.filter(e => filteredPlanIds.includes(e.daily_plan_id)), [allTypeEntries, filteredPlanIds]);
 
-  const teamsPerHour = useMemo(() => {
-    const arr = Array(24).fill(0);
-    filteredEntries.forEach(e => {
-      if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
-    });
-    return arr;
-  }, [filteredEntries]);
-
   const typePerHour = useMemo((): Record<string, number[]> => {
     const map: Record<string, number[]> = {};
     ALL_DISPLAY_TYPES.forEach(type => { map[type] = Array(24).fill(0); });
@@ -160,34 +153,95 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
     return map;
   }, [filteredEntries]);
 
+  // Excluded types for totals
+  const EXCLUDED_TYPES: readonly string[] = [...LV_MK_TYPES];
+
+  // Per-type sum of turno averages
+  const typeAvgSum = useMemo(() => {
+    const result: Record<string, number> = {};
+    ALL_DISPLAY_TYPES.forEach(type => {
+      const arr = typePerHour[type] || Array(24).fill(0);
+      result[type] = TURNOS.reduce((sum, turno) => sum + avgArr(arr, turno.hours), 0);
+    });
+    return result;
+  }, [typePerHour]);
+
+  // Turno totals (excluding LV/MK/Reguladas)
+  const turnoTotals = useMemo(() => {
+    return TURNOS.map(turno => {
+      let total = 0;
+      ALL_DISPLAY_TYPES.forEach(type => {
+        if (!EXCLUDED_TYPES.includes(type)) {
+          total += avgArr(typePerHour[type] || [], turno.hours);
+        }
+      });
+      return total;
+    });
+  }, [typePerHour]);
+
+  // 24h totals
   const allHours = Array.from({ length: 24 }, (_, i) => i);
-  const avgTotalTeams24h = avgArr(teamsPerHour, allHours);
-  const totalBT24h = allHours.reduce((s, h) => BT_ONLY_TYPES.reduce((bs, type) => bs + (typePerHour[type]?.[h] || 0), 0) + s, 0);
-  const avgBT24h = Math.round(totalBT24h / 24);
+  const countedPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    ALL_DISPLAY_TYPES.forEach(type => {
+      if (!EXCLUDED_TYPES.includes(type)) {
+        (typePerHour[type] || []).forEach((v, h) => { arr[h] += v; });
+      }
+    });
+    return arr;
+  }, [typePerHour]);
+
+  const mtPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    const MT_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as readonly string[];
+    filteredEntries.forEach(e => {
+      if (MT_TYPES.includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [filteredEntries]);
+
+  const btPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    filteredEntries.forEach(e => {
+      if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [filteredEntries]);
+
+  const avgTotal = avgArr(countedPerHour, allHours);
+  const avgMT = avgArr(mtPerHour, allHours);
+  const avgBT = avgArr(btPerHour, allHours);
 
   const sucursalOptions = hasSucursais ? regional.sucursais.map(s => s.name) : [];
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-[98vw] w-full max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={v => { if (!v) { onClose(); setShowHourly(false); } }}>
+      <DialogContent className={cn("max-h-[90vh] overflow-y-auto", showHourly ? "max-w-[98vw] w-full" : "max-w-md")}>
         <DialogHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <DialogTitle>
-              Estrutura Declarada - {regional.label} - {format(selectedDate, "dd/MM/yyyy")}
+            <DialogTitle className="flex items-center gap-2">
+              {showHourly && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHourly(false)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              )}
+              Estrutura Declarada - {regional.label}
             </DialogTitle>
-            {hasSucursais && (
-              <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
-                <SelectTrigger className="w-[200px] h-8 text-sm">
-                  <SelectValue placeholder="Sucursal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as sucursais</SelectItem>
-                  {sucursalOptions.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <div className="flex items-center gap-2">
+              {hasSucursais && (
+                <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
+                  <SelectTrigger className="w-[180px] h-8 text-sm">
+                    <SelectValue placeholder="Sucursal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as sucursais</SelectItem>
+                    {sucursalOptions.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
@@ -195,7 +249,8 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
           <div className="py-10 text-center text-muted-foreground text-sm">
             Nenhum plano encontrado para esta seleção.
           </div>
-        ) : (
+        ) : showHourly ? (
+          /* ===== HOURLY VIEW ===== */
           <>
             <div className="overflow-x-auto mt-2">
               <table className="w-full text-xs border-collapse min-w-[700px]">
@@ -233,10 +288,9 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Render type rows grouped */}
                   {([
-                    { types: GERAIS_TYPES, labelCls: "text-muted-foreground", valCls: "text-foreground" },
-                  ] as const).map(({ types, labelCls, valCls }) =>
+                    { types: [...GERAIS_TYPES] as string[], labelCls: "text-muted-foreground", valCls: "text-foreground" },
+                  ]).map(({ types, labelCls, valCls }) =>
                     types.map((type, idx) => {
                       const row = typePerHour[type] || [];
                       const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
@@ -329,33 +383,6 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                       </tr>
                     );
                   })}
-                  {/* Total row */}
-                  <tr><td colSpan={100}><div className="border-t border-border/30 my-1" /></td></tr>
-                  {(() => {
-                    const COUNTED_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES];
-                    const totalRow = Array(24).fill(0);
-                    COUNTED_TYPES.forEach(type => {
-                      const r = typePerHour[type] || [];
-                      r.forEach((v, h) => { totalRow[h] += v; });
-                    });
-                    return (
-                      <tr className="font-semibold">
-                        <td className="py-1 pr-2 text-foreground sticky left-0 bg-background z-10">Total Processos</td>
-                        {TURNOS.map(turno => {
-                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
-                          return (
-                            <React.Fragment key={turno.letter}>
-                              {turno.hours.map(h => (
-                                <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
-                              ))}
-                              <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>{avgArr(totalRow, turno.hours)}</td>
-                              {turno.letter !== "C" && <td className="w-2" />}
-                            </React.Fragment>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })()}
                 </tbody>
               </table>
             </div>
@@ -363,20 +390,104 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
             <div className="flex gap-6 mt-3 pt-3 border-t border-border/30 flex-wrap">
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
-                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+                <span className="font-bold text-sm text-foreground">{avgTotal}</span>
               </div>
               <div className="w-px bg-border/50 self-stretch" />
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
-                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+                <span className="font-bold text-sm text-foreground">{avgMT}</span>
               </div>
               <div className="w-px bg-border/50 self-stretch" />
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
-                <span className="font-bold text-sm text-warning">{avgBT24h}</span>
+                <span className="font-bold text-sm text-warning">{avgBT}</span>
               </div>
             </div>
           </>
+        ) : (
+          /* ===== CONSOLIDATED VIEW ===== */
+          <div className="space-y-4">
+            {/* Turno squares */}
+            <div className="grid grid-cols-3 gap-3">
+              {TURNOS.map((turno, idx) => {
+                const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                return (
+                  <div key={turno.letter} className={cn("rounded-lg p-3 text-center border", colors.bg, colors.border)}>
+                    <div className={cn("text-xs font-semibold mb-1", colors.cell)}>{turno.letter}</div>
+                    <div className={cn("text-2xl font-bold", colors.cell)}>{turnoTotals[idx]}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Type list */}
+            <div className="border-t border-border/30 pt-3 space-y-1">
+              {GERAIS_TYPES.map(type => {
+                const val = typeAvgSum[type] || 0;
+                if (val === 0) return null;
+                return (
+                  <div key={type} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{type}</span>
+                    <span className="font-semibold text-foreground">{val}</span>
+                  </div>
+                );
+              })}
+              {LV_MK_TYPES.map(type => {
+                const val = typeAvgSum[type] || 0;
+                if (val === 0) return null;
+                return (
+                  <div key={type} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{type}</span>
+                    <span className="font-semibold text-muted-foreground/60">{val}</span>
+                  </div>
+                );
+              })}
+              {APOIO_TYPES.map(type => {
+                const val = typeAvgSum[type] || 0;
+                if (val === 0) return null;
+                return (
+                  <div key={type} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{type}</span>
+                    <span className="font-semibold text-foreground">{val}</span>
+                  </div>
+                );
+              })}
+              {BT_ONLY_TYPES.map(type => {
+                const val = typeAvgSum[type] || 0;
+                if (val === 0) return null;
+                return (
+                  <div key={type} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{type}</span>
+                    <span className="font-semibold text-warning">{val}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer totals */}
+            <div className="border-t border-border/30 pt-3 flex justify-between text-xs">
+              <div className="flex flex-col items-center">
+                <span className="text-muted-foreground">Eq. Totais (24h)</span>
+                <span className="font-bold text-lg text-foreground">{avgTotal}</span>
+              </div>
+              <div className="w-px bg-border/50" />
+              <div className="flex flex-col items-center">
+                <span className="text-muted-foreground">Eq. MT (24h)</span>
+                <span className="font-bold text-lg text-foreground">{avgMT}</span>
+              </div>
+              <div className="w-px bg-border/50" />
+              <div className="flex flex-col items-center">
+                <span className="text-muted-foreground">Eq. BT (24h)</span>
+                <span className="font-bold text-lg text-warning">{avgBT}</span>
+              </div>
+            </div>
+
+            {/* Button to see hourly */}
+            <Button variant="outline" className="w-full" onClick={() => setShowHourly(true)}>
+              <Clock className="w-4 h-4 mr-2" />
+              Ver detalhamento hora a hora
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
@@ -1003,7 +1114,10 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
 
   return (
     <>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div className={cn(
+        "grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+        regionais.length >= 5 && "xl:grid-cols-5"
+      )}>
         {basesInGroup.map(({ regional, bases }) => (
           <div key={regional.label} className="space-y-2 min-w-0">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
