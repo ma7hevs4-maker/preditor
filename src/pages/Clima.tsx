@@ -1,18 +1,24 @@
-import { useState, useMemo } from "react";
-import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info, Map as MapIcon, LayoutGrid } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { CloudSun, CloudRain, Wind, Thermometer, AlertTriangle, ChevronLeft, ChevronRight, Calendar, Database, Clock, Droplets, Info, Map as MapIcon, LayoutGrid, Users } from "lucide-react";
 import { useBases, Base } from "@/hooks/useBases";
 import { useWeather, WeatherHour } from "@/hooks/useWeather";
 import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherTriggers, isTriggerActive, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useHistoricalData } from "@/hooks/useHistoricalData";
-import { REGIONAIS } from "@/data/basesConfig";
+import { REGIONAIS, Regional } from "@/data/basesConfig";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WeatherHourDetailDialog } from "@/components/clima/WeatherHourDetailDialog";
 import { translateWeatherDescription } from "@/utils/weatherTranslations";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { DailyTeamPlan, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
+import { useTeamTypeEntriesByPlans, TeamTypeEntry } from "@/hooks/useTeamTypeEntries";
+import { TURNOS } from "@/data/teamTypes";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -23,6 +29,43 @@ const PROVIDER_LABELS: Record<string, { label: string; color: string }> = {
   openmeteo: { label: "Open-Meteo", color: "text-primary" },
   openweathermap: { label: "OpenWeatherMap", color: "text-orange-400" },
 };
+
+const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
+const LV_MK_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras", "Reguladas"] as const;
+const APOIO_TYPES = ["Apoio UTS", "Apoio UTN"] as const;
+const BT_ONLY_TYPES = ["Corte e Religa", "Perdas"] as const;
+const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES] as const;
+const ALL_INCIDENTS_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as const;
+
+const TURNO_COLORS = {
+  A: {
+    bg: "bg-blue-500/10", border: "border-blue-500/30",
+    header: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+    cell: "text-blue-600 dark:text-blue-300",
+    avgCell: "bg-blue-500/15 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-bold",
+    avgHeader: "bg-blue-500/25 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300 font-bold",
+  },
+  B: {
+    bg: "bg-amber-500/10", border: "border-amber-500/30",
+    header: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
+    cell: "text-amber-600 dark:text-amber-300",
+    avgCell: "bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold",
+    avgHeader: "bg-amber-500/25 dark:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold",
+  },
+  C: {
+    bg: "bg-purple-500/10", border: "border-purple-500/30",
+    header: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
+    cell: "text-purple-600 dark:text-purple-300",
+    avgCell: "bg-purple-500/15 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-bold",
+    avgHeader: "bg-purple-500/25 dark:bg-purple-500/30 text-purple-700 dark:text-purple-300 font-bold",
+  },
+} as const;
+
+function avgArr(arr: number[], hours: readonly number[]): number {
+  if (hours.length === 0) return 0;
+  const sum = hours.reduce((s, h) => s + arr[h], 0);
+  return Math.round(sum / hours.length);
+}
 
 function getRainLevel(mm: number) {
   if (mm >= 10) return { label: "Muito Forte", cls: "text-destructive bg-destructive/10" };
@@ -49,7 +92,298 @@ function getTriggerNameColor(trigger: WeatherTrigger) {
   return "text-warning";
 }
 
-// Hourly detail dialog for a base
+// Hook to fetch all plans for a date
+const useAllPlansForDate = (date: string) =>
+  useQuery({
+    queryKey: ["all_daily_plans_date_clima", date],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_team_plans")
+        .select("*")
+        .eq("plan_date", date);
+      if (error) throw error;
+      return data as DailyTeamPlan[];
+    },
+    enabled: !!date,
+  });
+
+// ---------- Structure Detail Dialog (reused from Visão logic) ----------
+interface StructureDetailDialogProps {
+  open: boolean;
+  onClose: () => void;
+  regional: Regional;
+  allBases: { id: string; name: string }[];
+  plans: DailyTeamPlan[];
+  allTypeEntries: TeamTypeEntry[];
+  selectedDate: Date;
+}
+
+const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTypeEntries, selectedDate }: StructureDetailDialogProps) => {
+  const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
+  const hasSucursais = regional.sucursais.length > 0;
+
+  const regionalBaseIds = useMemo(() => {
+    if (!hasSucursais) {
+      const base = allBases.find(b => b.name.toLowerCase() === regional.label.toLowerCase());
+      return base ? [base.id] : [];
+    }
+    return regional.sucursais
+      .map(s => allBases.find(b => b.name.toLowerCase() === s.name.toLowerCase()))
+      .filter(Boolean)
+      .map(b => b!.id);
+  }, [regional, allBases, hasSucursais]);
+
+  const regionalPlans = useMemo(() => plans.filter(p => regionalBaseIds.includes(p.base_id)), [plans, regionalBaseIds]);
+
+  const filteredPlans = useMemo(() => {
+    if (selectedSucursal === "todas" || !hasSucursais) return regionalPlans;
+    const sucursalBase = allBases.find(b => b.name.toLowerCase() === selectedSucursal.toLowerCase());
+    if (!sucursalBase) return [];
+    return regionalPlans.filter(p => p.base_id === sucursalBase.id);
+  }, [regionalPlans, selectedSucursal, hasSucursais, allBases]);
+
+  const filteredPlanIds = filteredPlans.map(p => p.id);
+  const filteredEntries = useMemo(() => allTypeEntries.filter(e => filteredPlanIds.includes(e.daily_plan_id)), [allTypeEntries, filteredPlanIds]);
+
+  const teamsPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    filteredEntries.forEach(e => {
+      if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [filteredEntries]);
+
+  const typePerHour = useMemo((): Record<string, number[]> => {
+    const map: Record<string, number[]> = {};
+    ALL_DISPLAY_TYPES.forEach(type => { map[type] = Array(24).fill(0); });
+    filteredEntries.forEach(e => { if (map[e.team_type]) map[e.team_type][e.hour] += e.quantity; });
+    return map;
+  }, [filteredEntries]);
+
+  const allHours = Array.from({ length: 24 }, (_, i) => i);
+  const avgTotalTeams24h = avgArr(teamsPerHour, allHours);
+  const totalBT24h = allHours.reduce((s, h) => BT_ONLY_TYPES.reduce((bs, type) => bs + (typePerHour[type]?.[h] || 0), 0) + s, 0);
+  const avgBT24h = Math.round(totalBT24h / 24);
+
+  const sucursalOptions = hasSucursais ? regional.sucursais.map(s => s.name) : [];
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-[98vw] w-full max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <DialogTitle>
+              Estrutura Declarada - {regional.label} - {format(selectedDate, "dd/MM/yyyy")}
+            </DialogTitle>
+            {hasSucursais && (
+              <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
+                <SelectTrigger className="w-[200px] h-8 text-sm">
+                  <SelectValue placeholder="Sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as sucursais</SelectItem>
+                  {sucursalOptions.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </DialogHeader>
+
+        {filteredPlans.length === 0 ? (
+          <div className="py-10 text-center text-muted-foreground text-sm">
+            Nenhum plano encontrado para esta seleção.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto mt-2">
+              <table className="w-full text-xs border-collapse min-w-[700px]">
+                <thead>
+                  <tr>
+                    <th className="text-left py-2 pr-3 text-muted-foreground font-medium min-w-[120px] sticky left-0 bg-background z-10">Tipo</th>
+                    {TURNOS.map(turno => {
+                      const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                      return (
+                        <React.Fragment key={`th-${turno.letter}`}>
+                          <th colSpan={turno.hours.length + 1} className={cn("text-center py-1 px-1 font-semibold text-xs rounded-t border-b", colors.header)}>
+                            {turno.label}
+                          </th>
+                          {turno.letter !== "C" && <th className="w-2" />}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tr>
+                  <tr>
+                    <th className="sticky left-0 bg-background z-10" />
+                    {TURNOS.map(turno => {
+                      const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                      return (
+                        <React.Fragment key={`hr-${turno.letter}`}>
+                          {turno.hours.map(h => (
+                            <th key={h} className={cn("text-center py-1 px-0.5 font-mono font-medium min-w-[24px]", colors.cell)}>
+                              {String(h).padStart(2, "0")}
+                            </th>
+                          ))}
+                          <th className={cn("text-center py-1 px-1 font-medium min-w-[32px] rounded-sm", colors.avgHeader)}>x̄</th>
+                          {turno.letter !== "C" && <th className="w-2" />}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Render type rows grouped */}
+                  {([
+                    { types: GERAIS_TYPES, labelCls: "text-muted-foreground", valCls: "text-foreground" },
+                  ] as const).map(({ types, labelCls, valCls }) =>
+                    types.map((type, idx) => {
+                      const row = typePerHour[type] || [];
+                      const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                      if (!hasAny) return null;
+                      return (
+                        <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
+                          <td className={cn("py-0.5 pr-2 sticky left-0 bg-background z-10", labelCls)}>{type}</td>
+                          {TURNOS.map(turno => {
+                            const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                            return (
+                              <React.Fragment key={turno.letter}>
+                                {turno.hours.map(h => (
+                                  <td key={h} className={cn("text-center py-0.5 font-mono", valCls)}>{row[h] || 0}</td>
+                                ))}
+                                <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avgArr(row, turno.hours)}</td>
+                                {turno.letter !== "C" && <td className="w-2" />}
+                              </React.Fragment>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })
+                  )}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {LV_MK_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>{avgArr(row, turno.hours)}</td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {APOIO_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avgArr(row, turno.hours)}</td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
+                  {BT_ONLY_TYPES.map(type => {
+                    const row = typePerHour[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    if (!hasAny) return null;
+                    return (
+                      <tr key={type} className="hover:bg-muted/20">
+                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                              ))}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>{avgArr(row, turno.hours)}</td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {/* Total row */}
+                  <tr><td colSpan={100}><div className="border-t border-border/30 my-1" /></td></tr>
+                  {(() => {
+                    const COUNTED_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES];
+                    const totalRow = Array(24).fill(0);
+                    COUNTED_TYPES.forEach(type => {
+                      const r = typePerHour[type] || [];
+                      r.forEach((v, h) => { totalRow[h] += v; });
+                    });
+                    return (
+                      <tr className="font-semibold">
+                        <td className="py-1 pr-2 text-foreground sticky left-0 bg-background z-10">Total Processos</td>
+                        {TURNOS.map(turno => {
+                          const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
+                          return (
+                            <React.Fragment key={turno.letter}>
+                              {turno.hours.map(h => (
+                                <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                              ))}
+                              <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>{avgArr(totalRow, turno.hours)}</td>
+                              {turno.letter !== "C" && <td className="w-2" />}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex gap-6 mt-3 pt-3 border-t border-border/30 flex-wrap">
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
+                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+              </div>
+              <div className="w-px bg-border/50 self-stretch" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
+                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+              </div>
+              <div className="w-px bg-border/50 self-stretch" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
+                <span className="font-bold text-sm text-warning">{avgBT24h}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ---------- Hourly detail dialog for a base ----------
 function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, selectedDay, provider }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -129,7 +463,6 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 
           <ScrollArea className="max-h-[70vh]">
             <div className="p-4 space-y-4">
-              {/* Trigger summary with colored names */}
               {triggerRanges.length > 0 && (
                 <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
                   <div className="flex items-center gap-2">
@@ -153,7 +486,6 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
                 </div>
               )}
 
-              {/* Hourly table - clickable rows */}
               <div className="rounded-lg border border-border overflow-hidden">
                 <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
                   <table className="min-w-[600px] w-full text-xs">
@@ -264,8 +596,14 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
   );
 }
 
-// Component that fetches weather for a single base and renders its card
-function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider: "openmeteo" | "openweathermap"; selectedDay: Date }) {
+// ---------- Weather card for a single base ----------
+function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, onOpenStructure }: {
+  base: Base;
+  provider: "openmeteo" | "openweathermap";
+  selectedDay: Date;
+  eqhTotal: number | null;
+  onOpenStructure?: () => void;
+}) {
   const [detailOpen, setDetailOpen] = useState(false);
   const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider);
   const { data: triggers } = useWeatherTriggers(base.id);
@@ -318,7 +656,6 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
     return { maxPrecip, totalPrecip, maxWind, maxGust, minTemp, maxTemp, rainHours };
   }, [dayHours]);
 
-  // Operational daily summary: historical entries, adjusted entries, operator removal
   const operationalSummary = useMemo(() => {
     if (!historicalData || historicalData.length === 0 || dayHours.length === 0 || !triggers) return null;
 
@@ -348,7 +685,6 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
       totalBtEntryAdj += btEntryAdj;
       totalMtEntryAdj += mtEntryAdj;
 
-      // operator_removal is a ratio applied to the adjusted entry
       totalBtOpRemoval += btEntry * hist.bt_operator_removal;
       totalMtOpRemoval += mtEntry * hist.mt_operator_removal;
       totalBtOpRemovalAdj += btEntryAdj * hist.bt_operator_removal;
@@ -357,13 +693,11 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
 
     const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
 
-    // Entrada para Equipe = Entrada - Ret. Op.
     const btEntryForTeam = totalBtEntry - totalBtOpRemoval;
     const mtEntryForTeam = totalMtEntry - totalMtOpRemoval;
     const btEntryForTeamAdj = totalBtEntryAdj - totalBtOpRemovalAdj;
     const mtEntryForTeamAdj = totalMtEntryAdj - totalMtOpRemovalAdj;
 
-    // Equipes Necessárias = BT/3 + MT/1.5
     const teamsNeeded = Math.ceil(btEntryForTeam / 3 + mtEntryForTeam / 1.5);
     const teamsNeededAdj = Math.ceil(btEntryForTeamAdj / 3 + mtEntryForTeamAdj / 1.5);
 
@@ -569,6 +903,24 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
                 </span>
               </div>
             </div>
+            {/* Estrutura Declarada */}
+            {eqhTotal !== null && (
+              <div className="border-t border-border/30 pt-1.5 mt-1">
+                <div
+                  className="flex items-center justify-between text-xs cursor-pointer hover:bg-muted/20 rounded px-1 py-0.5 -mx-1 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenStructure?.();
+                  }}
+                >
+                  <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Estrutura Declarada
+                  </span>
+                  <span className="font-mono font-bold text-primary">{eqhTotal}</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -590,55 +942,105 @@ function BaseWeatherCard({ base, provider, selectedDay }: { base: Base; provider
   );
 }
 
-function UTGroupSection({ regionais, allBases, provider, selectedDay }: {
+function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, allTypeEntries }: {
   regionais: string[];
   allBases: Base[];
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
+  plans: DailyTeamPlan[];
+  allTypeEntries: TeamTypeEntry[];
 }) {
+  const [structureRegional, setStructureRegional] = useState<Regional | null>(null);
+
   const basesInGroup = useMemo(() => {
-    const result: { regional: string; bases: Base[] }[] = [];
+    const result: { regional: Regional; bases: Base[] }[] = [];
     regionais.forEach(regLabel => {
       const regional = REGIONAIS.find(r => r.label === regLabel);
       if (!regional) return;
 
       if (regional.sucursais.length === 0) {
         const base = allBases.find(b => b.name.toLowerCase() === regional.label.toLowerCase());
-        if (base) result.push({ regional: regLabel, bases: [base] });
+        if (base) result.push({ regional, bases: [base] });
       } else {
         const bases = regional.sucursais
           .map(s => allBases.find(b => b.name.toLowerCase() === s.name.toLowerCase()))
           .filter((b): b is Base => !!b);
-        if (bases.length > 0) result.push({ regional: regLabel, bases });
+        if (bases.length > 0) result.push({ regional, bases });
       }
     });
     return result;
   }, [regionais, allBases]);
 
+  // Compute Eq/h Total per regional
+  const eqhPerRegional = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    basesInGroup.forEach(({ regional, bases }) => {
+      const baseIds = bases.map(b => b.id);
+      const regionalPlans = plans.filter(p => baseIds.includes(p.base_id));
+      if (regionalPlans.length === 0) {
+        result[regional.label] = null;
+        return;
+      }
+      const planIds = regionalPlans.map(p => p.id);
+      const entries = allTypeEntries.filter(e => planIds.includes(e.daily_plan_id));
+
+      // Compute avg teams per hour (same logic as Visão)
+      const teamsPerHour = Array(24).fill(0);
+      entries.forEach(e => {
+        if ((ALL_INCIDENTS_TYPES as readonly string[]).includes(e.team_type)) teamsPerHour[e.hour] += e.quantity;
+      });
+      const btPerHour = Array(24).fill(0);
+      entries.forEach(e => {
+        if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) btPerHour[e.hour] += e.quantity;
+      });
+      const allHours = Array.from({ length: 24 }, (_, i) => i);
+      const avgTotal = avgArr(teamsPerHour, allHours);
+      const avgBT = avgArr(btPerHour, allHours);
+      result[regional.label] = avgTotal + avgBT;
+    });
+    return result;
+  }, [basesInGroup, plans, allTypeEntries]);
+
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" style={{ ['--cols' as any]: basesInGroup.length }}>
-      {basesInGroup.map(({ regional, bases }) => (
-        <div key={regional} className="space-y-2 min-w-0">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
-            {regional}
-          </h3>
-          <div className="flex flex-col gap-3">
-            {bases.map(base => (
-              <BaseWeatherCard
-                key={base.id}
-                base={base}
-                provider={provider}
-                selectedDay={selectedDay}
-              />
-            ))}
+    <>
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        {basesInGroup.map(({ regional, bases }) => (
+          <div key={regional.label} className="space-y-2 min-w-0">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pl-1">
+              {regional.label}
+            </h3>
+            <div className="flex flex-col gap-3">
+              {bases.map(base => (
+                <BaseWeatherCard
+                  key={base.id}
+                  base={base}
+                  provider={provider}
+                  selectedDay={selectedDay}
+                  eqhTotal={eqhPerRegional[regional.label]}
+                  onOpenStructure={() => setStructureRegional(regional)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {structureRegional && (
+        <StructureDetailDialog
+          open={!!structureRegional}
+          onClose={() => setStructureRegional(null)}
+          regional={structureRegional}
+          allBases={allBases}
+          plans={plans}
+          allTypeEntries={allTypeEntries}
+          selectedDate={selectedDay}
+        />
+      )}
+    </>
   );
 }
 
-// Windy map centered on the UT
+// Windy map
 const UT_CENTERS = {
   UTN: { lat: -22.0, lon: -41.8, zoom: 8 },
   UTS: { lat: -22.7, lon: -43.2, zoom: 8 },
@@ -668,9 +1070,13 @@ export default function Clima() {
 
   const today = startOfDay(new Date());
   const selectedDay = addDays(today, dayOffset);
-  const maxDays = 6; // 7 dias (0-6)
+  const maxDays = 6;
 
-  // OWM para os 5 primeiros dias (0-4), Open-Meteo para os 2 últimos (5-6)
+  const dateStr = format(selectedDay, "yyyy-MM-dd");
+  const { data: plans } = useAllPlansForDate(dateStr);
+  const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
+  const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
+
   const activeProvider: "openmeteo" | "openweathermap" = dayOffset <= 4 ? "openweathermap" : "openmeteo";
   const providerInfo = PROVIDER_LABELS[activeProvider];
 
@@ -738,7 +1144,6 @@ export default function Clima() {
           </button>
         </div>
 
-        {/* View mode toggle */}
         <div className="flex rounded-lg border border-border overflow-hidden">
           <button
             onClick={() => setViewMode("cards")}
@@ -795,6 +1200,8 @@ export default function Clima() {
           allBases={bases}
           provider={activeProvider}
           selectedDay={selectedDay}
+          plans={plans || []}
+          allTypeEntries={allTypeEntries || []}
         />
       ) : (
         <div className="text-center py-12 text-muted-foreground">
