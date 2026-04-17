@@ -287,8 +287,22 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       row["Enel / Parceira DESLOC"] || "Não informado",
     ).trim();
     row["Polo"] = String(row["Polo"] || "Não informado").trim();
-    
+
     row["Equipe Atribuída"] = String(row["Equipe Atribuída"] || "Não informado").trim();
+
+    // Double-check Insourcing/Outsourcing using letter before hyphen in team name.
+    // Letter "E" => ENEL, letter "P" => PARCEIRA. Letter overrides the column when conflicting.
+    const equipeNomeCheck = String(row["Equipe Desl."] || row["Equipe Atribuída"] || "").trim().toUpperCase();
+    const hyphenIdx = equipeNomeCheck.indexOf("-");
+    if (hyphenIdx > 0) {
+      const letterBeforeHyphen = equipeNomeCheck.charAt(hyphenIdx - 1);
+      const colTipo = String(row["Enel / Parceira DESLOC"] || "").toUpperCase();
+      if (letterBeforeHyphen === "E" && !colTipo.includes("ENEL")) {
+        row["Enel / Parceira DESLOC"] = "ENEL";
+      } else if (letterBeforeHyphen === "P" && !colTipo.includes("PARCEIRA")) {
+        row["Enel / Parceira DESLOC"] = "PARCEIRA";
+      }
+    }
     row["Nº Cliente"] = String(row["Nº Cliente"] || "").trim();
     row["Observação"] = String(row["Observação"] || "");
     row["Número"] = String(row["Número"] || "");
