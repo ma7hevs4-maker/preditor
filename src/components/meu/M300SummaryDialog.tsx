@@ -166,11 +166,11 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
         rows.push({
           polo,
           tipo,
-          login: getRawM300ValueForGroup(tipoRows, "1º Login Corrigido", getValMinutes),
-          despacho: getRawM300ValueForGroup(tipoRows, "1º Despacho", getValMinutes),
-          plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc", getValMinutes),
+          login: getRawM300ValueForGroup(tipoRows, "1º Login Corrigido"),
+          despacho: getRawM300ValueForGroup(tipoRows, "1º Despacho"),
+          plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc"),
           intervalo: calcIntervalMinutes(tipoRows, getValMinutes),
-          retorno: getRawM300ValueForGroup(tipoRows, "Retorno a base", getValMinutes),
+          retorno: getRawM300ValueForGroup(tipoRows, "Retorno a base"),
         });
       }
 
@@ -178,11 +178,11 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
       rows.push({
         polo,
         tipo: "Total",
-        login: getRawM300ValueForGroup(poloRows, "1º Login Corrigido", getValMinutes),
-        despacho: getRawM300ValueForGroup(poloRows, "1º Despacho", getValMinutes),
-        plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc", getValMinutes),
+        login: getRawM300ValueForGroup(poloRows, "1º Login Corrigido"),
+        despacho: getRawM300ValueForGroup(poloRows, "1º Despacho"),
+        plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc"),
         intervalo: calcIntervalMinutes(poloRows, getValMinutes),
-        retorno: getRawM300ValueForGroup(poloRows, "Retorno a base", getValMinutes),
+        retorno: getRawM300ValueForGroup(poloRows, "Retorno a base"),
       });
     }
 
