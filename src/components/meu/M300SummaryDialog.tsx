@@ -71,7 +71,16 @@ interface M300SummaryDialogProps {
   filterState: any;
 }
 
-function getRawM300ValueForGroup(rows: any[], columnName: string, getValMinutes: (val: any) => number | null): number | null {
+// For columns that already contain duration in minutes (numeric), parse directly
+function parseDurationMinutes(raw: any): number | null {
+  if (raw == null || raw === "" || raw === "-") return null;
+  if (typeof raw === "number") return isFinite(raw) ? raw : null;
+  const s = String(raw).trim().replace(",", ".");
+  const n = Number(s);
+  return isFinite(n) ? n : null;
+}
+
+function getRawM300ValueForGroup(rows: any[], columnName: string): number | null {
   // Deduplicate by equipe+data to get one value per team/day
   const seen = new Map<string, number>();
   for (const d of rows) {
@@ -79,8 +88,7 @@ function getRawM300ValueForGroup(rows: any[], columnName: string, getValMinutes:
     const dt = d["Data Turno"] || d["Data Ação"] || "";
     const key = `${eq}|${dt}`;
     if (seen.has(key)) continue;
-    const raw = d[columnName];
-    const val = getValMinutes(raw);
+    const val = parseDurationMinutes(d[columnName]);
     if (val != null && val > 0) {
       seen.set(key, val);
     }
@@ -158,11 +166,11 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
         rows.push({
           polo,
           tipo,
-          login: getRawM300ValueForGroup(tipoRows, "1º Login Corrigido", getValMinutes),
-          despacho: getRawM300ValueForGroup(tipoRows, "1º Despacho", getValMinutes),
-          plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc", getValMinutes),
+          login: getRawM300ValueForGroup(tipoRows, "1º Login Corrigido"),
+          despacho: getRawM300ValueForGroup(tipoRows, "1º Despacho"),
+          plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc"),
           intervalo: calcIntervalMinutes(tipoRows, getValMinutes),
-          retorno: getRawM300ValueForGroup(tipoRows, "Retorno a base", getValMinutes),
+          retorno: getRawM300ValueForGroup(tipoRows, "Retorno a base"),
         });
       }
 
@@ -170,11 +178,11 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
       rows.push({
         polo,
         tipo: "Total",
-        login: getRawM300ValueForGroup(poloRows, "1º Login Corrigido", getValMinutes),
-        despacho: getRawM300ValueForGroup(poloRows, "1º Despacho", getValMinutes),
-        plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc", getValMinutes),
+        login: getRawM300ValueForGroup(poloRows, "1º Login Corrigido"),
+        despacho: getRawM300ValueForGroup(poloRows, "1º Despacho"),
+        plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc"),
         intervalo: calcIntervalMinutes(poloRows, getValMinutes),
-        retorno: getRawM300ValueForGroup(poloRows, "Retorno a base", getValMinutes),
+        retorno: getRawM300ValueForGroup(poloRows, "Retorno a base"),
       });
     }
 
