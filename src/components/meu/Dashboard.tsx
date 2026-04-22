@@ -20,6 +20,7 @@ import {
   Star,
   Eye,
   Table2,
+  LineChart,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -116,6 +117,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [showGestaoAVista, setShowGestaoAVista] = useState(false);
   const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
   const [showM300Summary, setShowM300Summary] = useState(false);
+  const [showEvolucaoTemporal, setShowEvolucaoTemporal] = useState(false);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
