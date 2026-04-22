@@ -20,6 +20,7 @@ import {
   Star,
   Eye,
   Table2,
+  LineChart,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,7 @@ import { PoloAnalysisView } from "./PoloAnalysisView";
 import { TeamDetailModal } from "./TeamDetailModal";
 import { GestaoAVistaView } from "./GestaoAVistaView";
 import { M300SummaryDialog } from "./M300SummaryDialog";
+import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -115,6 +117,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [showGestaoAVista, setShowGestaoAVista] = useState(false);
   const [teamDetailModal, setTeamDetailModal] = useState<any>(null);
   const [showM300Summary, setShowM300Summary] = useState(false);
+  const [showEvolucaoTemporal, setShowEvolucaoTemporal] = useState(false);
   const isInvalidData = !rawData || !Array.isArray(rawData);
   const data = Array.isArray(rawData) ? rawData : [];
 
@@ -1561,6 +1564,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     );
   }
 
+  if (showEvolucaoTemporal) {
+    return (
+      <EvolucaoTemporalView
+        filteredData={filteredData}
+        onBack={() => setShowEvolucaoTemporal(false)}
+        calculateOccupancy={calculateOccupancy}
+        calculateIdleMinutes={calculateIdleMinutes}
+        calcTempoPlataforma={calcTempoPlataforma}
+        calcRetornoBase={calcRetornoBase}
+        getValMinutes={getValMinutes}
+      />
+    );
+  }
+
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
@@ -1595,6 +1612,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           >
             <Eye className="h-3.5 w-3.5" />
             Gestão à Vista
+          </Button>
+          {/* Evolução Temporal */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setShowEvolucaoTemporal(true)}
+          >
+            <LineChart className="h-3.5 w-3.5" />
+            Evolução
           </Button>
           {/* Resumo M300 */}
           <Button
