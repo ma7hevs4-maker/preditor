@@ -1564,6 +1564,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     );
   }
 
+  if (showEvolucaoTemporal) {
+    return (
+      <EvolucaoTemporalView
+        filteredData={filteredData}
+        onBack={() => setShowEvolucaoTemporal(false)}
+        calculateOccupancy={calculateOccupancy}
+        calculateIdleMinutes={calculateIdleMinutes}
+        calcTempoPlataforma={calcTempoPlataforma}
+        calcRetornoBase={calcRetornoBase}
+        getValMinutes={getValMinutes}
+      />
+    );
+  }
+
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-hidden">
       {/* Top Bar */}
