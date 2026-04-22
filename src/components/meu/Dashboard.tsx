@@ -1565,15 +1565,74 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   }
 
   if (showEvolucaoTemporal) {
+    const filterButton = (
+      <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+        <SheetTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 gap-2">
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="w-80 sm:w-96 p-0 flex flex-col">
+          <SheetHeader className="p-4 border-b border-border bg-secondary/30">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
+              Filtros (Evolução Temporal)
+            </SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-5">
+              <p className="text-[11px] text-muted-foreground bg-secondary/30 p-2 rounded">
+                💡 Nesta tela o filtro de <strong>dia/período</strong> é ignorado para preservar a série temporal completa.
+              </p>
+              <FilterMultiSelect label="Polo" options={polos} selected={selectedPolos} onChange={setSelectedPolos} />
+              <FilterMultiSelect label="Processo" options={processos} selected={selectedProcessos} onChange={setSelectedProcessos} />
+              <FilterMultiSelect label="Insourcing / Outsourcing" options={tiposEquipe} selected={selectedTiposEquipe} onChange={setSelectedTiposEquipe} />
+              <FilterMultiSelect label="Turno" options={turnos} selected={selectedTurnos} onChange={setSelectedTurnos} />
+              <FilterMultiSelect label="Equipe" options={equipes} selected={selectedEquipes} onChange={setSelectedEquipes} searchable={true} />
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+    );
+
+    // Evolução ignora filtro de dia/período — usa toda a base, aplicando apenas filtros categóricos
+    const evolucaoData = data.filter((d) => {
+      if (d.isM300Only) return false;
+      if (d["Equipe Desl."] === "---") return false;
+      if (selectedPolos.length > 0 && !selectedPolos.includes(d.Polo)) return false;
+      if (selectedProcessos.length > 0 && !selectedProcessos.includes(d.Processo)) return false;
+      if (selectedTiposEquipe.length > 0 && !selectedTiposEquipe.includes(d["Enel / Parceira DESLOC"])) return false;
+      if (selectedTurnos.length > 0) {
+        const equipe = String(d["Equipe Desl."] || "");
+        const firstEquipe = equipe.split(/[/;+]| e /)[0].trim();
+        const parts = firstEquipe.split("-");
+        let rowTurno = "Outros";
+        if (parts.length >= 2) {
+          const letter = parts[1].charAt(0).toUpperCase();
+          if (["A", "B", "C"].includes(letter)) rowTurno = letter;
+        }
+        if (!selectedTurnos.includes(rowTurno)) return false;
+      }
+      if (selectedEquipes.length > 0 && !selectedEquipes.includes(d["Equipe Desl."])) return false;
+      return true;
+    });
+
     return (
       <EvolucaoTemporalView
-        filteredData={filteredData}
+        filteredData={evolucaoData}
         onBack={() => setShowEvolucaoTemporal(false)}
         calculateOccupancy={calculateOccupancy}
         calculateIdleMinutes={calculateIdleMinutes}
         calcTempoPlataforma={calcTempoPlataforma}
         calcRetornoBase={calcRetornoBase}
         getValMinutes={getValMinutes}
+        filterTrigger={filterButton}
       />
     );
   }

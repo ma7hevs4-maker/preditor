@@ -25,7 +25,7 @@ interface EvolucaoTemporalViewProps {
   filterTrigger?: React.ReactNode;
 }
 
-type Granularidade = "semanal" | "mensal";
+type Granularidade = "diaria" | "semanal" | "mensal";
 type KPIKey =
   | "login"
   | "despacho"
@@ -62,6 +62,10 @@ function getMonth(dateStr: string): string {
   return dateStr.slice(0, 7); // YYYY-MM
 }
 function formatBucketLabel(bucket: string, gran: Granularidade): string {
+  if (gran === "diaria") {
+    const [y, m, d] = bucket.split("-");
+    return `${d}/${m}`;
+  }
   if (gran === "semanal") {
     const [y, w] = bucket.split("-W");
     return `Sem ${w}/${y.slice(2)}`;
@@ -119,7 +123,12 @@ export function EvolucaoTemporalView({
       if (!dateStr) return;
       const polo = matchPoloName(d.Polo);
       if (!polo) return;
-      const bucketKey = granularidade === "semanal" ? getISOWeek(dateStr) : getMonth(dateStr);
+      const bucketKey =
+        granularidade === "diaria"
+          ? dateStr
+          : granularidade === "semanal"
+            ? getISOWeek(dateStr)
+            : getMonth(dateStr);
       if (!buckets.has(bucketKey)) buckets.set(bucketKey, new Map());
       const poloMap = buckets.get(bucketKey)!;
       if (!poloMap.has(polo)) poloMap.set(polo, []);
@@ -297,7 +306,7 @@ export function EvolucaoTemporalView({
 
           {/* Granularidade toggle */}
           <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1">
-            {(["semanal", "mensal"] as Granularidade[]).map((g) => (
+            {(["diaria", "semanal", "mensal"] as Granularidade[]).map((g) => (
               <button
                 key={g}
                 onClick={() => setGranularidade(g)}
@@ -307,7 +316,7 @@ export function EvolucaoTemporalView({
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
                 }`}
               >
-                {g}
+                {g === "diaria" ? "Diária" : g}
               </button>
             ))}
           </div>
@@ -415,7 +424,7 @@ export function EvolucaoTemporalView({
             <div className="glass-card p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-foreground">
-                  Evolução {granularidade === "semanal" ? "Semanal" : "Mensal"} — {meta.label}
+                  Evolução {granularidade === "diaria" ? "Diária" : granularidade === "semanal" ? "Semanal" : "Mensal"} — {meta.label}
                 </h2>
                 <span className="text-[10px] text-muted-foreground">{allBuckets.length} períodos • {allPolos.length} polos</span>
               </div>
