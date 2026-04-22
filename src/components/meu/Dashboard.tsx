@@ -35,6 +35,7 @@ import { PoloAnalysisView } from "./PoloAnalysisView";
 import { TeamDetailModal } from "./TeamDetailModal";
 import { GestaoAVistaView } from "./GestaoAVistaView";
 import { M300SummaryDialog } from "./M300SummaryDialog";
+import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
