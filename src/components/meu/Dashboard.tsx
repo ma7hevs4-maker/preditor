@@ -1613,6 +1613,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
             <Eye className="h-3.5 w-3.5" />
             Gestão à Vista
           </Button>
+          {/* Evolução Temporal */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => setShowEvolucaoTemporal(true)}
+          >
+            <LineChart className="h-3.5 w-3.5" />
+            Evolução
+          </Button>
           {/* Resumo M300 */}
           <Button
             variant="outline"
