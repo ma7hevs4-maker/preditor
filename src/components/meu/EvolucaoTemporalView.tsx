@@ -224,9 +224,10 @@ export function EvolucaoTemporalView({
 
   // Variation cards: last bucket vs previous bucket per polo (using selected KPI)
   const variationCards = useMemo(() => {
-    if (allBuckets.length < 1) return [];
-    const lastBucket = allBuckets[allBuckets.length - 1];
-    const prevBucket = allBuckets.length >= 2 ? allBuckets[allBuckets.length - 2] : null;
+    if (allBuckets.length < 2) return [];
+    // D-1 vs D-2: skip the most recent bucket (D, possivelmente parcial) e compara D-1 com D-2
+    const lastBucket = allBuckets[allBuckets.length - 2];
+    const prevBucket = allBuckets.length >= 3 ? allBuckets[allBuckets.length - 3] : null;
     return allPolos.map((polo) => {
       const lastData = aggregated.get(lastBucket)?.get(polo) || [];
       const lastKPI = computeKPIs(lastData)[selectedKPI];
@@ -264,8 +265,11 @@ export function EvolucaoTemporalView({
     return <TrendingDown className="h-3.5 w-3.5" />;
   };
 
-  const lastBucketLabel = allBuckets.length > 0 ? formatBucketLabel(allBuckets[allBuckets.length - 1], granularidade) : "—";
-  const prevBucketLabel = allBuckets.length >= 2 ? formatBucketLabel(allBuckets[allBuckets.length - 2], granularidade) : null;
+  // D-1 vs D-2 labels (alinhado com variationCards)
+  const lastBucketLabel =
+    allBuckets.length >= 2 ? formatBucketLabel(allBuckets[allBuckets.length - 2], granularidade) : "—";
+  const prevBucketLabel =
+    allBuckets.length >= 3 ? formatBucketLabel(allBuckets[allBuckets.length - 3], granularidade) : null;
 
   return (
     <div className="h-screen w-full min-w-0 max-w-full bg-background flex flex-col overflow-x-hidden overflow-y-auto">
