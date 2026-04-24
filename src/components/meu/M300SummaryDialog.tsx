@@ -80,7 +80,7 @@ function parseDurationMinutes(raw: any): number | null {
   return isFinite(n) ? n : null;
 }
 
-function getRawM300ValueForGroup(rows: any[], columnName: string): number | null {
+function getRawM300ValueForGroup(rows: any[], columnName: string, ignoreZeros = false): number | null {
   // Deduplicate by equipe+data to get one value per team/day
   const seen = new Map<string, number>();
   for (const d of rows) {
@@ -89,7 +89,7 @@ function getRawM300ValueForGroup(rows: any[], columnName: string): number | null
     const key = `${eq}|${dt}`;
     if (seen.has(key)) continue;
     const val = parseDurationMinutes(d[columnName]);
-    if (val != null && val > 0) {
+    if (val != null && (!ignoreZeros || val > 0)) {
       seen.set(key, val);
     }
   }
@@ -168,7 +168,7 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
           tipo,
           login: getRawM300ValueForGroup(tipoRows, "1º Login Corrigido"),
           despacho: getRawM300ValueForGroup(tipoRows, "1º Despacho"),
-          plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc"),
+          plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc", true),
           intervalo: calcIntervalMinutes(tipoRows, getValMinutes),
           retorno: getRawM300ValueForGroup(tipoRows, "Retorno a base"),
         });
@@ -180,7 +180,7 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
         tipo: "Total",
         login: getRawM300ValueForGroup(poloRows, "1º Login Corrigido"),
         despacho: getRawM300ValueForGroup(poloRows, "1º Despacho"),
-        plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc"),
+        plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc", true),
         intervalo: calcIntervalMinutes(poloRows, getValMinutes),
         retorno: getRawM300ValueForGroup(poloRows, "Retorno a base"),
       });
