@@ -80,6 +80,21 @@ export function getTurnoFromEquipe(equipe: string): string {
   return "Outros";
 }
 
+export function getInsourcingTypeFromEquipe(row: any): string {
+  const currentType = String(row?.["Enel / Parceira DESLOC"] || "Não informado").trim();
+  const equipe = String(row?.["Equipe Desl."] || row?.["Equipe"] || row?.["Equipe Atribuída"] || "").trim().toUpperCase();
+  const firstEquipe = equipe.split(/[/;+]| E /)[0].trim();
+  const hyphenIdx = firstEquipe.indexOf("-");
+
+  if (hyphenIdx > 0) {
+    const letterBeforeHyphen = firstEquipe.charAt(hyphenIdx - 1);
+    if (letterBeforeHyphen === "E") return "ENEL";
+    if (letterBeforeHyphen === "P") return "PARCEIRA";
+  }
+
+  return currentType;
+}
+
 // Date parsing helper
 export const parseDate = (val: any) => {
   if (!val) return null;
@@ -290,19 +305,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
 
     row["Equipe Atribuída"] = String(row["Equipe Atribuída"] || "Não informado").trim();
 
-    // Double-check Insourcing/Outsourcing using letter before hyphen in team name.
-    // Letter "E" => ENEL, letter "P" => PARCEIRA. Letter overrides the column when conflicting.
-    const equipeNomeCheck = String(row["Equipe Desl."] || row["Equipe Atribuída"] || "").trim().toUpperCase();
-    const hyphenIdx = equipeNomeCheck.indexOf("-");
-    if (hyphenIdx > 0) {
-      const letterBeforeHyphen = equipeNomeCheck.charAt(hyphenIdx - 1);
-      const colTipo = String(row["Enel / Parceira DESLOC"] || "").toUpperCase();
-      if (letterBeforeHyphen === "E" && !colTipo.includes("ENEL")) {
-        row["Enel / Parceira DESLOC"] = "ENEL";
-      } else if (letterBeforeHyphen === "P" && !colTipo.includes("PARCEIRA")) {
-        row["Enel / Parceira DESLOC"] = "PARCEIRA";
-      }
-    }
+    row["Enel / Parceira DESLOC"] = getInsourcingTypeFromEquipe(row);
     row["Nº Cliente"] = String(row["Nº Cliente"] || "").trim();
     row["Observação"] = String(row["Observação"] || "");
     row["Número"] = String(row["Número"] || "");
@@ -392,6 +395,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     const equipeKey = rowKeys.find(k => k.toLowerCase() === 'equipe') || "Equipe";
     row["Equipe"] = String(row[equipeKey] || "").trim();
     row["Turno"] = getTurnoFromEquipe(row["Equipe"]);
+    row["Enel / Parceira DESLOC"] = getInsourcingTypeFromEquipe(row);
     const shiftStartHour = getShiftStartHour(row["Turno"]);
     row.shiftStartHour = shiftStartHour;
 
@@ -909,7 +913,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       "Data Referência": date,
       "Processo": normalizarProcesso(m["Grupo Processos DESLOC"] || "Outros"),
       "Grupo Processos DESLOC": m["Grupo Processos DESLOC"] || "Não informado",
-      "Enel / Parceira DESLOC": m["Enel / Parceira DESLOC"] || "Não informado",
+      "Enel / Parceira DESLOC": getInsourcingTypeFromEquipe(m),
       "Polo": m["Polo"] || "Não informado",
       "Causa": causa,
       "Improdutivo": causasImprodutivas.includes(causa.toUpperCase()),
