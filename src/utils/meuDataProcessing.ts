@@ -80,6 +80,21 @@ export function getTurnoFromEquipe(equipe: string): string {
   return "Outros";
 }
 
+export function getInsourcingTypeFromEquipe(row: any): string {
+  const currentType = String(row?.["Enel / Parceira DESLOC"] || "Não informado").trim();
+  const equipe = String(row?.["Equipe Desl."] || row?.["Equipe"] || row?.["Equipe Atribuída"] || "").trim().toUpperCase();
+  const firstEquipe = equipe.split(/[/;+]| E /)[0].trim();
+  const hyphenIdx = firstEquipe.indexOf("-");
+
+  if (hyphenIdx > 0) {
+    const letterBeforeHyphen = firstEquipe.charAt(hyphenIdx - 1);
+    if (letterBeforeHyphen === "E") return "ENEL";
+    if (letterBeforeHyphen === "P") return "PARCEIRA";
+  }
+
+  return currentType;
+}
+
 // Date parsing helper
 export const parseDate = (val: any) => {
   if (!val) return null;
