@@ -106,6 +106,21 @@ interface DashboardProps {
   rawM300?: any[];
 }
 
+const getInsourcingType = (row: any): string => {
+  const currentType = String(row?.["Enel / Parceira DESLOC"] || "Não informado").trim();
+  const equipe = String(row?.["Equipe Desl."] || row?.["Equipe Atribuída"] || "").trim().toUpperCase();
+  const firstEquipe = equipe.split(/[/;+]| E /)[0].trim();
+  const hyphenIdx = firstEquipe.indexOf("-");
+
+  if (hyphenIdx > 0) {
+    const letterBeforeHyphen = firstEquipe.charAt(hyphenIdx - 1);
+    if (letterBeforeHyphen === "E") return "ENEL";
+    if (letterBeforeHyphen === "P") return "PARCEIRA";
+  }
+
+  return currentType;
+};
+
 export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
@@ -142,7 +157,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const tiposEquipe = useMemo(
     () =>
       Array.from(
-        new Set(data.map((d) => d["Enel / Parceira DESLOC"]).filter(Boolean)),
+        new Set(data.map((d) => getInsourcingType(d)).filter(Boolean)),
       ).sort(),
     [data],
   );
@@ -223,7 +238,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         return false;
       if (
         selectedTiposEquipe.length > 0 &&
-        !selectedTiposEquipe.includes(d["Enel / Parceira DESLOC"])
+        !selectedTiposEquipe.includes(getInsourcingType(d))
       )
         return false;
       if (selectedTurnos.length > 0) {
