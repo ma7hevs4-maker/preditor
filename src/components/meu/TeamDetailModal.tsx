@@ -132,26 +132,34 @@ export function TeamDetailModal({
     const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], effectiveDate);
     const intervalEndDecimal = convertToDecimalHours(firstRow["Fim Intervalo"] || firstRow["Fim intervalo"], effectiveDate);
 
+    const firstLoginRaw = equipeData.map((d) => d["Log In"] || d["1º Login"]).find((v) => v != null && v !== "");
+    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, effectiveDate);
     let platformDuration: number | undefined;
-    let platformStart = shiftStartDecimal ?? undefined;
+    let platformStart = shiftStartDecimal ?? firstLoginDecimal ?? undefined;
     let platformEnd: number | undefined;
 
-    if (shiftStartDecimal != null && events.length > 0) {
+    if (platformStart != null && events.length > 0) {
       const sortedEvents = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal);
       const firstEventStart = sortedEvents[0].inicio_decimal;
-      if (intervalStartDecimal != null && intervalStartDecimal > shiftStartDecimal && intervalStartDecimal <= firstEventStart) {
+      if (
+        firstLoginDecimal != null &&
+        shiftStartDecimal != null &&
+        firstLoginDecimal < shiftStartDecimal &&
+        firstEventStart < shiftStartDecimal
+      ) {
+        platformStart = firstLoginDecimal;
+      }
+      if (intervalStartDecimal != null && intervalStartDecimal > platformStart && intervalStartDecimal <= firstEventStart) {
         platformEnd = intervalStartDecimal;
-      } else if (firstEventStart > shiftStartDecimal) {
+      } else if (firstEventStart > platformStart) {
         platformEnd = firstEventStart;
       }
       if (platformEnd != null) {
-        platformDuration = platformEnd - shiftStartDecimal;
+        platformDuration = platformEnd - platformStart;
         if (platformDuration <= 0) platformDuration = undefined;
       }
     }
 
-    const firstLoginRaw = equipeData.map((d) => d["Log In"] || d["1º Login"]).find((v) => v != null && v !== "");
-    const firstLoginDecimal = convertToDecimalHours(firstLoginRaw, effectiveDate);
     const lastLogOffRaw = equipeData.map((d) => d["Log Off Corrigido"] || d["Log Off"]).find((v) => v != null && v !== "");
     const lastLogOffDecimal = convertToDecimalHours(lastLogOffRaw, effectiveDate);
 

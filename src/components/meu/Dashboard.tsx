@@ -446,11 +446,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const getPlatformSegment = useCallback((eqData: any[]) => {
     const { shiftStart, shiftEnd } = getShiftWindowBounds(eqData);
     const firstLogin = getFirstLogin(eqData);
-    const start = firstLogin ?? shiftStart;
-    if (start == null) return null;
-
     const { intervalStart } = getIntervalBounds(eqData);
     const firstDispatch = getFirstDispatch(eqData);
+
+    const shouldUseEarlyLogin =
+      firstLogin != null &&
+      shiftStart != null &&
+      firstDispatch != null &&
+      firstLogin < shiftStart &&
+      firstDispatch < shiftStart;
+
+    const start = shouldUseEarlyLogin ? firstLogin : shiftStart ?? firstLogin;
+    if (start == null) return null;
 
     let end: number | null = null;
 
@@ -1297,15 +1304,23 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
     const intervalEndDecimal = convertToDecimalHours(firstRow["Fim Intervalo"] || firstRow["Fim intervalo"], timelineEffectiveDate);
     
-    // Platform duration: first login → first incident dispatch
-    // Use events (already in timeline reference frame) instead of getPlatformSegment to avoid midnight crossing issues
+    // Platform duration: shift start → first incident dispatch.
+    // Exception: use first login only when both login and first incident happened before shift start.
     let platformDuration = undefined;
-    let platformStart = firstLoginDecimal ?? shiftStartDecimal ?? undefined;
+    let platformStart = shiftStartDecimal ?? firstLoginDecimal ?? undefined;
     let platformEnd = undefined as number | undefined;
     
     if (platformStart != null && events.length > 0) {
       const sortedEvents = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal);
       const firstEventStart = sortedEvents[0].inicio_decimal;
+      if (
+        firstLoginDecimal != null &&
+        shiftStartDecimal != null &&
+        firstLoginDecimal < shiftStartDecimal &&
+        firstEventStart < shiftStartDecimal
+      ) {
+        platformStart = firstLoginDecimal;
+      }
       
       // Check if interval happens before first dispatch
       if (intervalStartDecimal != null && intervalStartDecimal > platformStart && intervalStartDecimal <= firstEventStart) {
