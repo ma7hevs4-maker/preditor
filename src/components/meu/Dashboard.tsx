@@ -431,9 +431,23 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return firstDispatch;
   }, []);
 
+  const getFirstLogin = useCallback((eqData: any[]) => {
+    let firstLogin: number | null = null;
+
+    eqData.forEach((d) => {
+      const baseDate = d["Data Turno"] || d["Data Ação"];
+      const login = convertToDecimalHours(d["Log In"] || d["1º Login"], baseDate);
+      if (login != null && (firstLogin === null || login < firstLogin)) firstLogin = login;
+    });
+
+    return firstLogin;
+  }, []);
+
   const getPlatformSegment = useCallback((eqData: any[]) => {
     const { shiftStart, shiftEnd } = getShiftWindowBounds(eqData);
-    if (shiftStart == null) return null;
+    const firstLogin = getFirstLogin(eqData);
+    const start = firstLogin ?? shiftStart;
+    if (start == null) return null;
 
     const { intervalStart } = getIntervalBounds(eqData);
     const firstDispatch = getFirstDispatch(eqData);
@@ -442,22 +456,22 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     if (
       intervalStart != null &&
-      intervalStart > shiftStart &&
+      intervalStart > start &&
       (shiftEnd == null || intervalStart <= shiftEnd) &&
       (firstDispatch == null || intervalStart <= firstDispatch)
     ) {
       end = intervalStart;
-    } else if (firstDispatch != null && firstDispatch > shiftStart) {
+    } else if (firstDispatch != null && firstDispatch > start) {
       end = firstDispatch;
     }
 
     if (end == null) return null;
 
-    const durationMinutes = (end - shiftStart) * 60;
+    const durationMinutes = (end - start) * 60;
     if (durationMinutes <= 0) return null;
 
-    return { start: shiftStart, end, durationMinutes };
-  }, [getFirstDispatch, getIntervalBounds, getShiftWindowBounds]);
+    return { start, end, durationMinutes };
+  }, [getFirstDispatch, getFirstLogin, getIntervalBounds, getShiftWindowBounds]);
 
   // Helper: calculate platform time (login → first incident dispatch) in minutes
   // If the first event after shift start is an interval (before first dispatch), use interval start instead
@@ -1283,25 +1297,25 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const intervalStartDecimal = convertToDecimalHours(firstRow["Inicio Intervalo"] || firstRow["Inicio intervalo"], timelineEffectiveDate);
     const intervalEndDecimal = convertToDecimalHours(firstRow["Fim Intervalo"] || firstRow["Fim intervalo"], timelineEffectiveDate);
     
-    // Platform duration: shift start (IT) → first incident dispatch
+    // Platform duration: first login → first incident dispatch
     // Use events (already in timeline reference frame) instead of getPlatformSegment to avoid midnight crossing issues
     let platformDuration = undefined;
-    let platformStart = shiftStartDecimal ?? undefined;
+    let platformStart = firstLoginDecimal ?? shiftStartDecimal ?? undefined;
     let platformEnd = undefined as number | undefined;
     
-    if (shiftStartDecimal != null && events.length > 0) {
+    if (platformStart != null && events.length > 0) {
       const sortedEvents = [...events].sort((a, b) => a.inicio_decimal - b.inicio_decimal);
       const firstEventStart = sortedEvents[0].inicio_decimal;
       
       // Check if interval happens before first dispatch
-      if (intervalStartDecimal != null && intervalStartDecimal > shiftStartDecimal && intervalStartDecimal <= firstEventStart) {
+      if (intervalStartDecimal != null && intervalStartDecimal > platformStart && intervalStartDecimal <= firstEventStart) {
         platformEnd = intervalStartDecimal;
-      } else if (firstEventStart > shiftStartDecimal) {
+      } else if (firstEventStart > platformStart) {
         platformEnd = firstEventStart;
       }
       
       if (platformEnd != null) {
-        platformDuration = platformEnd - shiftStartDecimal;
+        platformDuration = platformEnd - platformStart;
         if (platformDuration <= 0) platformDuration = undefined;
       }
     }
