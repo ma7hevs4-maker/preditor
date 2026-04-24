@@ -395,6 +395,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     const equipeKey = rowKeys.find(k => k.toLowerCase() === 'equipe') || "Equipe";
     row["Equipe"] = String(row[equipeKey] || "").trim();
     row["Turno"] = getTurnoFromEquipe(row["Equipe"]);
+    row["Enel / Parceira DESLOC"] = getInsourcingTypeFromEquipe(row);
     const shiftStartHour = getShiftStartHour(row["Turno"]);
     row.shiftStartHour = shiftStartHour;
 
@@ -912,7 +913,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       "Data Referência": date,
       "Processo": normalizarProcesso(m["Grupo Processos DESLOC"] || "Outros"),
       "Grupo Processos DESLOC": m["Grupo Processos DESLOC"] || "Não informado",
-      "Enel / Parceira DESLOC": m["Enel / Parceira DESLOC"] || "Não informado",
+      "Enel / Parceira DESLOC": getInsourcingTypeFromEquipe(m),
       "Polo": m["Polo"] || "Não informado",
       "Causa": causa,
       "Improdutivo": causasImprodutivas.includes(causa.toUpperCase()),
