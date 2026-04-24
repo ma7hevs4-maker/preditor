@@ -98,28 +98,6 @@ function getRawM300ValueForGroup(rows: any[], columnName: string, ignoreZeros = 
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-function calcIntervalMinutes(rows: any[], getValMinutes: (val: any) => number | null): number | null {
-  const seen = new Map<string, number>();
-  for (const d of rows) {
-    const eq = d["Equipe Desl."] || "";
-    const dt = d["Data Turno"] || d["Data Ação"] || "";
-    const key = `${eq}|${dt}`;
-    if (seen.has(key)) continue;
-    
-    const iniRaw = d["Inicio intervalo"] || d["Inicio Intervalo"];
-    const fimRaw = d["Fim intervalo"] || d["Fim Intervalo"];
-    const iniVal = getValMinutes(iniRaw);
-    const fimVal = getValMinutes(fimRaw);
-    
-    if (iniVal != null && fimVal != null && fimVal > iniVal) {
-      seen.set(key, fimVal - iniVal);
-    }
-  }
-  if (seen.size === 0) return null;
-  const values = Array.from(seen.values());
-  return values.reduce((a, b) => a + b, 0) / values.length;
-}
-
 const formatMinutes = (val: number | null): string => {
   if (val == null) return "-";
   return val.toFixed(0);
@@ -169,7 +147,7 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
           login: getRawM300ValueForGroup(tipoRows, "1º Login Corrigido"),
           despacho: getRawM300ValueForGroup(tipoRows, "1º Despacho"),
           plataforma: getRawM300ValueForGroup(tipoRows, "1º Desloc", true),
-          intervalo: calcIntervalMinutes(tipoRows, getValMinutes),
+          intervalo: getRawM300ValueForGroup(tipoRows, "Intervalo", true),
           retorno: getRawM300ValueForGroup(tipoRows, "Retorno a base"),
         });
       }
@@ -181,7 +159,7 @@ export function M300SummaryDialog({ open, onOpenChange, filteredData, getValMinu
         login: getRawM300ValueForGroup(poloRows, "1º Login Corrigido"),
         despacho: getRawM300ValueForGroup(poloRows, "1º Despacho"),
         plataforma: getRawM300ValueForGroup(poloRows, "1º Desloc", true),
-        intervalo: calcIntervalMinutes(poloRows, getValMinutes),
+        intervalo: getRawM300ValueForGroup(poloRows, "Intervalo", true),
         retorno: getRawM300ValueForGroup(poloRows, "Retorno a base"),
       });
     }
