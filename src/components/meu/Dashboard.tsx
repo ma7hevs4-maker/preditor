@@ -446,11 +446,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const getPlatformSegment = useCallback((eqData: any[]) => {
     const { shiftStart, shiftEnd } = getShiftWindowBounds(eqData);
     const firstLogin = getFirstLogin(eqData);
-    const start = firstLogin ?? shiftStart;
-    if (start == null) return null;
-
     const { intervalStart } = getIntervalBounds(eqData);
     const firstDispatch = getFirstDispatch(eqData);
+
+    const shouldUseEarlyLogin =
+      firstLogin != null &&
+      shiftStart != null &&
+      firstDispatch != null &&
+      firstLogin < shiftStart &&
+      firstDispatch < shiftStart;
+
+    const start = shouldUseEarlyLogin ? firstLogin : shiftStart ?? firstLogin;
+    if (start == null) return null;
 
     let end: number | null = null;
 
