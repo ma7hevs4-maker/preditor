@@ -431,9 +431,23 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return firstDispatch;
   }, []);
 
+  const getFirstLogin = useCallback((eqData: any[]) => {
+    let firstLogin: number | null = null;
+
+    eqData.forEach((d) => {
+      const baseDate = d["Data Turno"] || d["Data Ação"];
+      const login = convertToDecimalHours(d["Log In"] || d["1º Login"], baseDate);
+      if (login != null && (firstLogin === null || login < firstLogin)) firstLogin = login;
+    });
+
+    return firstLogin;
+  }, []);
+
   const getPlatformSegment = useCallback((eqData: any[]) => {
     const { shiftStart, shiftEnd } = getShiftWindowBounds(eqData);
-    if (shiftStart == null) return null;
+    const firstLogin = getFirstLogin(eqData);
+    const start = firstLogin ?? shiftStart;
+    if (start == null) return null;
 
     const { intervalStart } = getIntervalBounds(eqData);
     const firstDispatch = getFirstDispatch(eqData);
@@ -442,22 +456,22 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     if (
       intervalStart != null &&
-      intervalStart > shiftStart &&
+      intervalStart > start &&
       (shiftEnd == null || intervalStart <= shiftEnd) &&
       (firstDispatch == null || intervalStart <= firstDispatch)
     ) {
       end = intervalStart;
-    } else if (firstDispatch != null && firstDispatch > shiftStart) {
+    } else if (firstDispatch != null && firstDispatch > start) {
       end = firstDispatch;
     }
 
     if (end == null) return null;
 
-    const durationMinutes = (end - shiftStart) * 60;
+    const durationMinutes = (end - start) * 60;
     if (durationMinutes <= 0) return null;
 
-    return { start: shiftStart, end, durationMinutes };
-  }, [getFirstDispatch, getIntervalBounds, getShiftWindowBounds]);
+    return { start, end, durationMinutes };
+  }, [getFirstDispatch, getFirstLogin, getIntervalBounds, getShiftWindowBounds]);
 
   // Helper: calculate platform time (login → first incident dispatch) in minutes
   // If the first event after shift start is an interval (before first dispatch), use interval start instead
