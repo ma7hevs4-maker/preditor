@@ -8,7 +8,7 @@ export interface RankingWeights {
   incidentes: number;
   improdutivos: number;
   reincidentes: number;
-  ocupacao: number;
+  dias: number;
   ociosidade: number;
   inc_ociosidade: number;
   login: number;
@@ -21,7 +21,7 @@ export const DEFAULT_WEIGHTS: RankingWeights = {
   incidentes: 15,
   improdutivos: 10,
   reincidentes: 10,
-  ocupacao: 15,
+  dias: 15,
   ociosidade: 15,
   inc_ociosidade: 10,
   login: 5,
@@ -38,6 +38,7 @@ export interface TeamRankingData {
   TMDE: number;
   "Ordem 2": number;
   Ocupação: number;
+  Dias: number;
   "Ociosidade (min)": number;
   "Inc. Ociosid.": number;
   Login: string;
@@ -47,14 +48,14 @@ export interface TeamRankingData {
 }
 
 // Metrics where higher = better
-const HIGHER_IS_BETTER = new Set(["incidentes", "ocupacao"]);
+const HIGHER_IS_BETTER = new Set(["incidentes", "dias"]);
 
 // Metric keys mapping to TeamRankingData fields
 const METRIC_FIELDS: Record<keyof RankingWeights, { field: string; parse: (row: TeamRankingData) => number | null }> = {
   incidentes: { field: "Incidentes", parse: (r) => r.Incidentes },
   improdutivos: { field: "Improdutivos", parse: (r) => r.Improdutivos },
   reincidentes: { field: "Reincidentes causados", parse: (r) => r["Reincidentes causados"] },
-  ocupacao: { field: "Ocupação", parse: (r) => r.Ocupação },
+  dias: { field: "Dias", parse: (r) => r.Dias },
   ociosidade: { field: "Ociosidade (min)", parse: (r) => r["Ociosidade (min)"] },
   inc_ociosidade: { field: "Inc. Ociosid.", parse: (r) => r["Inc. Ociosid."] },
   login: { field: "Login", parse: (r) => r.Login === "-" ? null : Number(r.Login) },
@@ -142,7 +143,7 @@ export function parseWeightsFromSettings(
     ranking_weight_incidentes: "incidentes",
     ranking_weight_improdutivos: "improdutivos",
     ranking_weight_reincidentes: "reincidentes",
-    ranking_weight_ocupacao: "ocupacao",
+    ranking_weight_dias: "dias",
     ranking_weight_ociosidade: "ociosidade",
     ranking_weight_inc_ociosidade: "inc_ociosidade",
     ranking_weight_login: "login",
