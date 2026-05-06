@@ -373,16 +373,24 @@ export function GestaoAVistaView({
 
     return equipesPresentes.map((eq) => {
       const eqData = poloData.filter((d) => d["Equipe Desl."] === eq);
-      const inc = new Set(eqData.map((d) => d.Número)).size;
-      const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
-      const ord2 = eqData.filter((d) => d.ordem2).length;
+      const dias = new Set(
+        eqData.map((d) => d["Data Turno"] || d["Data Ação"]).filter(Boolean)
+      ).size || 1;
+      const incTotal = new Set(eqData.map((d) => d.Número)).size;
+      const impTotal = eqData.filter((d) => d.Improdutivo).length;
+      const reincTotal = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const ord2Total = eqData.filter((d) => d.ordem2).length;
+      const inc = incTotal / dias;
+      const imp = impTotal / dias;
+      const reinc = reincTotal / dias;
+      const ord2 = ord2Total / dias;
       const tmde = eqData.length > 0
         ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
         : 0;
       const ocupacao = calculateOccupancy(eqData);
-      const ociosidade = calculateIdleMinutes(eqData);
-      const incOciosidade = Math.floor(ociosidade / 60);
+      const ociosidadeTotal = calculateIdleMinutes(eqData);
+      const ociosidade = ociosidadeTotal / dias;
+      const incOciosidade = Math.floor(ociosidadeTotal / 60) / dias;
 
       // Raw M300 values (deduplicated)
       const login = getRawM300Value(eqData, "1º Login Corrigido", getValMinutes);
@@ -399,6 +407,7 @@ export function GestaoAVistaView({
 
       return {
         equipe: eq,
+        dias,
         incidentes: inc,
         improdutivos: imp,
         reincidentes: reinc,
