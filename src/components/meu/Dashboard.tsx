@@ -1100,6 +1100,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         TMDE: tmde,
         "Ordem 2": ord2,
         Ocupação: ocupacao,
+        Dias: eqDays,
         "Ociosidade (min)": idleMinutes,
         "Inc. Ociosid.": Math.floor(idleMinutes / 60),
         Login: primeiroLogin,

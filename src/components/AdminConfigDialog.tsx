@@ -1428,7 +1428,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                       { key: "ranking_weight_incidentes", label: "Incidentes (↑ melhor)", desc: "Mais incidentes = melhor" },
                       { key: "ranking_weight_improdutivos", label: "Improdutivos (↓ melhor)", desc: "Menos = melhor" },
                       { key: "ranking_weight_reincidentes", label: "Reincidentes (↓ melhor)", desc: "Menos = melhor" },
-                      { key: "ranking_weight_ocupacao", label: "Ocupação (↑ melhor)", desc: "Maior = melhor" },
+                     { key: "ranking_weight_dias", label: "Dias Trabalhados (↑ melhor)", desc: "Mais dias = melhor" },
                       { key: "ranking_weight_ociosidade", label: "Ociosidade (↓ melhor)", desc: "Menos = melhor" },
                       { key: "ranking_weight_inc_ociosidade", label: "Inc. Ociosid. (↓ melhor)", desc: "Menos = melhor" },
                       { key: "ranking_weight_login", label: "Login (↓ melhor)", desc: "Menor tempo = melhor" },

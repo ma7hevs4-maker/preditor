@@ -293,6 +293,7 @@ function matchPoloName(rawPolo: string): string | null {
 
 interface TeamData {
   equipe: string;
+  dias: number;
   incidentes: number;
   improdutivos: number;
   reincidentes: number;
@@ -372,16 +373,24 @@ export function GestaoAVistaView({
 
     return equipesPresentes.map((eq) => {
       const eqData = poloData.filter((d) => d["Equipe Desl."] === eq);
-      const inc = new Set(eqData.map((d) => d.Número)).size;
-      const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
-      const ord2 = eqData.filter((d) => d.ordem2).length;
+      const dias = new Set(
+        eqData.map((d) => d["Data Turno"] || d["Data Ação"]).filter(Boolean)
+      ).size || 1;
+      const incTotal = new Set(eqData.map((d) => d.Número)).size;
+      const impTotal = eqData.filter((d) => d.Improdutivo).length;
+      const reincTotal = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const ord2Total = eqData.filter((d) => d.ordem2).length;
+      const inc = incTotal / dias;
+      const imp = impTotal / dias;
+      const reinc = reincTotal / dias;
+      const ord2 = ord2Total / dias;
       const tmde = eqData.length > 0
         ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
         : 0;
       const ocupacao = calculateOccupancy(eqData);
-      const ociosidade = calculateIdleMinutes(eqData);
-      const incOciosidade = Math.floor(ociosidade / 60);
+      const ociosidadeTotal = calculateIdleMinutes(eqData);
+      const ociosidade = ociosidadeTotal / dias;
+      const incOciosidade = Math.floor(ociosidadeTotal / 60) / dias;
 
       // Raw M300 values (deduplicated)
       const login = getRawM300Value(eqData, "1º Login Corrigido", getValMinutes);
@@ -398,6 +407,7 @@ export function GestaoAVistaView({
 
       return {
         equipe: eq,
+        dias,
         incidentes: inc,
         improdutivos: imp,
         reincidentes: reinc,
@@ -428,6 +438,7 @@ export function GestaoAVistaView({
       TMDE: t.tmde,
       "Ordem 2": t.ordem2,
       Ocupação: t.ocupacao,
+      Dias: t.dias,
       "Ociosidade (min)": t.ociosidade,
       "Inc. Ociosid.": t.incOciosidade,
       Login: t.login != null ? t.login.toFixed(1) : "-",
@@ -556,6 +567,7 @@ export function GestaoAVistaView({
                   <th>Pos</th>
                   <th>Equipe</th>
                   <th>Pts</th>
+                  <th>Dias</th>
                   <th>Inc.</th>
                   <th>Improd.</th>
                   <th>Ord.2</th>
@@ -576,14 +588,15 @@ export function GestaoAVistaView({
                     <td>${idx + 1}</td>
                     <td>${team.equipe}${team.hasIncompleteData ? '*' : ''}</td>
                     <td class="pts">${(team.pontuacao ?? 0).toFixed(1)}</td>
-                    <td class="num">${team.incidentes}</td>
-                    <td class="num">${team.improdutivos}</td>
-                    <td class="num">${team.ordem2}</td>
-                    <td class="num">${team.reincidentes}</td>
+                    <td class="num">${team.dias}</td>
+                    <td class="num">${team.incidentes.toFixed(1)}</td>
+                    <td class="num">${team.improdutivos.toFixed(1)}</td>
+                    <td class="num">${team.ordem2.toFixed(1)}</td>
+                    <td class="num">${team.reincidentes.toFixed(1)}</td>
                     <td class="num">${team.tmde.toFixed(1)}</td>
                     <td class="num">${team.ocupacao.toFixed(1)}%</td>
                     <td class="num">${team.ociosidade.toFixed(0)}</td>
-                    <td class="num">${team.incOciosidade}</td>
+                    <td class="num">${team.incOciosidade.toFixed(1)}</td>
                     <td class="num">${team.login != null ? team.login.toFixed(1) : '-'}</td>
                     <td class="num">${team.despacho != null ? team.despacho.toFixed(1) : '-'}</td>
                     <td class="num">${team.plataforma != null ? team.plataforma.toFixed(1) : '-'}</td>
@@ -899,7 +912,7 @@ export function GestaoAVistaView({
                     <table className="w-full text-[11px]">
                       <thead>
                         <tr className="bg-secondary/20 border-b border-border">
-                          {["Pos","Equipe","Pts","Inc.","Improd.","Ord.2","Reinc.","TMDE","Ocup.","Ociosid.","Inc.Oc.","Login","Desp.","T.Plat.","Ret.Base"].map(h => (
+                          {["Pos","Equipe","Pts","Dias","Inc.","Improd.","Ord.2","Reinc.","TMDE","Ocup.","Ociosid.","Inc.Oc.","Login","Desp.","T.Plat.","Ret.Base"].map(h => (
                             <th key={h} className="px-2 py-1.5 text-left font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                           ))}
                         </tr>
@@ -914,14 +927,15 @@ export function GestaoAVistaView({
                               {team.equipe}{team.hasIncompleteData ? <span className="text-amber-500 ml-0.5">*</span> : null}
                             </td>
                             <td className="px-2 py-1 font-bold text-primary">{(team.pontuacao ?? 0).toFixed(1)}</td>
-                            <td className="px-2 py-1 text-muted-foreground">{team.incidentes}</td>
-                            <td className="px-2 py-1 text-muted-foreground">{team.improdutivos}</td>
-                            <td className="px-2 py-1 text-muted-foreground">{team.ordem2}</td>
-                            <td className="px-2 py-1 text-muted-foreground">{team.reincidentes}</td>
+                            <td className="px-2 py-1 text-foreground font-semibold">{team.dias}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.incidentes.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.improdutivos.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.ordem2.toFixed(1)}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.reincidentes.toFixed(1)}</td>
                             <td className="px-2 py-1 text-muted-foreground">{team.tmde.toFixed(1)}</td>
                             <td className="px-2 py-1 text-muted-foreground">{team.ocupacao.toFixed(1)}%</td>
                             <td className="px-2 py-1 text-muted-foreground">{team.ociosidade.toFixed(0)}</td>
-                            <td className="px-2 py-1 text-muted-foreground">{team.incOciosidade}</td>
+                            <td className="px-2 py-1 text-muted-foreground">{team.incOciosidade.toFixed(1)}</td>
                             <td className="px-2 py-1 text-muted-foreground">{team.login != null ? team.login.toFixed(1) : '-'}</td>
                             <td className="px-2 py-1 text-muted-foreground">{team.despacho != null ? team.despacho.toFixed(1) : '-'}</td>
                             <td className="px-2 py-1 text-muted-foreground">{team.plataforma != null ? team.plataforma.toFixed(1) : '-'}</td>
