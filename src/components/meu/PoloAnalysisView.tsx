@@ -274,6 +274,9 @@ function PoloCard({
   const rankingEquipes = useMemo(() => {
     const baseRanking: TeamRankingData[] = equipesPresentes.map((eq) => {
       const eqData = data.filter((d) => d["Equipe Desl."] === eq);
+      const dias = new Set(
+        eqData.map((d: any) => d["Data Turno"] || d["Data Ação"]).filter(Boolean)
+      ).size || 1;
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
       const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
@@ -305,6 +308,7 @@ function PoloCard({
         TMDE: tmde,
         "Ordem 2": ord2,
         Ocupação: ocupacao,
+        Dias: dias,
         "Ociosidade (min)": idleMinutes,
         "Inc. Ociosid.": Math.floor(idleMinutes / 60),
         Login: maxLoginVal != null ? maxLoginVal.toFixed(1) : "-",
