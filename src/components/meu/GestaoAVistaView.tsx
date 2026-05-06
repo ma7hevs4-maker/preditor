@@ -438,6 +438,7 @@ export function GestaoAVistaView({
       TMDE: t.tmde,
       "Ordem 2": t.ordem2,
       Ocupação: t.ocupacao,
+      Dias: t.dias,
       "Ociosidade (min)": t.ociosidade,
       "Inc. Ociosid.": t.incOciosidade,
       Login: t.login != null ? t.login.toFixed(1) : "-",
