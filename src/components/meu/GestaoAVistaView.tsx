@@ -293,6 +293,7 @@ function matchPoloName(rawPolo: string): string | null {
 
 interface TeamData {
   equipe: string;
+  dias: number;
   incidentes: number;
   improdutivos: number;
   reincidentes: number;
