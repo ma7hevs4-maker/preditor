@@ -113,7 +113,10 @@ export const parseDate = (val: any) => {
     return `${y}-${m}-${day}`;
   }
   if (typeof val === 'string') {
-    const s = val.trim().split(' ')[0];
+    // Take the date portion before either a space (e.g. "2026-04-23 05:30")
+    // or a 'T' (ISO format like "2026-04-23T05:30:00.000Z" — produced by JSON
+    // round-tripping Date objects through Supabase JSONB storage).
+    const s = val.trim().split(/[ T]/)[0];
     if (s.includes('-')) return s;
     if (s.includes('/')) {
       const parts = s.split('/');
