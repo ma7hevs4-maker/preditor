@@ -483,6 +483,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
 
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
+  const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
   const hasData = regionalPlans.length > 0;
 
   // Per-type 24h averages (all types including LV/MK)
@@ -512,7 +513,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-sm">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
+          <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
@@ -664,6 +665,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
 
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
+  const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
 
   if (utPlans.length === 0) {
     return (
@@ -686,7 +688,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             {regionais.map(r => r.label).join(" · ")} — {format(selectedDate, "dd/MM/yyyy")}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-3 py-1">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
+        <Badge variant="secondary" className="text-base px-3 py-1">{declaredTeamsTotal} equipes</Badge>
       </div>
 
       {/* Turno averages */}
