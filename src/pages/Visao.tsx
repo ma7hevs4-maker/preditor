@@ -83,6 +83,13 @@ function avg(arr: number[], hours: readonly number[]): number {
   return Math.round(sum / hours.length);
 }
 
+function sumTurnoAverages(...series: number[][]): number {
+  return TURNOS.reduce((sum, turno) => {
+    const turnoTotal = series.reduce((seriesSum, arr) => seriesSum + avg(arr, turno.hours), 0);
+    return sum + turnoTotal;
+  }, 0);
+}
+
 // ---------- Detail Dialog ----------
 interface RegionalDetailDialogProps {
   open: boolean;
@@ -171,6 +178,7 @@ const RegionalDetailDialog = ({
     return s + BT_ONLY_TYPES.reduce((bs, type) => bs + (typePerHour[type]?.[h] || 0), 0);
   }, 0);
   const avgBT24h = Math.round(totalBT24h / 24);
+  const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
