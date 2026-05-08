@@ -1109,9 +1109,7 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
           countedPerHour[e.hour] += e.quantity;
         }
       });
-      // Sum of turno averages = avg_A + avg_B + avg_C
-      const sumTurnoAvgs = TURNOS.reduce((sum, turno) => sum + avgArr(countedPerHour, turno.hours), 0);
-      result[regional.label] = sumTurnoAvgs;
+      result[regional.label] = sumTurnoAverages(countedPerHour);
     });
     return result;
   }, [basesInGroup, plans, allTypeEntries]);
