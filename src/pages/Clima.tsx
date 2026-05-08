@@ -67,6 +67,10 @@ function avgArr(arr: number[], hours: readonly number[]): number {
   return Math.round(sum / hours.length);
 }
 
+function sumTurnoAverages(arr: number[]): number {
+  return TURNOS.reduce((sum, turno) => sum + avgArr(arr, turno.hours), 0);
+}
+
 function getRainLevel(mm: number) {
   if (mm >= 10) return { label: "Muito Forte", cls: "text-destructive bg-destructive/10" };
   if (mm >= 6) return { label: "Forte", cls: "text-warning bg-warning/10" };
@@ -178,6 +182,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
       return total;
     });
   }, [typePerHour]);
+  const declaredTeamsTotal = turnoTotals.reduce((sum, total) => sum + total, 0);
 
   // 24h totals
   const allHours = Array.from({ length: 24 }, (_, i) => i);
@@ -228,6 +233,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
               Estrutura Declarada - {regional.label}
             </DialogTitle>
             <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
               {hasSucursais && (
                 <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
                   <SelectTrigger className="w-[180px] h-8 text-sm">
@@ -1103,9 +1109,7 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
           countedPerHour[e.hour] += e.quantity;
         }
       });
-      // Sum of turno averages = avg_A + avg_B + avg_C
-      const sumTurnoAvgs = TURNOS.reduce((sum, turno) => sum + avgArr(countedPerHour, turno.hours), 0);
-      result[regional.label] = sumTurnoAvgs;
+      result[regional.label] = sumTurnoAverages(countedPerHour);
     });
     return result;
   }, [basesInGroup, plans, allTypeEntries]);

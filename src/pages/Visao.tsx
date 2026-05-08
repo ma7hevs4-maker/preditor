@@ -83,6 +83,13 @@ function avg(arr: number[], hours: readonly number[]): number {
   return Math.round(sum / hours.length);
 }
 
+function sumTurnoAverages(...series: number[][]): number {
+  return TURNOS.reduce((sum, turno) => {
+    const turnoTotal = series.reduce((seriesSum, arr) => seriesSum + avg(arr, turno.hours), 0);
+    return sum + turnoTotal;
+  }, 0);
+}
+
 // ---------- Detail Dialog ----------
 interface RegionalDetailDialogProps {
   open: boolean;
@@ -151,6 +158,14 @@ const RegionalDetailDialog = ({
     return arr;
   }, [filteredPlans]);
 
+  const btPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    filteredEntries.forEach(e => {
+      if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [filteredEntries]);
+
   const typePerHour = useMemo((): Record<string, number[]> => {
     const map: Record<string, number[]> = {};
     ALL_DISPLAY_TYPES.forEach(type => {
@@ -171,6 +186,7 @@ const RegionalDetailDialog = ({
     return s + BT_ONLY_TYPES.reduce((bs, type) => bs + (typePerHour[type]?.[h] || 0), 0);
   }, 0);
   const avgBT24h = Math.round(totalBT24h / 24);
+  const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
@@ -467,6 +483,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
 
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
+  const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
   const hasData = regionalPlans.length > 0;
 
   // Per-type 24h averages (all types including LV/MK)
@@ -496,7 +513,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-sm">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
+          <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
@@ -648,6 +665,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
 
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
+  const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
 
   if (utPlans.length === 0) {
     return (
@@ -670,7 +688,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             {regionais.map(r => r.label).join(" · ")} — {format(selectedDate, "dd/MM/yyyy")}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-3 py-1">{avgTotalTeams24h + avgBT24h} eq/h</Badge>
+        <Badge variant="secondary" className="text-base px-3 py-1">{declaredTeamsTotal} equipes</Badge>
       </div>
 
       {/* Turno averages */}
