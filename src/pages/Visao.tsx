@@ -158,6 +158,14 @@ const RegionalDetailDialog = ({
     return arr;
   }, [filteredPlans]);
 
+  const btPerHour = useMemo(() => {
+    const arr = Array(24).fill(0);
+    filteredEntries.forEach(e => {
+      if ((BT_ONLY_TYPES as readonly string[]).includes(e.team_type)) arr[e.hour] += e.quantity;
+    });
+    return arr;
+  }, [filteredEntries]);
+
   const typePerHour = useMemo((): Record<string, number[]> => {
     const map: Record<string, number[]> = {};
     ALL_DISPLAY_TYPES.forEach(type => {
