@@ -3,6 +3,7 @@ import { HelpCircle, Zap, CloudSun, Users, Eye, ChevronRight, Calculator, BarCha
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 type Section = "simulacao" | "clima" | "estrutura" | "visao" | "meu" | "config";
 
@@ -257,6 +258,50 @@ const ConfigHelp = () => (
   </div>
 );
 
+const RANKING_WEIGHT_DEFS: { key: string; label: string; higher: boolean }[] = [
+  { key: "ranking_weight_incidentes", label: "Incidentes", higher: true },
+  { key: "ranking_weight_dias", label: "Dias Trabalhados", higher: true },
+  { key: "ranking_weight_improdutivos", label: "Improdutivos", higher: false },
+  { key: "ranking_weight_reincidentes", label: "Reincidentes", higher: false },
+  { key: "ranking_weight_ociosidade", label: "Ociosidade", higher: false },
+  { key: "ranking_weight_inc_ociosidade", label: "Inc. Ociosid.", higher: false },
+  { key: "ranking_weight_login", label: "Login", higher: false },
+  { key: "ranking_weight_despacho", label: "Despacho", higher: false },
+  { key: "ranking_weight_plataforma", label: "T. Plataforma", higher: false },
+  { key: "ranking_weight_retorno", label: "Retorno Base", higher: false },
+];
+
+const RankingWeightsTable = () => {
+  const { data: settings } = useSystemSettings();
+  const rows = RANKING_WEIGHT_DEFS.map((d) => {
+    const s = settings?.find((x) => x.key === d.key);
+    const value = s ? Number(s.value) : 0;
+    return { ...d, value: isNaN(value) ? 0 : value };
+  }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+  return (
+    <div className="border border-border rounded-md overflow-hidden">
+      <table className="w-full text-[11px]">
+        <thead className="bg-muted/50">
+          <tr>
+            <th className="text-left px-2 py-1 font-medium">Métrica</th>
+            <th className="text-right px-2 py-1 font-medium">Peso</th>
+            <th className="text-left px-2 py-1 font-medium">Direção</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className="border-t border-border">
+              <td className="px-2 py-1">{r.label}</td>
+              <td className="px-2 py-1 text-right font-mono">{r.value}</td>
+              <td className="px-2 py-1">{r.higher ? "Maior é melhor" : "Menor é melhor"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const MeuHelp = () => (
   <div className="space-y-6 text-sm text-foreground/90">
     <div>
@@ -425,29 +470,7 @@ const MeuHelp = () => (
           Pontuação = Σ(métrica_normalizada × peso) / Σ(pesos_ativos) × 100
         </code>
         <p className="!mt-2"><strong>Pesos atuais em produção:</strong></p>
-        <div className="border border-border rounded-md overflow-hidden">
-          <table className="w-full text-[11px]">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left px-2 py-1 font-medium">Métrica</th>
-                <th className="text-right px-2 py-1 font-medium">Peso</th>
-                <th className="text-left px-2 py-1 font-medium">Direção</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t border-border"><td className="px-2 py-1">Incidentes</td><td className="px-2 py-1 text-right font-mono">20</td><td className="px-2 py-1">Maior é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">T. Plataforma</td><td className="px-2 py-1 text-right font-mono">20</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Ociosidade</td><td className="px-2 py-1 text-right font-mono">15</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Improdutivos</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Reincidentes</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Login</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Retorno Base</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Dias Trabalhados</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Maior é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Inc. Ociosid.</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Menor é melhor</td></tr>
-              <tr className="border-t border-border"><td className="px-2 py-1">Despacho</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Menor é melhor</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <RankingWeightsTable />
         <p>Equipes sem dados em Login, Despacho, T. Plataforma ou Retorno Base são sinalizadas com <strong>asterisco (*)</strong> — essas métricas são ignoradas no cálculo, mas as demais ainda contam.</p>
         <p>Os pesos podem ser ajustados em <strong>Configurações → aba Ranking</strong> (senha requerida). Peso 0 desativa a métrica.</p>
       </div>
