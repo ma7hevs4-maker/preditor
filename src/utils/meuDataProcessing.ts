@@ -233,9 +233,12 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     row["Data Fim"] = dataFim;
     const dataInicio = parseDate(row[dataInicioKey]);
     row["Data Início"] = dataInicio;
-    let horaAcao = horaParaDecimalSeguro(row["Hora da ação equipe"]);
+    let horaAcao = horaParaDecimalSeguro(row["Hora Atuação"] ?? row["Hora Atuacao"] ?? row["Hora da ação equipe"]);
 
-    const dataAcaoKey = rowKeys.find(k => k.toLowerCase().includes('data ação') || k.toLowerCase().includes('data acao'));
+    const dataAcaoKey = rowKeys.find(k => {
+      const lk = k.toLowerCase();
+      return lk.includes('data atuação') || lk.includes('data atuacao') || lk.includes('data ação') || lk.includes('data acao');
+    });
     
     let dataAcaoDate: Date | null = null;
     if (dataAcaoKey && row[dataAcaoKey]) {
@@ -299,10 +302,10 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     row["TMDE"] = row["TMD"] + row["TME"];
 
     row["Grupo Processos DESLOC"] = String(
-      row["Grupo Processos DESLOC"] || "Não informado",
+      row["Grupo Processos (Equipe atrib.)"] || row["Grupo Processos DESLOC"] || "Não informado",
     ).trim();
     row["Enel / Parceira DESLOC"] = String(
-      row["Enel / Parceira DESLOC"] || "Não informado",
+      row["Enel/Parceira (Equipe desloc.)"] || row["Enel / Parceira DESLOC"] || "Não informado",
     ).trim();
     row["Polo"] = String(row["Polo"] || "Não informado").trim();
 
