@@ -42,12 +42,14 @@ async function fetchRows(table: "saved_inc_rows" | "saved_m300_rows"): Promise<a
 }
 
 async function deleteAll() {
-  await Promise.all([
-    supabase.from("saved_inc_rows").delete().gte("id", 0),
-    supabase.from("saved_m300_rows").delete().gte("id", 0),
-    supabase.from("saved_upload_meta").delete().gte("saved_at", "1970-01-01"),
-    supabase.from("saved_processed_cache").delete().gte("created_at", "1970-01-01"),
-  ]);
+  // Use RPC (TRUNCATE) so the wipe is atomic and not subject to PostgREST
+  // row-cap quirks that previously left old rows behind and caused duplicates
+  // when re-saving.
+  const { error } = await (supabase as any).rpc("clear_saved_dashboard_data");
+  if (error) {
+    console.error("clear_saved_dashboard_data RPC failed:", error);
+    throw error;
+  }
 }
 
 async function batchInsert(

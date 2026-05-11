@@ -931,7 +931,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      clear_saved_dashboard_data: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
