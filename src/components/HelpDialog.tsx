@@ -412,6 +412,9 @@ const MeuHelp = () => (
           <li><strong>↓ Menor é melhor:</strong> Improdutivos, Reincidentes, Ociosidade, Inc. Ociosid., Login, Despacho, T. Plataforma, Retorno Base.</li>
         </ul>
         <p><strong>Como funciona:</strong></p>
+        <p className="!mt-2"><strong>O que é "métrica normalizada"?</strong></p>
+        <p>É o valor da métrica convertido para uma escala de <strong>0 a 1</strong>, em que 0 corresponde à pior equipe daquela métrica (entre as filtradas) e 1 à melhor. Isso permite somar métricas de unidades diferentes (ex.: minutos de ociosidade com quantidade de incidentes) numa mesma pontuação. A normalização é <em>relativa</em>: depende do conjunto de equipes exibido no momento.</p>
+        <p><strong>Passo a passo:</strong></p>
         <ol className="list-decimal list-inside pl-2 space-y-1">
           <li>Para cada métrica, normaliza-se o valor entre 0 e 1: <code className="bg-muted px-1 rounded">(valor - mín) / (máx - mín)</code>, considerando o mín/máx entre todas as equipes filtradas.</li>
           <li>Métricas "↓ melhor" são invertidas: <code className="bg-muted px-1 rounded">1 - normalizado</code>.</li>
