@@ -141,8 +141,17 @@ export function calculateShiftDate(date: Date | string, hour: number, shiftStart
 }
 
 export async function readExcelToJson(file: File): Promise<any[]> {
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data, { type: "array", cellDates: false });
+  const name = (file.name || "").toLowerCase();
+  const isCsv = name.endsWith(".csv") || name.endsWith(".txt");
+  let workbook: XLSX.WorkBook;
+  if (isCsv) {
+    // Read as text and let XLSX auto-detect the separator (comma, semicolon, tab)
+    const text = await file.text();
+    workbook = XLSX.read(text, { type: "string", cellDates: false, raw: true });
+  } else {
+    const data = await file.arrayBuffer();
+    workbook = XLSX.read(data, { type: "array", cellDates: false });
+  }
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
   return XLSX.utils.sheet_to_json(worksheet, { defval: null, raw: true });

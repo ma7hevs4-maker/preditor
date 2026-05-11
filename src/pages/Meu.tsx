@@ -134,7 +134,7 @@ export default function Meu() {
             <label className="block text-sm font-medium text-foreground mb-2">Base de Incidentes</label>
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               onChange={(e) => setIncFile(e.target.files?.[0] || null)}
               className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             />
@@ -144,7 +144,7 @@ export default function Meu() {
             <label className="block text-sm font-medium text-foreground mb-2">Base M300 (Opcional)</label>
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               onChange={(e) => setM300File(e.target.files?.[0] || null)}
               className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             />
