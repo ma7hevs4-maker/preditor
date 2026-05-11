@@ -424,6 +424,30 @@ const MeuHelp = () => (
         <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
           Pontuação = Σ(métrica_normalizada × peso) / Σ(pesos_ativos) × 100
         </code>
+        <p className="!mt-2"><strong>Pesos atuais em produção:</strong></p>
+        <div className="border border-border rounded-md overflow-hidden">
+          <table className="w-full text-[11px]">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-2 py-1 font-medium">Métrica</th>
+                <th className="text-right px-2 py-1 font-medium">Peso</th>
+                <th className="text-left px-2 py-1 font-medium">Direção</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-border"><td className="px-2 py-1">Incidentes</td><td className="px-2 py-1 text-right font-mono">20</td><td className="px-2 py-1">Maior é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">T. Plataforma</td><td className="px-2 py-1 text-right font-mono">20</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Ociosidade</td><td className="px-2 py-1 text-right font-mono">15</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Improdutivos</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Reincidentes</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Login</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Retorno Base</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Dias Trabalhados</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Maior é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Inc. Ociosid.</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Despacho</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Menor é melhor</td></tr>
+            </tbody>
+          </table>
+        </div>
         <p>Equipes sem dados em Login, Despacho, T. Plataforma ou Retorno Base são sinalizadas com <strong>asterisco (*)</strong> — essas métricas são ignoradas no cálculo, mas as demais ainda contam.</p>
         <p>Os pesos podem ser ajustados em <strong>Configurações → aba Ranking</strong> (senha requerida). Peso 0 desativa a métrica.</p>
       </div>
