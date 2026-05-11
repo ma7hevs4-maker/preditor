@@ -412,6 +412,9 @@ const MeuHelp = () => (
           <li><strong>↓ Menor é melhor:</strong> Improdutivos, Reincidentes, Ociosidade, Inc. Ociosid., Login, Despacho, T. Plataforma, Retorno Base.</li>
         </ul>
         <p><strong>Como funciona:</strong></p>
+        <p className="!mt-2"><strong>O que é "métrica normalizada"?</strong></p>
+        <p>É o valor da métrica convertido para uma escala de <strong>0 a 1</strong>, em que 0 corresponde à pior equipe daquela métrica (entre as filtradas) e 1 à melhor. Isso permite somar métricas de unidades diferentes (ex.: minutos de ociosidade com quantidade de incidentes) numa mesma pontuação. A normalização é <em>relativa</em>: depende do conjunto de equipes exibido no momento.</p>
+        <p><strong>Passo a passo:</strong></p>
         <ol className="list-decimal list-inside pl-2 space-y-1">
           <li>Para cada métrica, normaliza-se o valor entre 0 e 1: <code className="bg-muted px-1 rounded">(valor - mín) / (máx - mín)</code>, considerando o mín/máx entre todas as equipes filtradas.</li>
           <li>Métricas "↓ melhor" são invertidas: <code className="bg-muted px-1 rounded">1 - normalizado</code>.</li>
@@ -421,6 +424,30 @@ const MeuHelp = () => (
         <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
           Pontuação = Σ(métrica_normalizada × peso) / Σ(pesos_ativos) × 100
         </code>
+        <p className="!mt-2"><strong>Pesos atuais em produção:</strong></p>
+        <div className="border border-border rounded-md overflow-hidden">
+          <table className="w-full text-[11px]">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-2 py-1 font-medium">Métrica</th>
+                <th className="text-right px-2 py-1 font-medium">Peso</th>
+                <th className="text-left px-2 py-1 font-medium">Direção</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-border"><td className="px-2 py-1">Incidentes</td><td className="px-2 py-1 text-right font-mono">20</td><td className="px-2 py-1">Maior é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">T. Plataforma</td><td className="px-2 py-1 text-right font-mono">20</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Ociosidade</td><td className="px-2 py-1 text-right font-mono">15</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Improdutivos</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Reincidentes</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Login</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Retorno Base</td><td className="px-2 py-1 text-right font-mono">10</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Dias Trabalhados</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Maior é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Inc. Ociosid.</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Menor é melhor</td></tr>
+              <tr className="border-t border-border"><td className="px-2 py-1">Despacho</td><td className="px-2 py-1 text-right font-mono">0</td><td className="px-2 py-1">Menor é melhor</td></tr>
+            </tbody>
+          </table>
+        </div>
         <p>Equipes sem dados em Login, Despacho, T. Plataforma ou Retorno Base são sinalizadas com <strong>asterisco (*)</strong> — essas métricas são ignoradas no cálculo, mas as demais ainda contam.</p>
         <p>Os pesos podem ser ajustados em <strong>Configurações → aba Ranking</strong> (senha requerida). Peso 0 desativa a métrica.</p>
       </div>
