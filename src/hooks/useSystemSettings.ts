@@ -29,8 +29,7 @@ export const useUpdateSystemSetting = () => {
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
       const { error } = await supabase
         .from("system_settings")
-        .update({ value })
-        .eq("key", key);
+        .upsert({ key, value }, { onConflict: "key" });
       
       if (error) throw error;
     },
