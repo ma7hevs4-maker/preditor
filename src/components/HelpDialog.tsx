@@ -408,14 +408,21 @@ const MeuHelp = () => (
       <div className="space-y-2 text-xs text-muted-foreground">
         <p>A pontuação de cada equipe é calculada com base em métricas normalizadas com pesos configuráveis:</p>
         <ul className="list-disc list-inside pl-2 space-y-1">
-          <li><strong>Pontos positivos:</strong> Mais incidentes e maior ocupação.</li>
-          <li><strong>Pontos negativos:</strong> Improdutivos, reincidentes, ociosidade, inc. ociosidade, login, despacho, tempo de plataforma e retorno à base.</li>
+          <li><strong>↑ Maior é melhor:</strong> Incidentes, Dias Trabalhados.</li>
+          <li><strong>↓ Menor é melhor:</strong> Improdutivos, Reincidentes, Ociosidade, Inc. Ociosid., Login, Despacho, T. Plataforma, Retorno Base.</li>
         </ul>
-        <p>Equipes sem dados em login, despacho, T. plataforma ou retorno à base são sinalizadas com <strong>asterisco (*)</strong> — essas métricas são ignoradas no cálculo.</p>
-        <p>Os pesos podem ser ajustados em <strong>Configurações → aba Ranking</strong> (senha requerida).</p>
+        <p><strong>Como funciona:</strong></p>
+        <ol className="list-decimal list-inside pl-2 space-y-1">
+          <li>Para cada métrica, normaliza-se o valor entre 0 e 1: <code className="bg-muted px-1 rounded">(valor - mín) / (máx - mín)</code>, considerando o mín/máx entre todas as equipes filtradas.</li>
+          <li>Métricas "↓ melhor" são invertidas: <code className="bg-muted px-1 rounded">1 - normalizado</code>.</li>
+          <li>Multiplica-se cada valor normalizado pelo peso configurado e divide-se pela soma dos pesos ativos para a equipe (métricas sem dado são ignoradas).</li>
+          <li>Multiplica-se por 100 para obter a pontuação final (0–100).</li>
+        </ol>
         <code className="text-xs bg-muted px-2 py-1 rounded block mt-1">
           Pontuação = Σ(métrica_normalizada × peso) / Σ(pesos_ativos) × 100
         </code>
+        <p>Equipes sem dados em Login, Despacho, T. Plataforma ou Retorno Base são sinalizadas com <strong>asterisco (*)</strong> — essas métricas são ignoradas no cálculo, mas as demais ainda contam.</p>
+        <p>Os pesos podem ser ajustados em <strong>Configurações → aba Ranking</strong> (senha requerida). Peso 0 desativa a métrica.</p>
       </div>
     </div>
   </div>
