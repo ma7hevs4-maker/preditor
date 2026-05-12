@@ -33,10 +33,9 @@ export function horaParaDecimalSeguro(valor: any): number | null {
   // up the day number instead of the hour. Only happens with CSV input
   // because XLSX delivers Date objects.
   let timeStr = s;
-  if (s.includes(" ")) {
-    const parts = s.split(/\s+/);
-    const last = parts[parts.length - 1];
-    if (last.includes(":")) timeStr = last;
+  const trailingTime = s.match(/(\d{1,2}:\d{2}(?::\d{2})?)\s*$/);
+  if (trailingTime) {
+    timeStr = trailingTime[1];
   }
 
   // Try HH:MM:SS or HH:MM
@@ -206,7 +205,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       return new Date(Math.round((val - 25569) * 86400 * 1000));
     }
     if (typeof val === 'string') {
-      const parts = val.trim().split(' ');
+      const parts = val.trim().split(/\s+/);
       if (parts.length >= 2) {
         const dateParts = parts[0].split(/[-/]/);
         const timeParts = parts[1].split(':');
