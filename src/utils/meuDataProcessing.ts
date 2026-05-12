@@ -27,8 +27,20 @@ export function horaParaDecimalSeguro(valor: any): number | null {
 
   const s = String(valor).trim();
 
+  // If the string contains a date portion (e.g. "11/05/2026 10:55"),
+  // strip it so the time parser below sees only "10:55". Without this,
+  // splitting on ":" yields ["11/05/2026 10", "55"] and parseInt picks
+  // up the day number instead of the hour. Only happens with CSV input
+  // because XLSX delivers Date objects.
+  let timeStr = s;
+  if (s.includes(" ")) {
+    const parts = s.split(/\s+/);
+    const last = parts[parts.length - 1];
+    if (last.includes(":")) timeStr = last;
+  }
+
   // Try HH:MM:SS or HH:MM
-  const timeParts = s.split(":");
+  const timeParts = timeStr.split(":");
   if (timeParts.length >= 2) {
     const h = parseInt(timeParts[0], 10);
     const m = parseInt(timeParts[1], 10);
