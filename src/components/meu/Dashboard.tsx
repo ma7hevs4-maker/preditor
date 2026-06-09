@@ -37,7 +37,7 @@ import { TeamDetailModal } from "./TeamDetailModal";
 import { GestaoAVistaView } from "./GestaoAVistaView";
 import { M300SummaryDialog } from "./M300SummaryDialog";
 import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
-import { getInsourcingTypeFromEquipe } from "@/utils/meuDataProcessing";
+import { getInsourcingTypeFromEquipe, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -194,6 +194,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const s = String(value ?? "").trim();
     return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
   };
+
+  const countUniqueReincidentes = (rows: any[]) =>
+    new Set(
+      rows
+        .filter(isReincidenteCausadoRow)
+        .map((d) => normalizeIncidentNumber(d.Número))
+        .filter(Boolean),
+    ).size;
 
   const matchesSelectedDateFilter = (rowDateStr?: string | null) => {
     if (!rowDateStr) return false;
@@ -711,9 +719,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       ? filteredData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) /
         filteredData.length
       : 0;
-  const reincTotal = filteredData.filter(
-    (d) => d["Reincidente Causado"],
-  ).length;
+  const reincTotal = countUniqueReincidentes(filteredData);
   const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
   const improdTotal = filteredData.filter((d) => d.Improdutivo).length;
   const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
@@ -733,7 +739,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
     const ord2 = procData.filter((d) => d.ordem2).length;
-    const reinc = procData.filter((d) => d["Reincidente Causado"]).length;
+    const reinc = countUniqueReincidentes(procData);
     const tmde =
       procData.length > 0
         ? procData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / procData.length
@@ -1053,7 +1059,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const reinc = countUniqueReincidentes(eqData);
       const tmde =
         eqData.length > 0
           ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
@@ -1282,7 +1288,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           origTMDE: d.origTMDE,
           improdutivo: !!d.Improdutivo,
           ordem2: !!d.ordem2,
-          reincidenteCausado: !!d["Reincidente Causado"],
+          reincidenteCausado: isReincidenteCausadoRow(d),
           isM300Only: !!d.isM300Only,
           possivelO2: !!d.possivelO2,
           possivelAnomalia: !!d.possivelAnomalia,
@@ -2401,7 +2407,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                               {ord2Equipe ? "Sim" : "Não"}
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-muted-foreground">
-                              {row["Reincidente Causado"] ? "Sim" : "Não"}
+                              {isReincidenteCausadoRow(row) ? "Sim" : "Não"}
                             </td>
                             <td className={`px-4 py-2 whitespace-nowrap text-sm ${row.TME > (row.tempo_padrao || 60) ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
                               {row.TME != null ? (row.TME > (row.tempo_padrao || 60) ? `>${row.tempo_padrao || 60}min` : `<=${row.tempo_padrao || 60}min`) : row.TMDE}

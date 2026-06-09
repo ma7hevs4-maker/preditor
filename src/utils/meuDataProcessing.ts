@@ -106,6 +106,42 @@ export function getInsourcingTypeFromEquipe(row: any): string {
   return currentType;
 }
 
+const normalizeReincidenteText = (value: any): string =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ºª°]/g, "")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .toLowerCase()
+    .trim();
+
+export function getReincidenteTipoValue(row: any): any {
+  if (!row || typeof row !== "object") return undefined;
+  const key = Object.keys(row).find((k) => {
+    const normalizedKey = normalizeReincidenteText(k);
+    return normalizedKey.includes("reincidente") && normalizedKey.includes("tipo");
+  });
+  return key ? row[key] : undefined;
+}
+
+export function isReincidenteTipoCausador(value: any): boolean {
+  const tipo = normalizeReincidenteText(value)
+    .replace(/\bbt\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return [
+    "1 incidencia individual",
+    "1 incidencia coletiva",
+    "mt ramal 1 incidencia",
+    "mt tronco 1 incidencia",
+  ].includes(tipo);
+}
+
+export function isReincidenteCausadoRow(row: any): boolean {
+  return isReincidenteTipoCausador(getReincidenteTipoValue(row));
+}
+
 // Date parsing helper
 export const parseDate = (val: any) => {
   if (!val) return null;
@@ -388,38 +424,9 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     qtdDeslocamentos: displacementCounts[row["Número"]] || 1
   }));
 
-  // Reincidente Causado: usa a coluna "Reincidente tipo" da base.
-  // Conta como gerador de reincidência qualquer linha cujo valor contenha
-  // "1" e "incidencia" (cobre os 4 rótulos: Individual, Coletiva,
-  // MT RAMAL 1ª Incidência, MT TRONCO 1ª Incidência).
-  const normReinc = (s: string) =>
-    String(s ?? "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[ºª]/g, "")
-      .toLowerCase()
-      .trim();
-
-  let reincTipoKey: string | null = null;
-  for (const row of filteredInc) {
-    if (!row) continue;
-    const found = Object.keys(row).find((k) => {
-      const n = normReinc(k);
-      return n.includes("reincidente") && n.includes("tipo");
-    });
-    if (found) {
-      reincTipoKey = found;
-      break;
-    }
-  }
-
-  if (filteredInc[0]) {
-    console.log("[Reincidente] coluna detectada:", reincTipoKey, "| headers:", Object.keys(filteredInc[0]));
-  }
-
+  // Reincidente Causado: somente pela coluna "Reincidente tipo".
   filteredInc.forEach((row: any) => {
-    const v = reincTipoKey ? normReinc(row[reincTipoKey]) : "";
-    row["Reincidente Causado"] = v.includes("1") && v.includes("incidencia");
+    row["Reincidente Causado"] = isReincidenteCausadoRow(row);
   });
 
   // Process m300
