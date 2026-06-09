@@ -1059,7 +1059,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter(isReincidenteCausadoRow).length;
+      const reinc = countUniqueReincidentes(eqData);
       const tmde =
         eqData.length > 0
           ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
