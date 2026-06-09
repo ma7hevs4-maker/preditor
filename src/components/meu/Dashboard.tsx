@@ -498,9 +498,30 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
   // If the last event before logoff is an interval, use interval start instead
   const calcRetornoBase = (eqData: any[]): number | null => {
+    // Include M300-only rows for same team(s)/date(s) so last-activity end matches the timeline
+    const teams = new Set<string>();
+    const dates = new Set<string>();
+    eqData.forEach((d) => {
+      if (d["Equipe Desl."]) teams.add(d["Equipe Desl."]);
+      const dt = d["Data Turno"] || d["Data Ação"];
+      if (dt) dates.add(dt);
+    });
+    const incidentKeys = new Set(
+      eqData.map((d) => normalizeIncidentNumber(d["Número"])).filter(Boolean)
+    );
+    const m300Extra = data.filter((d) => {
+      if (!d.isM300Only) return false;
+      if (!teams.has(d["Equipe Desl."])) return false;
+      const dt = d["Data Referência"] || d["Data M300"] || d["Data Turno"] || d["Data Ação"];
+      if (!dates.has(dt)) return false;
+      const num = normalizeIncidentNumber(d["Número"] || d["Incidente_M300"]);
+      return !!num && !incidentKeys.has(num);
+    });
+    const mergedData = [...eqData, ...m300Extra];
+
     const logoffVal = (() => {
       let best: number | null = null;
-      eqData.forEach(d => {
+      mergedData.forEach(d => {
         const raw = d["Log Off Corrigido"] || d["Log Off"];
         const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
         if (dec != null && (best === null || dec > best)) best = dec;
@@ -510,7 +531,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     if (logoffVal == null) return null;
 
     // Last incident end = latest (inicio_decimal + TMD/60 + TME/60)
-    const sorted = eqData
+    const sorted = mergedData
       .filter(d => d.hora_aux_ordenacao != null)
       .sort((a, b) => {
         const endA = (a.hora_aux_ordenacao || 0) + (Number(a.TMD) || 0) / 60 + (Number(a.TME) || 0) / 60;
@@ -525,7 +546,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     // Check interval start time
     const intervalStartVal = (() => {
       let val: number | null = null;
-      eqData.forEach(d => {
+      mergedData.forEach(d => {
         const raw = d["Inicio intervalo"] || d["Inicio Intervalo"];
         const dec = convertToDecimalHours(raw, d["Data Turno"] || d["Data Ação"]);
         if (dec != null && (val === null || dec > val)) val = dec;
