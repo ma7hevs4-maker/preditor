@@ -539,12 +539,12 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                 {ev.reincidenteCausado && xFimTotal > xInicio && (
                                   <rect
                                     x={xInicio}
-                                    y={yRect + rectHeight / 2 - 1.5}
+                                    y={yRect + rectHeight / 2 - 2}
                                     width={xFimTotal - xInicio}
-                                    height={3}
+                                    height={4}
                                     fill={COLORS.error}
                                     stroke="black"
-                                    strokeWidth="1.5"
+                                    strokeWidth="0.5"
                                     vectorEffect="non-scaling-stroke"
                                   />
                                 )}
