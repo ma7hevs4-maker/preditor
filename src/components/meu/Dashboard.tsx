@@ -1927,6 +1927,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <option value="anomalia">Possível Anomalia</option>
                       </select>
                     </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Retorno à Base &gt; 40 min</label>
+                      <select
+                        value={retornoBase40Filter}
+                        onChange={(e) => setRetornoBase40Filter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="border-t border-border pt-4 space-y-4">
