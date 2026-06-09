@@ -106,6 +106,42 @@ export function getInsourcingTypeFromEquipe(row: any): string {
   return currentType;
 }
 
+const normalizeReincidenteText = (value: any): string =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[ºª°]/g, "")
+    .replace(/[^a-z0-9]+/gi, " ")
+    .toLowerCase()
+    .trim();
+
+export function getReincidenteTipoValue(row: any): any {
+  if (!row || typeof row !== "object") return undefined;
+  const key = Object.keys(row).find((k) => {
+    const normalizedKey = normalizeReincidenteText(k);
+    return normalizedKey.includes("reincidente") && normalizedKey.includes("tipo");
+  });
+  return key ? row[key] : undefined;
+}
+
+export function isReincidenteTipoCausador(value: any): boolean {
+  const tipo = normalizeReincidenteText(value)
+    .replace(/\bbt\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return [
+    "1 incidencia individual",
+    "1 incidencia coletiva",
+    "mt ramal 1 incidencia",
+    "mt tronco 1 incidencia",
+  ].includes(tipo);
+}
+
+export function isReincidenteCausadoRow(row: any): boolean {
+  return isReincidenteTipoCausador(getReincidenteTipoValue(row));
+}
+
 // Date parsing helper
 export const parseDate = (val: any) => {
   if (!val) return null;
