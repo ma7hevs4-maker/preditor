@@ -1469,6 +1469,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     selectedIncidents.length > 0,
     tmdeAbove150Filter !== "todos",
     o2AnomaliaFilter !== "todos",
+    retornoBase40Filter !== "todos",
   ].filter(Boolean).length;
 
   if (isInvalidData) {
