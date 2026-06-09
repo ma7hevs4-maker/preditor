@@ -114,6 +114,7 @@ export function TeamDetailModal({
           origTMDE: d.origTMDE,
           improdutivo: !!d.Improdutivo,
           ordem2: !!d.ordem2,
+          reincidenteCausado: !!d["Reincidente Causado"],
           isM300Only: !!d.isM300Only,
           possivelO2: !!d.possivelO2,
           possivelAnomalia: !!d.possivelAnomalia,
