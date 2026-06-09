@@ -195,6 +195,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
   };
 
+  const countUniqueReincidentes = (rows: any[]) =>
+    new Set(
+      rows
+        .filter(isReincidenteCausadoRow)
+        .map((d) => normalizeIncidentNumber(d.Número))
+        .filter(Boolean),
+    ).size;
+
   const matchesSelectedDateFilter = (rowDateStr?: string | null) => {
     if (!rowDateStr) return false;
 
@@ -711,7 +719,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       ? filteredData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) /
         filteredData.length
       : 0;
-  const reincTotal = filteredData.filter(isReincidenteCausadoRow).length;
+  const reincTotal = countUniqueReincidentes(filteredData);
   const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
   const improdTotal = filteredData.filter((d) => d.Improdutivo).length;
   const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
@@ -731,7 +739,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
     const ord2 = procData.filter((d) => d.ordem2).length;
-    const reinc = procData.filter(isReincidenteCausadoRow).length;
+    const reinc = countUniqueReincidentes(procData);
     const tmde =
       procData.length > 0
         ? procData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / procData.length
