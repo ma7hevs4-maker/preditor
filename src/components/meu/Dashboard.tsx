@@ -189,6 +189,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
   const [tmdeAbove150Filter, setTmdeAbove150Filter] = useState<string>("todos");
   const [o2AnomaliaFilter, setO2AnomaliaFilter] = useState<string>("todos");
+  const [retornoBase40Filter, setRetornoBase40Filter] = useState<string>("todos");
 
   const normalizeIncidentNumber = (value: any) => {
     const s = String(value ?? "").trim();
