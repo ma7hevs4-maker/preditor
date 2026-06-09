@@ -283,7 +283,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return teams;
   }, [dataFilteredByBasics]);
 
-  const filteredData = useMemo(() => {
+  const filteredDataPreRetorno = useMemo(() => {
     let result = dataFilteredByBasics;
     
     if (tmdeAbove150Filter !== "todos") {
