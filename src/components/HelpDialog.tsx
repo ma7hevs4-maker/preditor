@@ -340,7 +340,7 @@ const MeuHelp = () => (
       <div className="space-y-2 text-xs text-muted-foreground">
         <div>
           <p className="font-medium text-foreground">Reincidente:</p>
-          <p>Incidentes com o mesmo número de cliente após um incidente anterior da mesma equipe.</p>
+          <p>Incidentes que <strong>geraram reincidência</strong>, identificados pela coluna <code>Reincidente tipo</code> com um dos valores: <em>1ª Incidência Individual</em>, <em>1ª Incidência Coletiva</em>, <em>MT RAMAL 1ª Incidência</em> ou <em>MT TRONCO 1ª Incidência</em>. Na linha do tempo aparecem com uma linha vermelha no centro do bloco.</p>
         </div>
         <div>
           <p className="font-medium text-foreground">Improdutivo:</p>

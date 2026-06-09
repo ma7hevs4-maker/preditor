@@ -13,6 +13,7 @@ interface TimelineEvent {
   origTMDE?: number;
   improdutivo: boolean;
   ordem2: boolean;
+  reincidenteCausado?: boolean;
   isM300Only?: boolean;
   possivelO2?: boolean;
   possivelAnomalia?: boolean;
@@ -532,6 +533,18 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                       <rect x={xInicio} y={yRect + rectHeight / 2 + 4} width={xFimTotal - xInicio} height={2} fill={COLORS.foreground} vectorEffect="non-scaling-stroke" />
                                     )}
                                   </g>
+                                )}
+
+                                {/* Reincidente Causado - Red Stripe */}
+                                {ev.reincidenteCausado && xFimTotal > xInicio && (
+                                  <rect
+                                    x={xInicio}
+                                    y={yRect + rectHeight / 2 - 1}
+                                    width={xFimTotal - xInicio}
+                                    height={2}
+                                    fill={COLORS.error}
+                                    vectorEffect="non-scaling-stroke"
+                                  />
                                 )}
 
                                 {/* Possível O2 Purple Stripe */}

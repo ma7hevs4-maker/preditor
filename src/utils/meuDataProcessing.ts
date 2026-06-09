@@ -388,22 +388,55 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     qtdDeslocamentos: displacementCounts[row["Número"]] || 1
   }));
 
-  // Sort for Reincidente
-  filteredInc.sort((a, b) => {
-    if (a["Nº Cliente"] !== b["Nº Cliente"])
-      return a["Nº Cliente"].localeCompare(b["Nº Cliente"]);
-    if (a["Data Ação"] !== b["Data Ação"])
-      return (a["Data Ação"] || "").localeCompare(b["Data Ação"] || "");
-    return a["hora_aux_ordenacao"] - b["hora_aux_ordenacao"];
-  });
+  // Reincidente Causado: prefer the official "Reincidente tipo" column when
+  // available. Values that mark a "first incidence" (parent of a reincidence)
+  // are the ones that count as causing a reincidência.
+  const normalizeReincTipo = (v: any) =>
+    String(v ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[ºª]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  const FIRST_INCIDENCE_TIPOS = new Set([
+    "1 incidencia individual",
+    "1 incidencia coletiva",
+    "mt ramal 1 incidencia",
+    "mt tronco 1 incidencia",
+  ]);
+  const getReincTipo = (row: any) =>
+    row["Reincidente tipo"] ??
+    row["Reincidente Tipo"] ??
+    row["Reincidência tipo"] ??
+    row["Reincidencia tipo"] ??
+    row["reincidente tipo"];
+  const hasReincTipoColumn = filteredInc.some(
+    (r: any) => getReincTipo(r) != null && String(getReincTipo(r)).trim() !== ""
+  );
 
-  for (let i = 0; i < filteredInc.length - 1; i++) {
-    filteredInc[i]["Reincidente Causado"] =
-      filteredInc[i]["Nº Cliente"] === filteredInc[i + 1]["Nº Cliente"] &&
-      filteredInc[i]["Nº Cliente"] !== "";
-  }
-  if (filteredInc.length > 0) {
-    filteredInc[filteredInc.length - 1]["Reincidente Causado"] = false;
+  if (hasReincTipoColumn) {
+    filteredInc.forEach((row: any) => {
+      const tipo = normalizeReincTipo(getReincTipo(row));
+      row["Reincidente Causado"] = FIRST_INCIDENCE_TIPOS.has(tipo);
+    });
+  } else {
+    // Fallback (legacy): same client number followed by another occurrence.
+    filteredInc.sort((a, b) => {
+      if (a["Nº Cliente"] !== b["Nº Cliente"])
+        return a["Nº Cliente"].localeCompare(b["Nº Cliente"]);
+      if (a["Data Ação"] !== b["Data Ação"])
+        return (a["Data Ação"] || "").localeCompare(b["Data Ação"] || "");
+      return a["hora_aux_ordenacao"] - b["hora_aux_ordenacao"];
+    });
+    for (let i = 0; i < filteredInc.length - 1; i++) {
+      filteredInc[i]["Reincidente Causado"] =
+        filteredInc[i]["Nº Cliente"] === filteredInc[i + 1]["Nº Cliente"] &&
+        filteredInc[i]["Nº Cliente"] !== "";
+    }
+    if (filteredInc.length > 0) {
+      filteredInc[filteredInc.length - 1]["Reincidente Causado"] = false;
+    }
   }
 
   // Process m300
