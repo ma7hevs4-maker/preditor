@@ -543,7 +543,7 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                     width={xFimTotal - xInicio}
                                     height={3}
                                     fill={COLORS.error}
-                                    stroke="white"
+                                    stroke="black"
                                     strokeWidth="1.5"
                                     vectorEffect="non-scaling-stroke"
                                   />
