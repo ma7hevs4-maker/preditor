@@ -25,6 +25,19 @@ type UT = "UTS" | "UTN";
 
 const processosOrdem = ["Emergência", "Comercial", "Perdas", "Poda", "Linha Viva"];
 
+const normalizeIncidentNumber = (value: any) => {
+  const s = String(value ?? "").trim();
+  return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
+};
+
+const countUniqueReincidentes = (rows: any[]) =>
+  new Set(
+    rows
+      .filter(isReincidenteCausadoRow)
+      .map((d) => normalizeIncidentNumber(d.Número))
+      .filter(Boolean),
+  ).size;
+
 function matchPoloName(rawPolo: string): string | null {
   if (!rawPolo || rawPolo === "Não informado") return null;
   const allPolos = [...UTS_POLOS, ...UTN_POLOS];
@@ -182,7 +195,7 @@ function PoloCard({
   // KPIs
   const totalInc = new Set(data.map((d) => d.Número)).size;
   const tmdeMedio = data.length > 0 ? data.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / data.length : 0;
-  const reincTotal = data.filter(isReincidenteCausadoRow).length;
+  const reincTotal = countUniqueReincidentes(data);
   const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
   const improdTotal = data.filter((d) => d.Improdutivo).length;
   const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
@@ -226,7 +239,7 @@ function PoloCard({
     const inc = new Set(procData.map((d) => d.Número)).size;
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
-    const reinc = procData.filter(isReincidenteCausadoRow).length;
+    const reinc = countUniqueReincidentes(procData);
 
     const uniqueTeams = new Set<string>();
     procData.forEach((d) => {
@@ -280,7 +293,7 @@ function PoloCard({
       ).size || 1;
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter(isReincidenteCausadoRow).length;
+      const reinc = countUniqueReincidentes(eqData);
       const tmde = eqData.length > 0 ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length : 0;
       const ord2 = eqData.filter((d) => d.ordem2).length;
       const ocupacao = calculateOccupancy(eqData);
