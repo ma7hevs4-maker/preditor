@@ -1051,7 +1051,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const reinc = eqData.filter(isReincidenteCausadoRow).length;
       const tmde =
         eqData.length > 0
           ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length
@@ -1280,7 +1280,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           origTMDE: d.origTMDE,
           improdutivo: !!d.Improdutivo,
           ordem2: !!d.ordem2,
-          reincidenteCausado: !!d["Reincidente Causado"],
+          reincidenteCausado: isReincidenteCausadoRow(d),
           isM300Only: !!d.isM300Only,
           possivelO2: !!d.possivelO2,
           possivelAnomalia: !!d.possivelAnomalia,
@@ -2399,7 +2399,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                               {ord2Equipe ? "Sim" : "Não"}
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-muted-foreground">
-                              {row["Reincidente Causado"] ? "Sim" : "Não"}
+                              {isReincidenteCausadoRow(row) ? "Sim" : "Não"}
                             </td>
                             <td className={`px-4 py-2 whitespace-nowrap text-sm ${row.TME > (row.tempo_padrao || 60) ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
                               {row.TME != null ? (row.TME > (row.tempo_padrao || 60) ? `>${row.tempo_padrao || 60}min` : `<=${row.tempo_padrao || 60}min`) : row.TMDE}
