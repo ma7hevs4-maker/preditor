@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { X, Calendar, Star, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TimelineChart } from "./TimelineChart";
-import { getShiftStartHour } from "@/utils/meuDataProcessing";
+import { getShiftStartHour, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 
 interface TeamDetailModalProps {
   team: any; // The ranking row data
@@ -114,7 +114,7 @@ export function TeamDetailModal({
           origTMDE: d.origTMDE,
           improdutivo: !!d.Improdutivo,
           ordem2: !!d.ordem2,
-          reincidenteCausado: !!d["Reincidente Causado"],
+          reincidenteCausado: isReincidenteCausadoRow(d),
           isM300Only: !!d.isM300Only,
           possivelO2: !!d.possivelO2,
           possivelAnomalia: !!d.possivelAnomalia,
