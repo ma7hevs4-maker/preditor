@@ -189,6 +189,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
   const [tmdeAbove150Filter, setTmdeAbove150Filter] = useState<string>("todos");
   const [o2AnomaliaFilter, setO2AnomaliaFilter] = useState<string>("todos");
+  const [retornoBase40Filter, setRetornoBase40Filter] = useState<string>("todos");
 
   const normalizeIncidentNumber = (value: any) => {
     const s = String(value ?? "").trim();
@@ -282,7 +283,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return teams;
   }, [dataFilteredByBasics]);
 
-  const filteredData = useMemo(() => {
+  const filteredDataPreRetorno = useMemo(() => {
     let result = dataFilteredByBasics;
     
     if (tmdeAbove150Filter !== "todos") {
@@ -546,6 +547,34 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const diff = (logoffVal - returnStart) * 60; // minutes
     return diff > 0 ? diff : null;
   };
+
+  // Teams that had retorno a base > 40 min on any day within the filtered scope
+  const teamsWithRetornoAbove40 = useMemo(() => {
+    const teams = new Set<string>();
+    const byTeamDate: Record<string, any[]> = {};
+    filteredDataPreRetorno.forEach((d) => {
+      const eq = d["Equipe Desl."];
+      const date = d["Data Turno"] || d["Data Ação"];
+      if (!eq || !date) return;
+      const key = `${eq}||${date}`;
+      if (!byTeamDate[key]) byTeamDate[key] = [];
+      byTeamDate[key].push(d);
+    });
+    Object.entries(byTeamDate).forEach(([key, rows]) => {
+      const eq = key.split("||")[0];
+      const ret = calcRetornoBase(rows);
+      if (ret != null && ret > 40) teams.add(eq);
+    });
+    return teams;
+  }, [filteredDataPreRetorno]);
+
+  const filteredData = useMemo(() => {
+    if (retornoBase40Filter === "todos") return filteredDataPreRetorno;
+    return filteredDataPreRetorno.filter((d) => {
+      const has = teamsWithRetornoAbove40.has(d["Equipe Desl."]);
+      return retornoBase40Filter === "sim" ? has : !has;
+    });
+  }, [filteredDataPreRetorno, retornoBase40Filter, teamsWithRetornoAbove40]);
 
   // Check if a day's shift is complete (has Logoff recorded)
   const isDayShiftComplete = (dayData: any[]): boolean => {
@@ -1440,6 +1469,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     selectedIncidents.length > 0,
     tmdeAbove150Filter !== "todos",
     o2AnomaliaFilter !== "todos",
+    retornoBase40Filter !== "todos",
   ].filter(Boolean).length;
 
   if (isInvalidData) {
@@ -1895,6 +1925,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <option value="todos">Todos</option>
                         <option value="o2">Possível O2</option>
                         <option value="anomalia">Possível Anomalia</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Retorno à Base &gt; 40 min</label>
+                      <select
+                        value={retornoBase40Filter}
+                        onChange={(e) => setRetornoBase40Filter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todos</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
                       </select>
                     </div>
                   </div>
