@@ -3,6 +3,7 @@ import { ArrowLeft, Trophy, AlertTriangle, Clock, BarChart3, XCircle, LogIn, Nav
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UTS_POLOS, UTN_POLOS, POLO_TO_UT, calculateRankingScores, RankingWeights, TeamRankingData } from "@/utils/rankingScoring";
+import { isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 
 interface PoloAnalysisViewProps {
   filteredData: any[];
@@ -181,7 +182,7 @@ function PoloCard({
   // KPIs
   const totalInc = new Set(data.map((d) => d.Número)).size;
   const tmdeMedio = data.length > 0 ? data.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / data.length : 0;
-  const reincTotal = data.filter((d) => d["Reincidente Causado"]).length;
+  const reincTotal = data.filter(isReincidenteCausadoRow).length;
   const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
   const improdTotal = data.filter((d) => d.Improdutivo).length;
   const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
@@ -225,7 +226,7 @@ function PoloCard({
     const inc = new Set(procData.map((d) => d.Número)).size;
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
-    const reinc = procData.filter((d) => d["Reincidente Causado"]).length;
+    const reinc = procData.filter(isReincidenteCausadoRow).length;
 
     const uniqueTeams = new Set<string>();
     procData.forEach((d) => {
@@ -279,7 +280,7 @@ function PoloCard({
       ).size || 1;
       const inc = new Set(eqData.map((d) => d.Número)).size;
       const imp = eqData.filter((d) => d.Improdutivo).length;
-      const reinc = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const reinc = eqData.filter(isReincidenteCausadoRow).length;
       const tmde = eqData.length > 0 ? eqData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / eqData.length : 0;
       const ord2 = eqData.filter((d) => d.ordem2).length;
       const ocupacao = calculateOccupancy(eqData);
