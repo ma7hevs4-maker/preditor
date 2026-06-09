@@ -37,7 +37,7 @@ import { TeamDetailModal } from "./TeamDetailModal";
 import { GestaoAVistaView } from "./GestaoAVistaView";
 import { M300SummaryDialog } from "./M300SummaryDialog";
 import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
-import { getInsourcingTypeFromEquipe } from "@/utils/meuDataProcessing";
+import { getInsourcingTypeFromEquipe, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -711,9 +711,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       ? filteredData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) /
         filteredData.length
       : 0;
-  const reincTotal = filteredData.filter(
-    (d) => d["Reincidente Causado"],
-  ).length;
+  const reincTotal = filteredData.filter(isReincidenteCausadoRow).length;
   const taxaReinc = totalInc > 0 ? reincTotal / totalInc : 0;
   const improdTotal = filteredData.filter((d) => d.Improdutivo).length;
   const taxaImprod = totalInc > 0 ? improdTotal / totalInc : 0;
@@ -733,7 +731,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
     const imp = procData.filter((d) => d.Improdutivo).length;
     const ord2 = procData.filter((d) => d.ordem2).length;
-    const reinc = procData.filter((d) => d["Reincidente Causado"]).length;
+    const reinc = procData.filter(isReincidenteCausadoRow).length;
     const tmde =
       procData.length > 0
         ? procData.reduce((acc, curr) => acc + (Number(curr.TMDE) || 0), 0) / procData.length
