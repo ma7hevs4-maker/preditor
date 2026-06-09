@@ -292,6 +292,19 @@ function matchPoloName(rawPolo: string): string | null {
   return rawPolo;
 }
 
+const normalizeIncidentNumber = (value: any) => {
+  const s = String(value ?? "").trim();
+  return /^\d+$/.test(s) ? s.replace(/^0+/, "") : s;
+};
+
+const countUniqueReincidentes = (rows: any[]) =>
+  new Set(
+    rows
+      .filter(isReincidenteCausadoRow)
+      .map((d) => normalizeIncidentNumber(d.Número))
+      .filter(Boolean),
+  ).size;
+
 interface TeamData {
   equipe: string;
   dias: number;
@@ -379,7 +392,7 @@ export function GestaoAVistaView({
       ).size || 1;
       const incTotal = new Set(eqData.map((d) => d.Número)).size;
       const impTotal = eqData.filter((d) => d.Improdutivo).length;
-      const reincTotal = eqData.filter(isReincidenteCausadoRow).length;
+      const reincTotal = countUniqueReincidentes(eqData);
       const ord2Total = eqData.filter((d) => d.ordem2).length;
       const inc = incTotal / dias;
       const imp = impTotal / dias;
