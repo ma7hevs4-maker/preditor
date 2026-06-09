@@ -535,6 +535,18 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                                   </g>
                                 )}
 
+                                {/* Reincidente Causado - Red Stripe */}
+                                {ev.reincidenteCausado && xFimTotal > xInicio && (
+                                  <rect
+                                    x={xInicio}
+                                    y={yRect + rectHeight / 2 - 1}
+                                    width={xFimTotal - xInicio}
+                                    height={2}
+                                    fill={COLORS.error}
+                                    vectorEffect="non-scaling-stroke"
+                                  />
+                                )}
+
                                 {/* Possível O2 Purple Stripe */}
                                 {ev.possivelO2 && xFimTotal > xInicio && (
                                   <g>
