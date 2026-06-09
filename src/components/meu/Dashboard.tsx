@@ -548,6 +548,34 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return diff > 0 ? diff : null;
   };
 
+  // Teams that had retorno a base > 40 min on any day within the filtered scope
+  const teamsWithRetornoAbove40 = useMemo(() => {
+    const teams = new Set<string>();
+    const byTeamDate: Record<string, any[]> = {};
+    filteredDataPreRetorno.forEach((d) => {
+      const eq = d["Equipe Desl."];
+      const date = d["Data Turno"] || d["Data Ação"];
+      if (!eq || !date) return;
+      const key = `${eq}||${date}`;
+      if (!byTeamDate[key]) byTeamDate[key] = [];
+      byTeamDate[key].push(d);
+    });
+    Object.entries(byTeamDate).forEach(([key, rows]) => {
+      const eq = key.split("||")[0];
+      const ret = calcRetornoBase(rows);
+      if (ret != null && ret > 40) teams.add(eq);
+    });
+    return teams;
+  }, [filteredDataPreRetorno]);
+
+  const filteredData = useMemo(() => {
+    if (retornoBase40Filter === "todos") return filteredDataPreRetorno;
+    return filteredDataPreRetorno.filter((d) => {
+      const has = teamsWithRetornoAbove40.has(d["Equipe Desl."]);
+      return retornoBase40Filter === "sim" ? has : !has;
+    });
+  }, [filteredDataPreRetorno, retornoBase40Filter, teamsWithRetornoAbove40]);
+
   // Check if a day's shift is complete (has Logoff recorded)
   const isDayShiftComplete = (dayData: any[]): boolean => {
     return dayData.some(d => {
