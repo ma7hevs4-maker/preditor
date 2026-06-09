@@ -23,6 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 import {
   Select,
   SelectContent,
@@ -378,7 +379,7 @@ export function GestaoAVistaView({
       ).size || 1;
       const incTotal = new Set(eqData.map((d) => d.Número)).size;
       const impTotal = eqData.filter((d) => d.Improdutivo).length;
-      const reincTotal = eqData.filter((d) => d["Reincidente Causado"]).length;
+      const reincTotal = eqData.filter(isReincidenteCausadoRow).length;
       const ord2Total = eqData.filter((d) => d.ordem2).length;
       const inc = incTotal / dias;
       const imp = impTotal / dias;
