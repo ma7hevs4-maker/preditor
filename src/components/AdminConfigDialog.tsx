@@ -195,6 +195,64 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
     }));
   };
 
+  // Field order matches table columns (BT Prod, BT Entrada, BT Ret.Op, MT Prod, MT Entrada, MT Ret.Op)
+  const HISTORICAL_FIELDS = [
+    "bt_productivity",
+    "bt_entry_rate",
+    "bt_operator_removal",
+    "mt_productivity",
+    "mt_entry_rate",
+    "mt_operator_removal",
+  ] as const;
+
+  // Paste handler: supports pasting a full column (one value per line) or a block (tab/comma separated)
+  // starting at the focused cell. Works for both single-cell and multi-cell pastes from Excel.
+  const handlePasteHistorical = (
+    e: React.ClipboardEvent<HTMLInputElement>,
+    startRowIndex: number,
+    startFieldIndex: number,
+  ) => {
+    if (!historicalData) return;
+    const text = e.clipboardData.getData("text");
+    if (!text) return;
+    // Only intercept when there's multi-cell data
+    const rows = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.length > 0);
+    if (rows.length === 0) return;
+    const looksMulti = rows.length > 1 || /[\t;,]/.test(rows[0]);
+    if (!looksMulti) return; // let the default single-value paste happen
+    e.preventDefault();
+
+    const parseNum = (s: string): number | null => {
+      const cleaned = s.trim().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+      // If the original used "." as decimal (e.g. "0.72"), the above breaks it; try fallback.
+      const direct = parseFloat(s.trim().replace(",", "."));
+      const v = isNaN(direct) ? parseFloat(cleaned) : direct;
+      return isNaN(v) ? null : v;
+    };
+
+    setEditedHistoricalData(prev => {
+      const next = { ...prev };
+      rows.forEach((line, dr) => {
+        const targetRow = historicalData[startRowIndex + dr];
+        if (!targetRow) return;
+        const cells = line.split(/\t|;|,(?=\s*-?\d)|,/);
+        cells.forEach((cell, dc) => {
+          const fieldIdx = startFieldIndex + dc;
+          if (fieldIdx >= HISTORICAL_FIELDS.length) return;
+          const num = parseNum(cell);
+          if (num === null) return;
+          const field = HISTORICAL_FIELDS[fieldIdx];
+          next[targetRow.id] = {
+            ...next[targetRow.id],
+            [field]: num,
+          };
+        });
+      });
+      return next;
+    });
+    toast.success(`${rows.length} linha(s) coladas`);
+  };
+
   // Save all historical data changes
   const handleSaveHistoricalData = async () => {
     if (!historicalData) return;
