@@ -1127,6 +1127,31 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
     return result;
   }, [basesInGroup, plans, allTypeEntries]);
 
+  // Compute Eq/h per individual base (sucursal)
+  const eqhPerBase = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
+    basesInGroup.forEach(({ bases }) => {
+      bases.forEach(base => {
+        const basePlans = plans.filter(p => p.base_id === base.id);
+        if (basePlans.length === 0) {
+          result[base.id] = null;
+          return;
+        }
+        const planIds = basePlans.map(p => p.id);
+        const entries = allTypeEntries.filter(e => planIds.includes(e.daily_plan_id));
+        const countedPerHour = Array(24).fill(0);
+        entries.forEach(e => {
+          if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+            countedPerHour[e.hour] += e.quantity;
+          }
+        });
+        result[base.id] = sumTurnoAverages(countedPerHour);
+      });
+    });
+    return result;
+  }, [basesInGroup, plans, allTypeEntries]);
+
   return (
     <>
       <div className={cn(
@@ -1146,6 +1171,8 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
                   provider={provider}
                   selectedDay={selectedDay}
                   eqhTotal={eqhPerRegional[regional.label]}
+                  eqhSucursal={eqhPerBase[base.id]}
+                  showSucursal={bases.length > 1}
                   onOpenStructure={() => setStructureRegional(regional)}
                 />
               ))}
