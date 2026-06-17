@@ -195,6 +195,67 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
     }));
   };
 
+  // Field order matches table columns (BT Prod, BT Entrada, BT Ret.Op, MT Prod, MT Entrada, MT Ret.Op)
+  const HISTORICAL_FIELDS = [
+    "bt_productivity",
+    "bt_entry_rate",
+    "bt_operator_removal",
+    "mt_productivity",
+    "mt_entry_rate",
+    "mt_operator_removal",
+  ] as const;
+
+  // Paste handler: supports pasting a full column (one value per line) or a block (tab/comma separated)
+  // starting at the focused cell. Works for both single-cell and multi-cell pastes from Excel.
+  const handlePasteHistorical = (
+    e: React.ClipboardEvent<HTMLInputElement>,
+    startRowIndex: number,
+    startFieldIndex: number,
+  ) => {
+    if (!historicalData) return;
+    const text = e.clipboardData.getData("text");
+    if (!text) return;
+    // Only intercept when there's multi-cell data
+    const rows = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.length > 0);
+    if (rows.length === 0) return;
+    const looksMulti = rows.length > 1 || /\t/.test(rows[0]);
+    if (!looksMulti) return; // let the default single-value paste happen
+    e.preventDefault();
+
+    const parseNum = (s: string): number | null => {
+      const t = s.trim();
+      if (!t) return null;
+      // Accept Excel pt-BR ("1,47") and en-US ("1.47"). If both separators exist, treat "." as thousands.
+      const hasDot = t.includes(".");
+      const hasComma = t.includes(",");
+      const norm = hasDot && hasComma ? t.replace(/\./g, "").replace(",", ".") : t.replace(",", ".");
+      const v = parseFloat(norm);
+      return isNaN(v) ? null : v;
+    };
+
+    setEditedHistoricalData(prev => {
+      const next = { ...prev };
+      rows.forEach((line, dr) => {
+        const targetRow = historicalData[startRowIndex + dr];
+        if (!targetRow) return;
+        const cells = line.split(/\t/);
+        cells.forEach((cell, dc) => {
+          const fieldIdx = startFieldIndex + dc;
+          if (fieldIdx >= HISTORICAL_FIELDS.length) return;
+          const num = parseNum(cell);
+          if (num === null) return;
+          const field = HISTORICAL_FIELDS[fieldIdx];
+          next[targetRow.id] = {
+            ...next[targetRow.id],
+            [field]: num,
+          };
+        });
+      });
+      return next;
+    });
+    toast.success(`${rows.length} linha(s) coladas`);
+  };
+
   // Save all historical data changes
   const handleSaveHistoricalData = async () => {
     if (!historicalData) return;
@@ -1023,6 +1084,12 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                       )}
                     </div>
 
+                    {isEditingHistorical && (
+                      <p className="text-xs text-muted-foreground -mt-2">
+                        💡 Dica: copie uma coluna inteira do Excel (24 células) e cole em qualquer célula da coluna para preencher de uma vez. Também aceita blocos com várias colunas (separadas por TAB).
+                      </p>
+                    )}
+
                     <div className="border border-border rounded-lg overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
@@ -1051,6 +1118,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.bt_productivity ?? row.bt_productivity}
                                         onChange={(e) => handleEditHistoricalField(row.id, "bt_productivity", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 0)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1060,6 +1128,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.bt_entry_rate ?? row.bt_entry_rate}
                                         onChange={(e) => handleEditHistoricalField(row.id, "bt_entry_rate", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 1)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1069,6 +1138,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.01"
                                         value={editedHistoricalData[row.id]?.bt_operator_removal ?? row.bt_operator_removal}
                                         onChange={(e) => handleEditHistoricalField(row.id, "bt_operator_removal", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 2)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1078,6 +1148,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.mt_productivity ?? row.mt_productivity}
                                         onChange={(e) => handleEditHistoricalField(row.id, "mt_productivity", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 3)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1087,6 +1158,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.mt_entry_rate ?? row.mt_entry_rate}
                                         onChange={(e) => handleEditHistoricalField(row.id, "mt_entry_rate", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 4)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1096,6 +1168,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.01"
                                         value={editedHistoricalData[row.id]?.mt_operator_removal ?? row.mt_operator_removal}
                                         onChange={(e) => handleEditHistoricalField(row.id, "mt_operator_removal", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 5)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
