@@ -1023,6 +1023,17 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
               </div>
             </div>
             {/* Estrutura Declarada */}
+            {showSucursal && eqhSucursal !== null && eqhSucursal !== undefined && (
+              <div className="border-t border-border/30 pt-1.5 mt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Estrutura Sucursal
+                  </span>
+                  <span className="font-mono font-bold text-foreground">{eqhSucursal}</span>
+                </div>
+              </div>
+            )}
             {eqhTotal !== null && (
               <div className="border-t border-border/30 pt-1.5 mt-1">
                 <div
