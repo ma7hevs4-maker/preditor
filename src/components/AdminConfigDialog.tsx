@@ -1118,6 +1118,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.bt_productivity ?? row.bt_productivity}
                                         onChange={(e) => handleEditHistoricalField(row.id, "bt_productivity", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 0)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1127,6 +1128,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.bt_entry_rate ?? row.bt_entry_rate}
                                         onChange={(e) => handleEditHistoricalField(row.id, "bt_entry_rate", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 1)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1136,6 +1138,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.01"
                                         value={editedHistoricalData[row.id]?.bt_operator_removal ?? row.bt_operator_removal}
                                         onChange={(e) => handleEditHistoricalField(row.id, "bt_operator_removal", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 2)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1145,6 +1148,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.mt_productivity ?? row.mt_productivity}
                                         onChange={(e) => handleEditHistoricalField(row.id, "mt_productivity", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 3)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1154,6 +1158,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.1"
                                         value={editedHistoricalData[row.id]?.mt_entry_rate ?? row.mt_entry_rate}
                                         onChange={(e) => handleEditHistoricalField(row.id, "mt_entry_rate", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 4)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
@@ -1163,6 +1168,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                                         step="0.01"
                                         value={editedHistoricalData[row.id]?.mt_operator_removal ?? row.mt_operator_removal}
                                         onChange={(e) => handleEditHistoricalField(row.id, "mt_operator_removal", parseFloat(e.target.value) || 0)}
+                                        onPaste={(e) => handlePasteHistorical(e, index, 5)}
                                         className="h-7 text-xs bg-muted/50 border border-primary/50 text-center font-mono"
                                       />
                                     </td>
