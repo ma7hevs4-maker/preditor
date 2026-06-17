@@ -218,7 +218,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
     // Only intercept when there's multi-cell data
     const rows = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.length > 0);
     if (rows.length === 0) return;
-    const looksMulti = rows.length > 1 || /[\t;,]/.test(rows[0]);
+    const looksMulti = rows.length > 1 || /\t/.test(rows[0]);
     if (!looksMulti) return; // let the default single-value paste happen
     e.preventDefault();
 
@@ -238,7 +238,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
       rows.forEach((line, dr) => {
         const targetRow = historicalData[startRowIndex + dr];
         if (!targetRow) return;
-        const cells = line.split(/\t|;|,(?=\s*-?\d)|,/);
+        const cells = line.split(/\t/);
         cells.forEach((cell, dc) => {
           const fieldIdx = startFieldIndex + dc;
           if (fieldIdx >= HISTORICAL_FIELDS.length) return;
