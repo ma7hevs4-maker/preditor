@@ -318,6 +318,7 @@ export type Database = {
           mt_entry_rate: number
           mt_operator_removal: number
           mt_productivity: number
+          season: string
           updated_at: string
         }
         Insert: {
@@ -331,6 +332,7 @@ export type Database = {
           mt_entry_rate?: number
           mt_operator_removal?: number
           mt_productivity?: number
+          season?: string
           updated_at?: string
         }
         Update: {
@@ -344,6 +346,7 @@ export type Database = {
           mt_entry_rate?: number
           mt_operator_removal?: number
           mt_productivity?: number
+          season?: string
           updated_at?: string
         }
         Relationships: [

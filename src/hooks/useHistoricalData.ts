@@ -1,6 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type Season = "verao" | "inverno";
+
+// Verão: meses 1, 2, 3, 10, 11, 12 | Inverno: 4, 5, 6, 7, 8, 9
+export const SUMMER_MONTHS = [1, 2, 3, 10, 11, 12];
+
+export const getSeasonForMonth = (month1to12: number): Season =>
+  SUMMER_MONTHS.includes(month1to12) ? "verao" : "inverno";
+
+export const getCurrentSeason = (date: Date = new Date()): Season =>
+  getSeasonForMonth(date.getMonth() + 1);
+
+export const SEASON_LABEL: Record<Season, string> = {
+  verao: "Verão",
+  inverno: "Inverno",
+};
+
 export interface HistoricalDataRow {
   id: string;
   base_id: string;
@@ -11,11 +27,13 @@ export interface HistoricalDataRow {
   mt_productivity: number;
   mt_entry_rate: number;
   mt_operator_removal: number;
+  season: Season;
 }
 
-export const useHistoricalData = (baseId: string | null) => {
+export const useHistoricalData = (baseId: string | null, season?: Season) => {
+  const effectiveSeason: Season = season ?? getCurrentSeason();
   return useQuery({
-    queryKey: ["historical_data", baseId],
+    queryKey: ["historical_data", baseId, effectiveSeason],
     queryFn: async () => {
       if (!baseId) return [];
       
@@ -23,6 +41,7 @@ export const useHistoricalData = (baseId: string | null) => {
         .from("historical_data")
         .select("*")
         .eq("base_id", baseId)
+        .eq("season", effectiveSeason)
         .order("hour");
       
       if (error) throw error;
