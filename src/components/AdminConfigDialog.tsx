@@ -1047,10 +1047,41 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                   </div>
                 </div>
 
+                {selectedBaseId && (
+                  <div className="space-y-2">
+                    <Label>Estação</Label>
+                    <div className="flex gap-2">
+                      {(["verao", "inverno"] as Season[]).map((s) => (
+                        <Button
+                          key={s}
+                          type="button"
+                          variant={historicalSeason === s ? "default" : "outline"}
+                          size="sm"
+                          disabled={isEditingHistorical}
+                          onClick={() => {
+                            setHistoricalSeason(s);
+                            setEditedHistoricalData({});
+                          }}
+                        >
+                          {SEASON_LABEL[s]}
+                          {getCurrentSeason() === s && (
+                            <span className="ml-1 text-[10px] opacity-70">(atual)</span>
+                          )}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Verão: meses 1, 2, 3, 10, 11, 12 · Inverno: meses 4, 5, 6, 7, 8, 9. O sistema usa automaticamente a estação correspondente ao mês atual nas simulações.
+                    </p>
+                  </div>
+                )}
+
                 {selectedBaseId && historicalData && (
                   <>
                     <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-foreground">Dados Históricos por Hora</h4>
+                      <h4 className="font-semibold text-foreground">
+                        Dados Históricos por Hora — {SEASON_LABEL[historicalSeason]}
+                      </h4>
                       {!isEditingHistorical ? (
                         <Button 
                           variant="outline" 
