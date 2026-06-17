@@ -714,11 +714,13 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 }
 
 // ---------- Weather card for a single base ----------
-function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, onOpenStructure }: {
+function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, showSucursal, onOpenStructure }: {
   base: Base;
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
   eqhTotal: number | null;
+  eqhSucursal?: number | null;
+  showSucursal?: boolean;
   onOpenStructure?: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
