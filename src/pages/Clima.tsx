@@ -714,11 +714,13 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 }
 
 // ---------- Weather card for a single base ----------
-function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, onOpenStructure }: {
+function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, showSucursal, onOpenStructure }: {
   base: Base;
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
   eqhTotal: number | null;
+  eqhSucursal?: number | null;
+  showSucursal?: boolean;
   onOpenStructure?: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
@@ -1021,6 +1023,17 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, onOpenStructur
               </div>
             </div>
             {/* Estrutura Declarada */}
+            {showSucursal && eqhSucursal !== null && eqhSucursal !== undefined && (
+              <div className="border-t border-border/30 pt-1.5 mt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Estrutura Sucursal
+                  </span>
+                  <span className="font-mono font-bold text-foreground">{eqhSucursal}</span>
+                </div>
+              </div>
+            )}
             {eqhTotal !== null && (
               <div className="border-t border-border/30 pt-1.5 mt-1">
                 <div
@@ -1114,6 +1127,31 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
     return result;
   }, [basesInGroup, plans, allTypeEntries]);
 
+  // Compute Eq/h per individual base (sucursal)
+  const eqhPerBase = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
+    basesInGroup.forEach(({ bases }) => {
+      bases.forEach(base => {
+        const basePlans = plans.filter(p => p.base_id === base.id);
+        if (basePlans.length === 0) {
+          result[base.id] = null;
+          return;
+        }
+        const planIds = basePlans.map(p => p.id);
+        const entries = allTypeEntries.filter(e => planIds.includes(e.daily_plan_id));
+        const countedPerHour = Array(24).fill(0);
+        entries.forEach(e => {
+          if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+            countedPerHour[e.hour] += e.quantity;
+          }
+        });
+        result[base.id] = sumTurnoAverages(countedPerHour);
+      });
+    });
+    return result;
+  }, [basesInGroup, plans, allTypeEntries]);
+
   return (
     <>
       <div className={cn(
@@ -1133,6 +1171,8 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
                   provider={provider}
                   selectedDay={selectedDay}
                   eqhTotal={eqhPerRegional[regional.label]}
+                  eqhSucursal={eqhPerBase[base.id]}
+                  showSucursal={bases.length > 1}
                   onOpenStructure={() => setStructureRegional(regional)}
                 />
               ))}
