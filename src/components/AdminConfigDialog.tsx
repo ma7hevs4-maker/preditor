@@ -223,10 +223,13 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
     e.preventDefault();
 
     const parseNum = (s: string): number | null => {
-      const cleaned = s.trim().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
-      // If the original used "." as decimal (e.g. "0.72"), the above breaks it; try fallback.
-      const direct = parseFloat(s.trim().replace(",", "."));
-      const v = isNaN(direct) ? parseFloat(cleaned) : direct;
+      const t = s.trim();
+      if (!t) return null;
+      // Accept Excel pt-BR ("1,47") and en-US ("1.47"). If both separators exist, treat "." as thousands.
+      const hasDot = t.includes(".");
+      const hasComma = t.includes(",");
+      const norm = hasDot && hasComma ? t.replace(/\./g, "").replace(",", ".") : t.replace(",", ".");
+      const v = parseFloat(norm);
       return isNaN(v) ? null : v;
     };
 
