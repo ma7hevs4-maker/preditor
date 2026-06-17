@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
-import { useHistoricalData, useUpdateHistoricalData } from "@/hooks/useHistoricalData";
+import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
 import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
@@ -45,9 +45,10 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
+  const [historicalSeason, setHistoricalSeason] = useState<Season>(getCurrentSeason());
   
   const { data: bases, isLoading: basesLoading } = useBases();
-  const { data: historicalData } = useHistoricalData(selectedBaseId);
+  const { data: historicalData } = useHistoricalData(selectedBaseId, historicalSeason);
   const { data: systemSettings, isLoading: settingsLoading } = useSystemSettings();
   const { data: weatherTriggers, isLoading: triggersLoading } = useAllWeatherTriggers();
   const { data: teamStructures, isLoading: structuresLoading } = useTeamStructures(selectedBaseId);
