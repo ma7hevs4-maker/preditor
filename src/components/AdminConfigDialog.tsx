@@ -1084,6 +1084,12 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                       )}
                     </div>
 
+                    {isEditingHistorical && (
+                      <p className="text-xs text-muted-foreground -mt-2">
+                        💡 Dica: copie uma coluna inteira do Excel (24 células) e cole em qualquer célula da coluna para preencher de uma vez. Também aceita blocos com várias colunas (separadas por TAB).
+                      </p>
+                    )}
+
                     <div className="border border-border rounded-lg overflow-hidden">
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
