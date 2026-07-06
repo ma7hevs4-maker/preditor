@@ -1167,7 +1167,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         diasCompletos,
         turnoEmAndamento: temTurnoEmAndamento,
       };
-    }).filter(eq => eq.diasCompletos > 0 || !eq.turnoEmAndamento); // Exclude teams with ONLY incomplete days
+    });
+    // Note: Teams whose shift has no recorded Log Off (e.g. Turno A in progress
+    // or missing logoff data) are kept in the ranking. Ocupação/Ociosidade
+    // will be 0 for them, and the ⏳ indicator flags the incomplete shift.
 
     const scored = calculateRankingScores(baseRanking, rankingWeights);
 
