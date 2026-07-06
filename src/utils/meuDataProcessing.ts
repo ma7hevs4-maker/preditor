@@ -559,14 +559,19 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     const retBaseKey = rowKeys.find(k => k.toLowerCase().includes('retorno a base') || k.toLowerCase().includes('retorno à base'));
     if (retBaseKey) row["Retorno a base"] = row[retBaseKey];
 
-    const logOffKey = rowKeys.find(k => {
+    // Priorizar "Log Off Corrigido" — a coluna "Log Off" bruta pode estar vazia
+    // (especialmente no Turno A), enquanto a Corrigido traz o valor tratado.
+    const logOffCorrigidoKey = rowKeys.find(k => k.toLowerCase().trim() === 'log off corrigido');
+    const logOffRawKey = rowKeys.find(k => {
       const lower = k.toLowerCase().trim();
-      return lower === 'log off corrigido' || lower === 'log off' || lower === 'log-off';
+      return lower === 'log off' || lower === 'log-off';
     });
-    if (logOffKey) {
-      const logOffVal = parseFullDateTime(row[logOffKey]);
-      row["Log Off"] = logOffVal;
-      row["Log Off Corrigido"] = logOffVal;
+    const logOffCorrigidoVal = logOffCorrigidoKey ? parseFullDateTime(row[logOffCorrigidoKey]) : null;
+    const logOffRawVal = logOffRawKey ? parseFullDateTime(row[logOffRawKey]) : null;
+    const finalLogOff = logOffCorrigidoVal ?? logOffRawVal;
+    if (finalLogOff != null) {
+      row["Log Off"] = finalLogOff;
+      row["Log Off Corrigido"] = finalLogOff;
     }
 
     const tempoPadraoKey = rowKeys.find(k => k.toLowerCase().includes('tempo padrao') || k.toLowerCase().includes('tempo padrão'));
