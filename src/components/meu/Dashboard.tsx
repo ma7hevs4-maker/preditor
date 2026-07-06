@@ -1118,9 +1118,12 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       // Ordem 2
       const ord2 = eqData.filter((d) => d.ordem2).length;
 
-      // Ocupação e Ociosidade - use only complete days
-      const ocupacao = completeDayData.length > 0 ? calculateOccupancy(completeDayData) : 0;
-      const idleMinutes = completeDayData.length > 0 ? calculateIdleMinutes(completeDayData) : 0;
+      // Ocupação e Ociosidade — preferimos dias completos (com Log Off),
+      // mas se nenhum dia estiver completo (comum no Turno A quando o Log Off
+      // não é reconhecido) usamos os dados brutos para não zerar as métricas.
+      const baseForMetrics = completeDayData.length > 0 ? completeDayData : eqData;
+      const ocupacao = baseForMetrics.length > 0 ? calculateOccupancy(baseForMetrics) : 0;
+      const idleMinutes = baseForMetrics.length > 0 ? calculateIdleMinutes(baseForMetrics) : 0;
 
       // Login
       let maxLoginVal: number | null = null;
