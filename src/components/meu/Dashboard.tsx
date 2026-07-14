@@ -519,6 +519,31 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     });
     const mergedData = [...eqData, ...m300Extra];
 
+    // Helper: absolute decimal hours for a row's incident start, relative to its Data Turno.
+    // hora_aux_ordenacao is the raw hour-of-day of "Data Ação" (0-24). For shifts that cross
+    // midnight (Turno A, and Turno C when it extends past 00:00), Data Ação can be a later
+    // calendar day than Data Turno, so we must add (Data Ação - Data Turno) * 24 to align
+    // with logoff/interval values (which convertToDecimalHours normalizes to Data Turno).
+    const absoluteStart = (d: any): number | null => {
+      if (d.hora_aux_ordenacao == null) return null;
+      let val = Number(d.hora_aux_ordenacao) || 0;
+      const dTurno = d["Data Turno"];
+      const dAcao = d["Data Ação"];
+      if (dTurno && dAcao) {
+        try {
+          const [yT, mT, dT] = String(dTurno).split("-").map(Number);
+          const [yA, mA, dA] = String(dAcao).split("-").map(Number);
+          const tT = Date.UTC(yT, mT - 1, dT);
+          const tA = Date.UTC(yA, mA - 1, dA);
+          if (!isNaN(tT) && !isNaN(tA)) {
+            const diffDays = Math.round((tA - tT) / (1000 * 60 * 60 * 24));
+            val += diffDays * 24;
+          }
+        } catch (e) {}
+      }
+      return val;
+    };
+
     const logoffVal = (() => {
       let best: number | null = null;
       mergedData.forEach(d => {
@@ -533,14 +558,16 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     // Last incident end = latest (inicio_decimal + TMD/60 + TME/60)
     const sorted = mergedData
       .filter(d => d.hora_aux_ordenacao != null)
+      .map(d => ({ d, start: absoluteStart(d) }))
+      .filter(x => x.start != null)
       .sort((a, b) => {
-        const endA = (a.hora_aux_ordenacao || 0) + (Number(a.TMD) || 0) / 60 + (Number(a.TME) || 0) / 60;
-        const endB = (b.hora_aux_ordenacao || 0) + (Number(b.TMD) || 0) / 60 + (Number(b.TME) || 0) / 60;
+        const endA = (a.start as number) + (Number(a.d.TMD) || 0) / 60 + (Number(a.d.TME) || 0) / 60;
+        const endB = (b.start as number) + (Number(b.d.TMD) || 0) / 60 + (Number(b.d.TME) || 0) / 60;
         return endB - endA;
       });
 
     const lastIncidentEnd = sorted.length > 0
-      ? sorted[0].hora_aux_ordenacao + (Number(sorted[0].TMD) || 0) / 60 + (Number(sorted[0].TME) || 0) / 60
+      ? (sorted[0].start as number) + (Number(sorted[0].d.TMD) || 0) / 60 + (Number(sorted[0].d.TME) || 0) / 60
       : null;
 
     // Check interval start time
