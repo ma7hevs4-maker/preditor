@@ -38,6 +38,7 @@ import { GestaoAVistaView } from "./GestaoAVistaView";
 import { M300SummaryDialog } from "./M300SummaryDialog";
 import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
 import { getInsourcingTypeFromEquipe, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
+import { classifyTeamOrigin } from "@/data/teamPrefixToPolo";
 
 const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
@@ -190,6 +191,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [tmdeAbove150Filter, setTmdeAbove150Filter] = useState<string>("todos");
   const [o2AnomaliaFilter, setO2AnomaliaFilter] = useState<string>("todos");
   const [retornoBase40Filter, setRetornoBase40Filter] = useState<string>("todos");
+  const [teamOriginFilter, setTeamOriginFilter] = useState<string>("todos");
 
   const normalizeIncidentNumber = (value: any) => {
     const s = String(value ?? "").trim();
@@ -226,6 +228,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
       if (selectedPolos.length > 0 && !selectedPolos.includes(d.Polo))
         return false;
+      if (teamOriginFilter !== "todos") {
+        const kind = classifyTeamOrigin(d["Equipe Desl."], d.Polo);
+        if (kind !== teamOriginFilter) return false;
+      }
       if (
         selectedProcessos.length > 0 &&
         !selectedProcessos.includes(d.Processo)
@@ -266,6 +272,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     periodStart,
     periodEnd,
     selectedPolos,
+    teamOriginFilter,
     selectedProcessos,
     selectedTiposEquipe,
     selectedTurnos,
@@ -1524,6 +1531,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     tmdeAbove150Filter !== "todos",
     o2AnomaliaFilter !== "todos",
     retornoBase40Filter !== "todos",
+    teamOriginFilter !== "todos",
   ].filter(Boolean).length;
 
   if (isInvalidData) {
@@ -1834,6 +1842,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                   setSelectedIncidents([]);
                   setTmdeAbove150Filter("todos");
                   setO2AnomaliaFilter("todos");
+                  setRetornoBase40Filter("todos");
+                  setTeamOriginFilter("todos");
                 }}
               >
                 Limpar tudo
