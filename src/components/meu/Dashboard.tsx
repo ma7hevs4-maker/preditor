@@ -2003,6 +2003,19 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <option value="nao">Não</option>
                       </select>
                     </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Origem da Equipe (prefixo)</label>
+                      <select
+                        value={teamOriginFilter}
+                        onChange={(e) => setTeamOriginFilter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Todas</option>
+                        <option value="propria">Própria (mesmo Polo)</option>
+                        <option value="emprestada">Emprestada (outro Polo)</option>
+                        <option value="desconhecida">Prefixo desconhecido</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="border-t border-border pt-4 space-y-4">
