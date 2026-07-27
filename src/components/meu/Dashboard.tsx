@@ -192,6 +192,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const [o2AnomaliaFilter, setO2AnomaliaFilter] = useState<string>("todos");
   const [retornoBase40Filter, setRetornoBase40Filter] = useState<string>("todos");
   const [teamOriginFilter, setTeamOriginFilter] = useState<string>("todos");
+  const [improdutivoFilter, setImprodutivoFilter] = useState<string>("todos");
 
   const normalizeIncidentNumber = (value: any) => {
     const s = String(value ?? "").trim();
@@ -263,6 +264,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         !selectedIncidents.includes(d.Número)
       )
         return false;
+      if (improdutivoFilter === "nao" && d.Improdutivo) return false;
       return true;
     });
   }, [
@@ -278,6 +280,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     selectedTurnos,
     selectedEquipes,
     selectedIncidents,
+    improdutivoFilter,
   ]);
 
   const teamsWithAbove150 = useMemo(() => {
@@ -1532,6 +1535,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     o2AnomaliaFilter !== "todos",
     retornoBase40Filter !== "todos",
     teamOriginFilter !== "todos",
+    improdutivoFilter !== "todos",
   ].filter(Boolean).length;
 
   if (isInvalidData) {
@@ -1844,6 +1848,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                   setO2AnomaliaFilter("todos");
                   setRetornoBase40Filter("todos");
                   setTeamOriginFilter("todos");
+                  setImprodutivoFilter("todos");
                 }}
               >
                 Limpar tudo
@@ -2014,6 +2019,17 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
                         <option value="propria">Própria (mesmo Polo)</option>
                         <option value="emprestada">Emprestada (outro Polo)</option>
                         <option value="desconhecida">Prefixo desconhecido</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Considerar Improdutivos</label>
+                      <select
+                        value={improdutivoFilter}
+                        onChange={(e) => setImprodutivoFilter(e.target.value)}
+                        className="w-full rounded-md bg-background text-foreground border border-border text-xs p-2 focus:border-ring focus:ring-1 focus:ring-ring outline-none"
+                      >
+                        <option value="todos">Tudo</option>
+                        <option value="nao">Não</option>
                       </select>
                     </div>
                   </div>
