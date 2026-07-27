@@ -327,6 +327,12 @@ export function TimelineChart({ data, onEventClick, highlightedIds = [], onRemov
                 <span>Possível Anomalia</span>
               </div>
               <div className="flex items-center gap-1.5">
+                <div className="w-4 h-3.5 rounded-sm bg-muted border border-foreground/30 relative">
+                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 border-y border-black" style={{ backgroundColor: COLORS.error }}></div>
+                </div>
+                <span>Reincidente Causado</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <div className="w-4 h-3.5 rounded-sm border border-border" style={{ backgroundColor: COLORS.highlight }}></div>
                 <span>Selecionado</span>
               </div>
