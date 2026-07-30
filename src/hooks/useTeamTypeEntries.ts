@@ -27,17 +27,39 @@ export const useTeamTypeEntries = (planId: string | null) => {
 };
 
 // Fetch entries for multiple plans (for the view page)
+// NOTE: PostgREST caps responses (default 1000 rows), so we paginate to avoid
+// silently truncating hours/types when many plans are queried at once.
 export const useTeamTypeEntriesByPlans = (planIds: string[]) => {
   return useQuery({
     queryKey: ["team_type_entries_bulk", planIds],
     queryFn: async () => {
       if (planIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("daily_team_type_entries")
-        .select("*")
-        .in("daily_plan_id", planIds);
-      if (error) throw error;
-      return data as TeamTypeEntry[];
+
+      const PAGE = 1000;
+      const CHUNK = 50; // limit URL length for the .in() filter
+      const all: TeamTypeEntry[] = [];
+
+      for (let i = 0; i < planIds.length; i += CHUNK) {
+        const chunk = planIds.slice(i, i + CHUNK);
+        let from = 0;
+        // paginate until a short page is returned
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data, error } = await supabase
+            .from("daily_team_type_entries")
+            .select("*")
+            .in("daily_plan_id", chunk)
+            .order("id")
+            .range(from, from + PAGE - 1);
+          if (error) throw error;
+          const rows = (data || []) as TeamTypeEntry[];
+          all.push(...rows);
+          if (rows.length < PAGE) break;
+          from += PAGE;
+        }
+      }
+
+      return all;
     },
     enabled: planIds.length > 0,
   });
