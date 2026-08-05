@@ -724,7 +724,7 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
   onOpenStructure?: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
-  const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider);
+  const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider, "day");
   const { data: triggers } = useWeatherTriggers(base.id);
   const { data: historicalData } = useHistoricalData(base.id);
 
@@ -1233,7 +1233,11 @@ export default function Clima() {
   const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
   const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
 
-  const activeProvider: "openmeteo" | "openweathermap" = dayOffset <= 4 ? "openweathermap" : "openmeteo";
+  // OpenWeatherMap only returns future 3-hour blocks, so late in the day it
+  // cannot provide a complete 00h–23h grid for today. Open-Meteo can.
+  const activeProvider: "openmeteo" | "openweathermap" = dayOffset === 0 || dayOffset > 4
+    ? "openmeteo"
+    : "openweathermap";
   const providerInfo = PROVIDER_LABELS[activeProvider];
 
   return (

@@ -67,7 +67,7 @@ function getWeatherInfoFromWMO(code: number, isDay: boolean): { description: str
 }
 
 // Fetch from Open-Meteo (free, no API key)
-async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Promise<WeatherHour[]> {
+async function fetchFromOpenMeteo(lat: number, lon: number, hours: number, startMode: 'now' | 'day' = 'now'): Promise<WeatherHour[]> {
   console.log(`Fetching from Open-Meteo for lat: ${lat}, lon: ${lon}`);
   
   // One extra day is required because the rolling horizon starts at the
@@ -91,7 +91,8 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Prom
     const utcOffsetSeconds = Number(data.utc_offset_seconds ?? 0);
     const localNow = new Date(Date.now() + utcOffsetSeconds * 1000);
     const currentLocalHour = formatLocalDateTime(localNow).slice(0, 13);
-    const startIndex = Math.max(0, hourlyData.time.findIndex((time: string) => time.slice(0, 13) >= currentLocalHour));
+    const rollingStartIndex = hourlyData.time.findIndex((time: string) => time.slice(0, 13) >= currentLocalHour);
+    const startIndex = startMode === 'day' ? 0 : Math.max(0, rollingStartIndex);
     const endIndex = Math.min(startIndex + hours, hourlyData.time.length);
 
     for (let i = startIndex; i < endIndex; i++) {
@@ -188,7 +189,7 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lon, hours = 72, provider = 'openmeteo' } = await req.json();
+    const { lat, lon, hours = 72, provider = 'openmeteo', startMode = 'now' } = await req.json();
 
     if (!lat || !lon) {
       return new Response(
@@ -207,19 +208,19 @@ serve(async (req) => {
       
       if (!apiKey) {
         console.warn('OpenWeatherMap API key not found, falling back to Open-Meteo');
-        forecast = await fetchFromOpenMeteo(lat, lon, hours);
+        forecast = await fetchFromOpenMeteo(lat, lon, hours, startMode);
         providerUsed = 'openmeteo';
       } else {
         try {
           forecast = await fetchFromOpenWeatherMap(lat, lon, hours, apiKey);
         } catch (error) {
           console.error('OpenWeatherMap failed, falling back to Open-Meteo:', error);
-          forecast = await fetchFromOpenMeteo(lat, lon, hours);
+          forecast = await fetchFromOpenMeteo(lat, lon, hours, startMode);
           providerUsed = 'openmeteo';
         }
       }
     } else {
-      forecast = await fetchFromOpenMeteo(lat, lon, hours);
+      forecast = await fetchFromOpenMeteo(lat, lon, hours, startMode);
     }
 
     return new Response(
