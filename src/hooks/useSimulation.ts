@@ -129,6 +129,11 @@ export const useSimulation = (
       
       const targetDate = new Date(now);
       targetDate.setHours(currentHour + i, 0, 0, 0);
+      const localDatetime = [
+        targetDate.getFullYear(),
+        String(targetDate.getMonth() + 1).padStart(2, "0"),
+        String(targetDate.getDate()).padStart(2, "0"),
+      ].join("-") + `T${String(targetDate.getHours()).padStart(2, "0")}:00:00`;
 
       // Nas primeiras 8 horas, retirar a % de remoto do backlog BT ANTES do cálculo
       let remoto_bt_retirado = 0;
@@ -298,7 +303,7 @@ export const useSimulation = (
       result.push({
         hora,
         dia,
-        datetime: targetDate.toISOString(),
+        datetime: localDatetime,
         entrada_bt_adj: Math.round(entrada_bt_adj * 100) / 100,
         ret_op_bt: Math.round(ret_op_bt * 100) / 100,
         eq_disp,

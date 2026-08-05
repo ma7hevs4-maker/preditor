@@ -26,15 +26,16 @@ export const useWeather = (
   lat: number | null, 
   lon: number | null, 
   hours: number = 72,
-  provider: WeatherProvider = "openmeteo"
+  provider: WeatherProvider = "openmeteo",
+  startMode: "now" | "day" = "now"
 ) => {
   return useQuery({
-    queryKey: ["weather", lat, lon, hours, provider],
+    queryKey: ["weather", lat, lon, hours, provider, startMode],
     queryFn: async () => {
       if (!lat || !lon) return null;
       
       const { data, error } = await supabase.functions.invoke<WeatherResponse>("weather-forecast", {
-        body: { lat, lon, hours, provider },
+        body: { lat, lon, hours, provider, startMode },
       });
       
       if (error) {
