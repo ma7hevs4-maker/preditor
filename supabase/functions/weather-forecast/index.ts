@@ -70,6 +70,8 @@ function getWeatherInfoFromWMO(code: number, isDay: boolean): { description: str
 async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Promise<WeatherHour[]> {
   console.log(`Fetching from Open-Meteo for lat: ${lat}, lon: ${lon}`);
   
+  // One extra day is required because the rolling horizon starts at the
+  // current local hour instead of midnight.
   const forecastDays = Math.min(Math.ceil(hours / 24) + 1, 16);
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,is_day&forecast_days=${forecastDays}&timezone=auto`;
   
@@ -86,10 +88,13 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number): Prom
   const hourlyData = data.hourly;
   
   if (hourlyData && hourlyData.time) {
-    const endIndex = Math.min(hours, hourlyData.time.length);
+    const utcOffsetSeconds = Number(data.utc_offset_seconds ?? 0);
+    const localNow = new Date(Date.now() + utcOffsetSeconds * 1000);
+    const currentLocalHour = formatLocalDateTime(localNow).slice(0, 13);
+    const startIndex = Math.max(0, hourlyData.time.findIndex((time: string) => time.slice(0, 13) >= currentLocalHour));
+    const endIndex = Math.min(startIndex + hours, hourlyData.time.length);
 
-    for (let i = 0; i < endIndex; i++) {
-      const datetime = new Date(hourlyData.time[i]);
+    for (let i = startIndex; i < endIndex; i++) {
       const isDay = hourlyData.is_day[i] === 1;
       const weatherInfo = getWeatherInfoFromWMO(hourlyData.weather_code[i], isDay);
       
@@ -117,7 +122,7 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
   
   // Use the 5-day/3-hour forecast endpoint (free tier)
   // For hourly data, we'd need the One Call API 3.0 which requires subscription
-  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&cnt=${Math.ceil(hours / 3) + 1}`;
+  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&cnt=${Math.min(Math.ceil(hours / 3) + 2, 40)}`;
   
   const response = await fetch(url);
   
@@ -136,8 +141,6 @@ async function fetchFromOpenWeatherMap(lat: number, lon: number, hours: number, 
     for (let i = 0; i < data.list.length - 1 && hourlyForecast.length < hours; i++) {
       const current = data.list[i];
       const next = data.list[i + 1];
-      
-      const currentTime = new Date(current.dt * 1000);
       
       // Create 3 hourly entries by interpolating between current and next
       for (let h = 0; h < 3 && hourlyForecast.length < hours; h++) {

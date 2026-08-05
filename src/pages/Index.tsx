@@ -123,17 +123,9 @@ const Index = () => {
       // Solving: index = targetDay * 24 + targetHour - currentHour
       
       const getHourIndex = (day: number, hour: number) => {
-        // day is 1-based (Dia 1 = today, Dia 2 = tomorrow)
-        // Convert to 0-based for calculation
-        const dayOffset = (day - 1) * 24;
-        // Calculate total offset from start of simulation
-        // If hour >= currentHour, it's in the same calendar day offset
-        // If hour < currentHour, we need to add 24 to get to that hour in that day
-        let hourOffset = hour - currentHour;
-        if (hourOffset < 0) {
-          hourOffset += 24;
-        }
-        return dayOffset + hourOffset;
+        // Day is a calendar day (Dia 1 = today), not a 24-hour block from now.
+        // Example at 18h: Dia 2 às 00h is index 6, not index 30.
+        return (day - 1) * 24 + hour - currentHour;
       };
       
       const startHourIndex = getHourIndex(weatherOverride.startDay, weatherOverride.startHour);
@@ -143,7 +135,7 @@ const Index = () => {
       
       return weatherData.forecast.map((hour, index) => {
         // Check if this hour falls within the override period
-        if (index >= startHourIndex && index <= endHourIndex) {
+        if (startHourIndex >= 0 && index >= startHourIndex && index <= endHourIndex) {
           return {
             ...hour,
             precip_mm: weatherOverride.precip_mm,

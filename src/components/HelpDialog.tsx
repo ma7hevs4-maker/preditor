@@ -130,6 +130,45 @@ const ClimaHelp = () => (
     </div>
 
     <div>
+      <h3 className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+        <Calculator className="w-4 h-4 text-primary" /> Cálculos da Central Climática
+      </h3>
+      <div className="space-y-3 bg-muted/30 rounded-lg p-3 border border-border/50 text-xs">
+        <div>
+          <p className="font-medium text-foreground">Resumo meteorológico diário</p>
+          <p className="text-muted-foreground mt-1">Chuva é a soma da precipitação horária. Vento e rajada usam o maior valor do dia. Temperatura exibe a mínima e a máxima. Horas de chuva contam horas com precipitação igual ou superior a 0,2 mm.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Gatilhos e impacto</p>
+          <code className="bg-muted px-2 py-1 rounded block mt-1">Uplift BT/MT = soma dos impactos de todos os gatilhos ativos na hora</code>
+          <p className="text-muted-foreground mt-1">Um gatilho fica ativo quando chuva, vento, rajada ou temperatura entra na faixa configurada para a base.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Entrada prevista</p>
+          <code className="bg-muted px-2 py-1 rounded block mt-1">Entrada ajustada = Entrada histórica × (1 + Uplift / 100)</code>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Retirada do operador</p>
+          <code className="bg-muted px-2 py-1 rounded block mt-1">Ret. operador = Entrada prevista × Taxa histórica de retirada</code>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Entrada destinada às equipes</p>
+          <code className="bg-muted px-2 py-1 rounded block mt-1">Ent. equipe = Entrada prevista − Retirada do operador</code>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Equipes necessárias</p>
+          <code className="bg-muted px-2 py-1 rounded block mt-1">Equipes = teto((Ent. equipe BT ÷ 3) + (Ent. equipe MT ÷ 1,5))</code>
+          <p className="text-muted-foreground mt-1">Quando há impacto climático, o card mostra o valor normal e, após a seta, o valor ajustado pelo clima.</p>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">Estrutura declarada (Eq/h)</p>
+          <code className="bg-muted px-2 py-1 rounded block mt-1">Eq/h = média do Turno A + média do Turno B + média do Turno C</code>
+          <p className="text-muted-foreground mt-1">Cada média usa as 8 horas do turno. LV, MK e Reguladas são excluídas. Em Polos com mais de uma sucursal, a Estrutura Sucursal usa somente a base do card; a Estrutura Declarada consolida o Polo.</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
       <h3 className="text-base font-semibold text-foreground mb-2">Provedor de Dados</h3>
       <p className="text-xs text-muted-foreground">
         O sistema suporta dois provedores: <strong>Open-Meteo</strong> (padrão, gratuito) e <strong>OpenWeatherMap</strong>. A alternância é feita na página de Simulação.

@@ -81,7 +81,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
       const totalRetEqMt = rows.reduce((sum, r) => sum + r.cap_mt_h, 0);
       
       // Get the last row of the day to get final backlog
-      const sortedRows = [...rows].sort((a, b) => a.hora - b.hora);
+      const sortedRows = [...rows].sort((a, b) => a.datetime.localeCompare(b.datetime));
       const lastRow = sortedRows[sortedRows.length - 1];
       
       const summary: DaySummary = {
