@@ -798,8 +798,21 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return new Set(filteredData.map(d => d["Data Turno"] || d["Data Ação"])).size || 1;
   }, [filteredData]);
 
+  // Heavy aggregate block — memoized so that merely opening the filter panel,
+  // typing in a search box or toggling dialogs does not recompute everything.
+  const aggregates = useMemo(() => {
   const totalInc = new Set(filteredData.map((d) => d.Número)).size;
   const displayInc = totalInc;
+
+  // Pre-group rows by "Equipe Desl." once (avoids O(rows × teams) scans below)
+  const rowsByEquipe = new Map<string, any[]>();
+  filteredData.forEach((d) => {
+    const key = d["Equipe Desl."];
+    if (!key) return;
+    const arr = rowsByEquipe.get(key);
+    if (arr) arr.push(d);
+    else rowsByEquipe.set(key, [d]);
+  });
 
   const tmdeMedio =
     filteredData.length > 0
@@ -821,6 +834,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   ];
   const resumoProcessos = processosOrdem.map((proc) => {
     const procData = filteredData.filter((d) => d.Processo === proc);
+    const procRowsByEquipe = new Map<string, any[]>();
+    procData.forEach((d) => {
+      const key = d["Equipe Desl."];
+      if (!key) return;
+      const arr = procRowsByEquipe.get(key);
+      if (arr) arr.push(d);
+      else procRowsByEquipe.set(key, [d]);
+    });
     const inc = new Set(procData.map((d) => d.Número)).size;
 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
@@ -849,13 +870,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     let somaOcupacao = 0;
     let somaIdleMinutes = 0;
-    const equipesPresentesNoProcesso = Array.from(
-      new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
-    );
+    const equipesPresentesNoProcesso = Array.from(procRowsByEquipe.keys());
     
     let countOcupacaoValidas = 0;
     equipesPresentesNoProcesso.forEach(eq => {
-      const eqData = procData.filter(d => d["Equipe Desl."] === eq);
+      const eqData = procRowsByEquipe.get(eq) || [];
       const completeData = filterCompleteDays(eqData);
       if (completeData.length === 0) return;
       const occ = calculateOccupancy(completeData);
@@ -899,7 +918,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const plataformaValues: number[] = [];
     const retornoValues: number[] = [];
     equipesPresentesNoProcesso.forEach(eq => {
-      const eqData = procData.filter(d => d["Equipe Desl."] === eq);
+      const eqData = procRowsByEquipe.get(eq) || [];
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"];
@@ -963,12 +982,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   let somaOcupacaoGeral = 0;
   let somaIdleMinutesGeral = 0;
-  const equipesPresentesGeral = Array.from(
-    new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean))
-  );
+  const equipesPresentesGeral = Array.from(rowsByEquipe.keys());
   let countOcupacaoValidasGeral = 0;
   equipesPresentesGeral.forEach(eq => {
-    const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
+    const eqData = rowsByEquipe.get(eq) || [];
     const completeData = filterCompleteDays(eqData);
     if (completeData.length === 0) return;
     const occ = calculateOccupancy(completeData);
@@ -987,7 +1004,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const allPlatVals: number[] = [];
   const allRetornoVals: number[] = [];
   equipesPresentesGeral.forEach(eq => {
-    const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
+    const eqData = rowsByEquipe.get(eq) || [];
     let maxLogin: number | null = null;
     eqData.forEach(d => {
       const raw = d["1º Login Corrigido"];
@@ -1048,7 +1065,41 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     "Retorno Base": allRetornoVals.length > 0 ? allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length : null,
   };
 
+    return {
+      totalInc,
+      displayInc,
+      tmdeMedio,
+      reincTotal,
+      taxaReinc,
+      improdTotal,
+      taxaImprod,
+      resumoProcessos,
+      totalIncProdutivos,
+      totalEquipesGeralCount,
+      ocupacaoMediaGeral,
+      avgIdleMinutesGeral,
+      equipesPresentesGeral,
+      totalRowProcessos,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredData, isPeriodMode, data]);
 
+  const {
+    totalInc,
+    displayInc,
+    tmdeMedio,
+    reincTotal,
+    taxaReinc,
+    improdTotal,
+    taxaImprod,
+    resumoProcessos,
+    totalIncProdutivos,
+    totalEquipesGeralCount,
+    ocupacaoMediaGeral,
+    avgIdleMinutesGeral,
+    equipesPresentesGeral,
+    totalRowProcessos,
+  } = aggregates;
 
   // Helper to format values from Excel to minutes (duration)
   const formatToMinutes = (val: any): string => {
