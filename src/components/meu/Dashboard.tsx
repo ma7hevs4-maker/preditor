@@ -625,6 +625,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   // Teams that had retorno a base > 40 min on any day within the filtered scope
   const teamsWithRetornoAbove40 = useMemo(() => {
     const teams = new Set<string>();
+    // Expensive scan — only needed when the filter is actually active.
+    if (retornoBase40Filter === "todos") return teams;
     const byTeamDate: Record<string, any[]> = {};
     filteredDataPreRetorno.forEach((d) => {
       const eq = d["Equipe Desl."];
@@ -640,7 +642,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       if (ret != null && ret > 40) teams.add(eq);
     });
     return teams;
-  }, [filteredDataPreRetorno]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredDataPreRetorno, retornoBase40Filter]);
 
   const filteredData = useMemo(() => {
     if (retornoBase40Filter === "todos") return filteredDataPreRetorno;
