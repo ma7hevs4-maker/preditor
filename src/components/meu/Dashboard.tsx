@@ -50,6 +50,11 @@ const FilterMultiSelect = React.memo(({ label, options, selected, onChange, sear
     [options, searchable, search]
   );
   const selectedSet = useMemo(() => new Set<string>(selected), [selected]);
+  // Cap rendered chips — lists like incident numbers can hold thousands of
+  // entries and rendering them all freezes the filter panel.
+  const MAX_VISIBLE = 300;
+  const visibleOptions = filteredOptions.slice(0, MAX_VISIBLE);
+  const hiddenCount = filteredOptions.length - visibleOptions.length;
 
   return (
     <div className="space-y-2">
@@ -78,7 +83,7 @@ const FilterMultiSelect = React.memo(({ label, options, selected, onChange, sear
         </div>
       )}
       <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
-        {filteredOptions.map((opt: string) => {
+        {visibleOptions.map((opt: string) => {
           const isSelected = selectedSet.has(opt);
           return (
             <button
@@ -100,6 +105,11 @@ const FilterMultiSelect = React.memo(({ label, options, selected, onChange, sear
             </button>
           );
         })}
+        {hiddenCount > 0 && (
+          <span className="px-2 py-0.5 text-[10px] text-muted-foreground">
+            +{hiddenCount} — refine a pesquisa
+          </span>
+        )}
       </div>
     </div>
   );
