@@ -70,6 +70,84 @@ export const useUpdateHistoricalData = () => {
   });
 };
 
+/**
+ * Dados históricos agregados de várias bases (sucursais).
+ * - Entradas (bt/mt_entry_rate): SOMA das sucursais
+ * - Produtividade e retirada de operador: MÉDIA das sucursais
+ */
+export const useAggregatedHistoricalData = (
+  baseIds: string[] | null | undefined,
+  season?: Season
+) => {
+  const effectiveSeason: Season = season ?? getCurrentSeason();
+  const ids = (baseIds ?? []).filter(Boolean);
+  const key = [...ids].sort().join(",");
+
+  return useQuery({
+    queryKey: ["historical_data_agg", key, effectiveSeason],
+    queryFn: async () => {
+      if (ids.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from("historical_data")
+        .select("*")
+        .in("base_id", ids)
+        .eq("season", effectiveSeason)
+        .order("hour");
+
+      if (error) throw error;
+      const rows = (data ?? []) as HistoricalDataRow[];
+      if (ids.length === 1) return rows;
+
+      const byHour = new Map<number, HistoricalDataRow[]>();
+      rows.forEach((r) => {
+        const list = byHour.get(r.hour) ?? [];
+        list.push(r);
+        byHour.set(r.hour, list);
+      });
+
+      const avg = (arr: number[]) =>
+        arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+      const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+
+      return Array.from(byHour.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([hour, list]) => ({
+          id: `agg-${hour}`,
+          base_id: "aggregated",
+          hour,
+          season: effectiveSeason,
+          bt_entry_rate: sum(list.map((r) => Number(r.bt_entry_rate) || 0)),
+          mt_entry_rate: sum(list.map((r) => Number(r.mt_entry_rate) || 0)),
+          bt_productivity: avg(list.map((r) => Number(r.bt_productivity) || 0)),
+          mt_productivity: avg(list.map((r) => Number(r.mt_productivity) || 0)),
+          bt_operator_removal: avg(list.map((r) => Number(r.bt_operator_removal) || 0)),
+          mt_operator_removal: avg(list.map((r) => Number(r.mt_operator_removal) || 0)),
+        })) as HistoricalDataRow[];
+    },
+    enabled: ids.length > 0,
+  });
+};
+
+const _unusedUpdateHistoricalData = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (updates: Partial<HistoricalDataRow> & { id: string }) => {
+      const { id, ...data } = updates;
+      const { error } = await supabase
+        .from("historical_data")
+        .update(data)
+        .eq("id", id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["historical_data"] });
+    },
+  });
+};
+
 // Bulk update for multiple hours
 export const useBulkUpdateHistoricalData = () => {
   const queryClient = useQueryClient();
