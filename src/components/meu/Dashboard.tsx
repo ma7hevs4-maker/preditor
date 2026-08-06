@@ -1080,6 +1080,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       avgIdleMinutesGeral,
       equipesPresentesGeral,
       totalRowProcessos,
+      allLoginVals,
+      allDespachoVals,
+      allPlatVals,
+      allRetornoVals,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredData, isPeriodMode, data]);
@@ -1099,6 +1103,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     avgIdleMinutesGeral,
     equipesPresentesGeral,
     totalRowProcessos,
+    allLoginVals,
+    allDespachoVals,
+    allPlatVals,
+    allRetornoVals,
   } = aggregates;
 
   // Helper to format values from Excel to minutes (duration)
