@@ -523,6 +523,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
   // If the last event before logoff is an interval, use interval start instead
+  // Pre-index M300-only rows by team so calcRetornoBase doesn't rescan all data per team.
+  const m300OnlyByTeam = useMemo(() => {
+    const map = new Map<string, any[]>();
+    data.forEach((d) => {
+      if (!d.isM300Only) return;
+      const eq = d["Equipe Desl."];
+      if (!eq) return;
+      const arr = map.get(eq);
+      if (arr) arr.push(d);
+      else map.set(eq, [d]);
+    });
+    return map;
+  }, [data]);
+
   const calcRetornoBase = (eqData: any[]): number | null => {
     // Include M300-only rows for same team(s)/date(s) so last-activity end matches the timeline
     const teams = new Set<string>();
@@ -535,9 +549,12 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const incidentKeys = new Set(
       eqData.map((d) => normalizeIncidentNumber(d["Número"])).filter(Boolean)
     );
-    const m300Extra = data.filter((d) => {
-      if (!d.isM300Only) return false;
-      if (!teams.has(d["Equipe Desl."])) return false;
+    const candidates: any[] = [];
+    teams.forEach((t) => {
+      const arr = m300OnlyByTeam.get(t);
+      if (arr) candidates.push(...arr);
+    });
+    const m300Extra = candidates.filter((d) => {
       const dt = d["Data Referência"] || d["Data M300"] || d["Data Turno"] || d["Data Ação"];
       if (!dates.has(dt)) return false;
       const num = normalizeIncidentNumber(d["Número"] || d["Incidente_M300"]);
