@@ -1378,7 +1378,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     });
   }, [filteredData, isPeriodMode, selectedTimelineDay]);
 
-  const timelineData = selectedEquipesDetalhe.map(equipe => {
+  const timelineData = useMemo(() => selectedEquipesDetalhe.map(equipe => {
     const incidentesPlotados = timelineFilteredData.filter((d) => d["Equipe Desl."] === equipe);
     const incidentesBaseKeys = new Set(
       incidentesPlotados.map((d) => normalizeIncidentNumber(d["Número"]))
@@ -1536,7 +1536,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       returnToBaseDuration,
       lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], timelineEffectiveDate),
     };
-  });
+  }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [selectedEquipesDetalhe, timelineFilteredData, data, isPeriodMode, selectedTimelineDay, timelineEffectiveDate]);
 
   const handlePasswordAction = useCallback(async () => {
     if (isSaving || !pendingAction) return;
