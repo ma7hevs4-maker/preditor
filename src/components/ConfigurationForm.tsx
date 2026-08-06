@@ -102,7 +102,12 @@ export const ConfigurationForm = ({
     if (!bases || !selectedRegionalLabel) return;
     const primaryId = getPrimaryBaseId(selectedRegionalLabel, bases, null);
     if (primaryId) {
-      setLocalConfig((prev) => ({ ...prev, baseId: primaryId, regionalLabel: selectedRegionalLabel }));
+      setLocalConfig((prev) => ({
+        ...prev,
+        baseId: primaryId,
+        regionalLabel: selectedRegionalLabel,
+        aggregateBaseIds: getBaseIdsForRegional(selectedRegionalLabel, bases, null),
+      }));
     }
     setSelectedSucursal("todas");
     setLocationSucursal("");
@@ -117,9 +122,18 @@ export const ConfigurationForm = ({
         : locationSucursal || null;
     const primaryId = getPrimaryBaseId(selectedRegional.label, bases, refSucursal);
     if (primaryId) {
-      setLocalConfig((prev) => ({ ...prev, baseId: primaryId, regionalLabel: selectedRegional.label }));
+      setLocalConfig((prev) => ({
+        ...prev,
+        baseId: primaryId,
+        regionalLabel: selectedRegional.label,
+        aggregateBaseIds: getBaseIdsForRegional(
+          selectedRegional.label,
+          bases,
+          hasSucursais && selectedSucursal !== "todas" ? selectedSucursal : null
+        ),
+      }));
     }
-  }, [selectedSucursal, locationSucursal, bases, selectedRegional]);
+  }, [selectedSucursal, locationSucursal, bases, selectedRegional, hasSucursais]);
 
 
   const handleChange = (field: keyof SimulationConfig, value: number | string | number[]) => {

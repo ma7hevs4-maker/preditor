@@ -10,6 +10,8 @@ import { OperationalOverride } from "@/components/OperationalOverrideDialog";
 export interface SimulationConfig {
   baseId: string;
   regionalLabel?: string | null; // Label da regional (ex: "Lagos") para histórico e filtros
+  /** IDs das bases (sucursais) consideradas — usado para agregar dados históricos */
+  aggregateBaseIds?: string[];
   btInitialBacklog: number;
   mtInitialBacklog: number;
   teamsPerHour: number[]; // 24 values for day 1

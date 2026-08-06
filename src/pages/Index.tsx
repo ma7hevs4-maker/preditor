@@ -12,7 +12,7 @@ import { AlertTriangle, TrendingDown, Users, Zap, Loader2 } from "lucide-react";
 
 import { toast } from "@/hooks/use-toast";
 import { useBases } from "@/hooks/useBases";
-import { useHistoricalData } from "@/hooks/useHistoricalData";
+import { useAggregatedHistoricalData } from "@/hooks/useHistoricalData";
 import { useWeather } from "@/hooks/useWeather";
 import { useSimulation, SimulationConfig, SimulationRow } from "@/hooks/useSimulation";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -66,8 +66,18 @@ const Index = () => {
 
   const selectedBase = bases?.find(b => b.id === config.baseId);
 
-  // Fetch historical data for selected base
-  const { data: historicalData, isLoading: historicalLoading } = useHistoricalData(config.baseId);
+  // Fetch historical data (agregado quando há várias sucursais)
+  const historicalBaseIds = useMemo(
+    () =>
+      config.aggregateBaseIds && config.aggregateBaseIds.length > 0
+        ? config.aggregateBaseIds
+        : config.baseId
+        ? [config.baseId]
+        : [],
+    [config.aggregateBaseIds, config.baseId]
+  );
+  const { data: historicalData, isLoading: historicalLoading } =
+    useAggregatedHistoricalData(historicalBaseIds);
 
   // Fetch weather triggers for selected base
   const { data: weatherTriggers } = useWeatherTriggers(config.baseId || null);
