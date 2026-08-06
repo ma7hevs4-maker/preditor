@@ -129,25 +129,6 @@ export const useAggregatedHistoricalData = (
   });
 };
 
-const _unusedUpdateHistoricalData = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (updates: Partial<HistoricalDataRow> & { id: string }) => {
-      const { id, ...data } = updates;
-      const { error } = await supabase
-        .from("historical_data")
-        .update(data)
-        .eq("id", id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["historical_data"] });
-    },
-  });
-};
-
 // Bulk update for multiple hours
 export const useBulkUpdateHistoricalData = () => {
   const queryClient = useQueryClient();
