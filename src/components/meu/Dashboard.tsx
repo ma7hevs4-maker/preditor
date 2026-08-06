@@ -40,11 +40,21 @@ import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
 import { getInsourcingTypeFromEquipe, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 import { classifyTeamOrigin } from "@/data/teamPrefixToPolo";
 
-const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
+const FilterMultiSelect = React.memo(({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
-  const filteredOptions = searchable 
-    ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
-    : options;
+  const filteredOptions = useMemo(
+    () =>
+      searchable
+        ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
+        : options,
+    [options, searchable, search]
+  );
+  const selectedSet = useMemo(() => new Set<string>(selected), [selected]);
+  // Cap rendered chips — lists like incident numbers can hold thousands of
+  // entries and rendering them all freezes the filter panel.
+  const MAX_VISIBLE = 300;
+  const visibleOptions = filteredOptions.slice(0, MAX_VISIBLE);
+  const hiddenCount = filteredOptions.length - visibleOptions.length;
 
   return (
     <div className="space-y-2">
@@ -73,8 +83,8 @@ const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: a
         </div>
       )}
       <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
-        {filteredOptions.map((opt: string) => {
-          const isSelected = selected.includes(opt);
+        {visibleOptions.map((opt: string) => {
+          const isSelected = selectedSet.has(opt);
           return (
             <button
               key={opt}
@@ -95,10 +105,16 @@ const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: a
             </button>
           );
         })}
+        {hiddenCount > 0 && (
+          <span className="px-2 py-0.5 text-[10px] text-muted-foreground">
+            +{hiddenCount} — refine a pesquisa
+          </span>
+        )}
       </div>
     </div>
   );
-};
+});
+FilterMultiSelect.displayName = "FilterMultiSelect";
 
 interface DashboardProps {
   data: any[];
@@ -507,6 +523,20 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   // Helper: calculate return to base (last incident "Liberada" → logoff) in minutes
   // If the last event before logoff is an interval, use interval start instead
+  // Pre-index M300-only rows by team so calcRetornoBase doesn't rescan all data per team.
+  const m300OnlyByTeam = useMemo(() => {
+    const map = new Map<string, any[]>();
+    data.forEach((d) => {
+      if (!d.isM300Only) return;
+      const eq = d["Equipe Desl."];
+      if (!eq) return;
+      const arr = map.get(eq);
+      if (arr) arr.push(d);
+      else map.set(eq, [d]);
+    });
+    return map;
+  }, [data]);
+
   const calcRetornoBase = (eqData: any[]): number | null => {
     // Include M300-only rows for same team(s)/date(s) so last-activity end matches the timeline
     const teams = new Set<string>();
@@ -519,9 +549,12 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const incidentKeys = new Set(
       eqData.map((d) => normalizeIncidentNumber(d["Número"])).filter(Boolean)
     );
-    const m300Extra = data.filter((d) => {
-      if (!d.isM300Only) return false;
-      if (!teams.has(d["Equipe Desl."])) return false;
+    const candidates: any[] = [];
+    teams.forEach((t) => {
+      const arr = m300OnlyByTeam.get(t);
+      if (arr) candidates.push(...arr);
+    });
+    const m300Extra = candidates.filter((d) => {
       const dt = d["Data Referência"] || d["Data M300"] || d["Data Turno"] || d["Data Ação"];
       if (!dates.has(dt)) return false;
       const num = normalizeIncidentNumber(d["Número"] || d["Incidente_M300"]);
@@ -609,6 +642,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   // Teams that had retorno a base > 40 min on any day within the filtered scope
   const teamsWithRetornoAbove40 = useMemo(() => {
     const teams = new Set<string>();
+    // Expensive scan — only needed when the filter is actually active.
+    if (retornoBase40Filter === "todos") return teams;
     const byTeamDate: Record<string, any[]> = {};
     filteredDataPreRetorno.forEach((d) => {
       const eq = d["Equipe Desl."];
@@ -624,7 +659,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       if (ret != null && ret > 40) teams.add(eq);
     });
     return teams;
-  }, [filteredDataPreRetorno]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredDataPreRetorno, retornoBase40Filter]);
 
   const filteredData = useMemo(() => {
     if (retornoBase40Filter === "todos") return filteredDataPreRetorno;
@@ -798,8 +834,21 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     return new Set(filteredData.map(d => d["Data Turno"] || d["Data Ação"])).size || 1;
   }, [filteredData]);
 
+  // Heavy aggregate block — memoized so that merely opening the filter panel,
+  // typing in a search box or toggling dialogs does not recompute everything.
+  const aggregates = useMemo(() => {
   const totalInc = new Set(filteredData.map((d) => d.Número)).size;
   const displayInc = totalInc;
+
+  // Pre-group rows by "Equipe Desl." once (avoids O(rows × teams) scans below)
+  const rowsByEquipe = new Map<string, any[]>();
+  filteredData.forEach((d) => {
+    const key = d["Equipe Desl."];
+    if (!key) return;
+    const arr = rowsByEquipe.get(key);
+    if (arr) arr.push(d);
+    else rowsByEquipe.set(key, [d]);
+  });
 
   const tmdeMedio =
     filteredData.length > 0
@@ -821,6 +870,14 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   ];
   const resumoProcessos = processosOrdem.map((proc) => {
     const procData = filteredData.filter((d) => d.Processo === proc);
+    const procRowsByEquipe = new Map<string, any[]>();
+    procData.forEach((d) => {
+      const key = d["Equipe Desl."];
+      if (!key) return;
+      const arr = procRowsByEquipe.get(key);
+      if (arr) arr.push(d);
+      else procRowsByEquipe.set(key, [d]);
+    });
     const inc = new Set(procData.map((d) => d.Número)).size;
 
     const incProdutivos = new Set(procData.filter((d) => !d.Improdutivo).map((d) => d.Número)).size;
@@ -849,13 +906,11 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
     let somaOcupacao = 0;
     let somaIdleMinutes = 0;
-    const equipesPresentesNoProcesso = Array.from(
-      new Set(procData.map((d) => d["Equipe Desl."]).filter(Boolean))
-    );
+    const equipesPresentesNoProcesso = Array.from(procRowsByEquipe.keys());
     
     let countOcupacaoValidas = 0;
     equipesPresentesNoProcesso.forEach(eq => {
-      const eqData = procData.filter(d => d["Equipe Desl."] === eq);
+      const eqData = procRowsByEquipe.get(eq) || [];
       const completeData = filterCompleteDays(eqData);
       if (completeData.length === 0) return;
       const occ = calculateOccupancy(completeData);
@@ -899,7 +954,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     const plataformaValues: number[] = [];
     const retornoValues: number[] = [];
     equipesPresentesNoProcesso.forEach(eq => {
-      const eqData = procData.filter(d => d["Equipe Desl."] === eq);
+      const eqData = procRowsByEquipe.get(eq) || [];
       let maxLogin: number | null = null;
       eqData.forEach(d => {
         const raw = d["1º Login Corrigido"];
@@ -963,12 +1018,10 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
 
   let somaOcupacaoGeral = 0;
   let somaIdleMinutesGeral = 0;
-  const equipesPresentesGeral = Array.from(
-    new Set(filteredData.map((d) => d["Equipe Desl."]).filter(Boolean))
-  );
+  const equipesPresentesGeral = Array.from(rowsByEquipe.keys());
   let countOcupacaoValidasGeral = 0;
   equipesPresentesGeral.forEach(eq => {
-    const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
+    const eqData = rowsByEquipe.get(eq) || [];
     const completeData = filterCompleteDays(eqData);
     if (completeData.length === 0) return;
     const occ = calculateOccupancy(completeData);
@@ -987,7 +1040,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const allPlatVals: number[] = [];
   const allRetornoVals: number[] = [];
   equipesPresentesGeral.forEach(eq => {
-    const eqData = filteredData.filter(d => d["Equipe Desl."] === eq);
+    const eqData = rowsByEquipe.get(eq) || [];
     let maxLogin: number | null = null;
     eqData.forEach(d => {
       const raw = d["1º Login Corrigido"];
@@ -1048,7 +1101,49 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     "Retorno Base": allRetornoVals.length > 0 ? allRetornoVals.reduce((a, b) => a + b, 0) / allRetornoVals.length : null,
   };
 
+    return {
+      totalInc,
+      displayInc,
+      tmdeMedio,
+      reincTotal,
+      taxaReinc,
+      improdTotal,
+      taxaImprod,
+      resumoProcessos,
+      totalIncProdutivos,
+      totalEquipesGeralCount,
+      ocupacaoMediaGeral,
+      avgIdleMinutesGeral,
+      equipesPresentesGeral,
+      totalRowProcessos,
+      allLoginVals,
+      allDespachoVals,
+      allPlatVals,
+      allRetornoVals,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredData, isPeriodMode, data]);
 
+  const {
+    totalInc,
+    displayInc,
+    tmdeMedio,
+    reincTotal,
+    taxaReinc,
+    improdTotal,
+    taxaImprod,
+    resumoProcessos,
+    totalIncProdutivos,
+    totalEquipesGeralCount,
+    ocupacaoMediaGeral,
+    avgIdleMinutesGeral,
+    equipesPresentesGeral,
+    totalRowProcessos,
+    allLoginVals,
+    allDespachoVals,
+    allPlatVals,
+    allRetornoVals,
+  } = aggregates;
 
   // Helper to format values from Excel to minutes (duration)
   const formatToMinutes = (val: any): string => {
@@ -1319,7 +1414,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     });
   }, [filteredData, isPeriodMode, selectedTimelineDay]);
 
-  const timelineData = selectedEquipesDetalhe.map(equipe => {
+  const timelineData = useMemo(() => selectedEquipesDetalhe.map(equipe => {
     const incidentesPlotados = timelineFilteredData.filter((d) => d["Equipe Desl."] === equipe);
     const incidentesBaseKeys = new Set(
       incidentesPlotados.map((d) => normalizeIncidentNumber(d["Número"]))
@@ -1477,7 +1572,9 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       returnToBaseDuration,
       lastLogOff: lastLogOffDecimal ?? convertToDecimalHours(firstRow["Log Off Corrigido"] || firstRow["Log Off"], timelineEffectiveDate),
     };
-  });
+  }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [selectedEquipesDetalhe, timelineFilteredData, data, isPeriodMode, selectedTimelineDay, timelineEffectiveDate]);
 
   const handlePasswordAction = useCallback(async () => {
     if (isSaving || !pendingAction) return;
