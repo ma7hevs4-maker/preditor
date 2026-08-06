@@ -40,11 +40,16 @@ import { EvolucaoTemporalView } from "./EvolucaoTemporalView";
 import { getInsourcingTypeFromEquipe, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
 import { classifyTeamOrigin } from "@/data/teamPrefixToPolo";
 
-const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: any) => {
+const FilterMultiSelect = React.memo(({ label, options, selected, onChange, searchable }: any) => {
   const [search, setSearch] = useState("");
-  const filteredOptions = searchable 
-    ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
-    : options;
+  const filteredOptions = useMemo(
+    () =>
+      searchable
+        ? options.filter((opt: string) => opt.toLowerCase().includes(search.toLowerCase()))
+        : options,
+    [options, searchable, search]
+  );
+  const selectedSet = useMemo(() => new Set<string>(selected), [selected]);
 
   return (
     <div className="space-y-2">
@@ -74,7 +79,7 @@ const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: a
       )}
       <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
         {filteredOptions.map((opt: string) => {
-          const isSelected = selected.includes(opt);
+          const isSelected = selectedSet.has(opt);
           return (
             <button
               key={opt}
@@ -98,7 +103,8 @@ const FilterMultiSelect = ({ label, options, selected, onChange, searchable }: a
       </div>
     </div>
   );
-};
+});
+FilterMultiSelect.displayName = "FilterMultiSelect";
 
 interface DashboardProps {
   data: any[];
