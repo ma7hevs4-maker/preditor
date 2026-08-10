@@ -788,9 +788,28 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <ClipboardList className="w-4 h-4" />
-                  Log de alterações — {bases?.find(b => b.id === selectedBaseId)?.name ?? "base"}
+                  Log de alterações
                 </DialogTitle>
               </DialogHeader>
+
+              <div className="flex items-center gap-2 mb-3">
+                <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">Base:</label>
+                <Select value={logBaseFilter} onValueChange={setLogBaseFilter}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs">
+                    <SelectValue placeholder="Filtrar base" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as bases</SelectItem>
+                    {bases?.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {changeLogs.length} registro(s)
+                </span>
+              </div>
+
               <ScrollArea className="max-h-[60vh] pr-3">
                 {!changeLogs || changeLogs.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma alteração registrada ainda.</p>
@@ -806,6 +825,9 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                               {format(new Date(log.plan_date + "T00:00:00"), "dd/MM/yyyy")}
                               <span className="text-muted-foreground font-normal">
                                 · {log.action === "create" ? "criação" : "edição"}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-foreground">
+                                {bases?.find(b => b.id === log.base_id)?.name ?? log.base_id}
                               </span>
                             </span>
                             <span className="text-[11px] text-muted-foreground">
