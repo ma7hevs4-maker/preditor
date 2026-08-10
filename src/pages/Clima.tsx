@@ -716,7 +716,7 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 }
 
 // ---------- Weather card for a single base ----------
-function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, showSucursal, onOpenStructure }: {
+function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, showSucursal, onOpenStructure, eqhTotalRealizado, eqhSucursalRealizado, onOpenStructureRealizado }: {
   base: Base;
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
@@ -724,6 +724,9 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
   eqhSucursal?: number | null;
   showSucursal?: boolean;
   onOpenStructure?: () => void;
+  eqhTotalRealizado?: number | null;
+  eqhSucursalRealizado?: number | null;
+  onOpenStructureRealizado?: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider, "day");
@@ -1024,7 +1027,7 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
                 </span>
               </div>
             </div>
-            {/* Estrutura Declarada */}
+            {/* Estrutura Sucursal (planejada) */}
             {showSucursal && eqhSucursal !== null && eqhSucursal !== undefined && (
               <div className="border-t border-border/30 pt-1.5 mt-1">
                 <div className="flex items-center justify-between text-xs">
@@ -1034,8 +1037,17 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
                   </span>
                   <span className="font-mono font-bold text-foreground">{eqhSucursal}</span>
                 </div>
+                {eqhSucursalRealizado !== null && eqhSucursalRealizado !== undefined && (
+                  <div className="flex items-center justify-between text-xs mt-0.5">
+                    <span className="text-muted-foreground/80 flex items-center gap-1 pl-4">
+                      Sucursal (realizada)
+                    </span>
+                    <span className="font-mono font-bold text-muted-foreground">{eqhSucursalRealizado}</span>
+                  </div>
+                )}
               </div>
             )}
+            {/* Estrutura Planejada / Realizada */}
             {eqhTotal !== null && (
               <div className="border-t border-border/30 pt-1.5 mt-1">
                 <div
@@ -1047,9 +1059,24 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
                 >
                   <span className="text-muted-foreground font-semibold flex items-center gap-1">
                     <Users className="w-3 h-3" />
-                    Estrutura Declarada
+                    Estrutura Planejada
                   </span>
                   <span className="font-mono font-bold text-primary">{eqhTotal}</span>
+                </div>
+                <div
+                  className="flex items-center justify-between text-xs cursor-pointer hover:bg-muted/20 rounded px-1 py-0.5 -mx-1 transition-colors mt-0.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenStructureRealizado?.();
+                  }}
+                >
+                  <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Estrutura Realizada
+                  </span>
+                  <span className="font-mono font-bold text-warning">
+                    {eqhTotalRealizado ?? "—"}
+                  </span>
                 </div>
               </div>
             )}
