@@ -92,7 +92,13 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const deletePlan = useDeleteDailyTeamPlan();
   const upsertTypeEntries = useUpsertTeamTypeEntries();
   const addChangeLog = useAddPlanChangeLog();
-  const { data: changeLogs } = usePlanChangeLogs(isRealizado ? selectedBaseId || null : null, null, "realizado");
+  const { data: allChangeLogs } = useAllPlanChangeLogs("realizado");
+
+  const changeLogs = useMemo(() => {
+    if (!allChangeLogs) return [];
+    if (logBaseFilter === "all") return allChangeLogs;
+    return allChangeLogs.filter(log => log.base_id === logBaseFilter);
+  }, [allChangeLogs, logBaseFilter]);
 
   const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
 
