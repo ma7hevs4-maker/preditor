@@ -1307,9 +1307,13 @@ export default function Clima() {
   const maxDays = 6;
 
   const dateStr = format(selectedDay, "yyyy-MM-dd");
-  const { data: plans } = useAllPlansForDate(dateStr);
+  const { data: plans } = useAllPlansForDate(dateStr, "planejado");
   const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
   const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
+
+  const { data: plansRealizado } = useAllPlansForDate(dateStr, "realizado");
+  const planIdsRealizado = useMemo(() => (plansRealizado || []).map(p => p.id), [plansRealizado]);
+  const { data: allTypeEntriesRealizado } = useTeamTypeEntriesByPlans(planIdsRealizado);
 
   // OpenWeatherMap only returns future 3-hour blocks, so late in the day it
   // cannot provide a complete 00h–23h grid for today. Open-Meteo can.
@@ -1440,6 +1444,8 @@ export default function Clima() {
           selectedDay={selectedDay}
           plans={plans || []}
           allTypeEntries={allTypeEntries || []}
+          plansRealizado={plansRealizado || []}
+          allTypeEntriesRealizado={allTypeEntriesRealizado || []}
         />
       ) : (
         <div className="text-center py-12 text-muted-foreground">
