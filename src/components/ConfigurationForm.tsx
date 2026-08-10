@@ -261,7 +261,7 @@ export const ConfigurationForm = ({
   const BT_TEAM_TYPES = ["Corte e Religa", "Perdas"];
 
   // Load declared structure from daily plans for a specific date
-  const handleLoadDeclaredStructure = async (day: number) => {
+  const handleLoadDeclaredStructure = async (day: number, kind: "planejado" | "realizado" = "planejado") => {
     if (!bases || declaredBaseIds.length === 0) return;
     setLoadingDeclared(true);
     try {
@@ -276,6 +276,7 @@ export const ConfigurationForm = ({
           .select("id")
           .eq("base_id", baseId)
           .eq("plan_date", declaredDateStr)
+          .eq("plan_kind", kind)
           .maybeSingle();
 
         if (data?.id) {
@@ -285,7 +286,7 @@ export const ConfigurationForm = ({
 
       if (planIds.length === 0) {
         toast({
-          title: "Sem estrutura declarada",
+          title: kind === "realizado" ? "Sem estrutura realizada" : "Sem estrutura planejada",
           description: `Nenhum plano encontrado para ${format(declaredDate, "dd/MM/yyyy")}`,
           variant: "destructive",
         });
@@ -341,12 +342,12 @@ export const ConfigurationForm = ({
         : hasSucursais ? `todas as sucursais de ${selectedRegional?.label}` : selectedRegionalLabel;
 
       toast({
-        title: "Estrutura declarada carregada",
+        title: kind === "realizado" ? "Estrutura realizada carregada" : "Estrutura planejada carregada",
         description: `${planIds.length} plano(s) de ${sucursalLabel} somados para ${format(declaredDate, "dd/MM/yyyy")}`,
       });
       setDeclaredDateOpen(false);
     } catch {
-      toast({ title: "Erro ao carregar estrutura declarada", variant: "destructive" });
+      toast({ title: "Erro ao carregar estrutura", variant: "destructive" });
     } finally {
       setLoadingDeclared(false);
     }
