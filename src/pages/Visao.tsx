@@ -865,7 +865,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             ].map(({ types, color, labelColor }) =>
               types.map((type, idx) => {
                 const row = typePerHour[type] || [];
-                const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                const rowB = typePerHourB[type] || [];
+                const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                 if (!hasAny) return null;
                 return (
                   <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
@@ -875,9 +876,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                       return (
                         <React.Fragment key={turno.letter}>
                           {turno.hours.map(h => (
-                            <td key={h} className={cn("text-center py-0.5 font-mono", color)}>{row[h] || 0}</td>
+                            <td key={h} className={cn("text-center py-0.5 font-mono whitespace-nowrap", color)}>{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                           ))}
-                          <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                          <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                           {turno.letter !== "C" && <td className="w-2" />}
                         </React.Fragment>
                       );
@@ -889,7 +890,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
             {LV_MK_TYPES.map(type => {
               const row = typePerHour[type] || [];
-              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              const rowB = typePerHourB[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
@@ -899,9 +901,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                          <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                         ))}
-                        <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60 whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -912,7 +914,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
             {APOIO_TYPES.map(type => {
               const row = typePerHour[type] || [];
-              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              const rowB = typePerHourB[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
@@ -922,9 +925,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                          <td key={h} className="text-center py-0.5 font-mono text-foreground whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                         ))}
-                        <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -935,7 +938,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
             {BT_ONLY_TYPES.map(type => {
               const row = typePerHour[type] || [];
-              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              const rowB = typePerHourB[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
@@ -945,9 +949,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                          <td key={h} className="text-center py-0.5 font-mono text-warning/80 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                         ))}
-                        <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>{avg(row, turno.hours)}</td>
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell, "text-warning")}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -964,6 +968,11 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                 const r = typePerHour[type] || [];
                 r.forEach((v, h) => { totalRow[h] += v; });
               });
+              const totalRowB = Array(24).fill(0);
+              COUNTED_TYPES.forEach(type => {
+                const r = typePerHourB[type] || [];
+                r.forEach((v, h) => { totalRowB[h] += v; });
+              });
               return (
                 <tr className="font-semibold">
                   <td className="py-1 pr-2 text-foreground sticky left-0 bg-card z-10">Total Processos</td>
@@ -972,9 +981,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                          <td key={h} className="text-center py-1 font-mono text-foreground whitespace-nowrap">{pair(compare, totalRow[h], totalRowB[h])}</td>
                         ))}
-                        <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>{avg(totalRow, turno.hours)}</td>
+                        <td className={cn("text-center py-1 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(totalRow, turno.hours), avg(totalRowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
