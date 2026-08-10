@@ -95,6 +95,50 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_plan_change_logs: {
+        Row: {
+          action: string
+          author: string | null
+          base_id: string
+          changes: Json
+          created_at: string
+          id: string
+          note: string | null
+          plan_date: string
+          plan_kind: string
+        }
+        Insert: {
+          action?: string
+          author?: string | null
+          base_id: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan_date: string
+          plan_kind?: string
+        }
+        Update: {
+          action?: string
+          author?: string | null
+          base_id?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan_date?: string
+          plan_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_plan_change_logs_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_team_plans: {
         Row: {
           base_id: string
@@ -125,6 +169,7 @@ export type Database = {
           loss_teams_hour_8: number
           loss_teams_hour_9: number
           plan_date: string
+          plan_kind: string
           teams_hour_0: number
           teams_hour_1: number
           teams_hour_10: number
@@ -180,6 +225,7 @@ export type Database = {
           loss_teams_hour_8?: number
           loss_teams_hour_9?: number
           plan_date: string
+          plan_kind?: string
           teams_hour_0?: number
           teams_hour_1?: number
           teams_hour_10?: number
@@ -235,6 +281,7 @@ export type Database = {
           loss_teams_hour_8?: number
           loss_teams_hour_9?: number
           plan_date?: string
+          plan_kind?: string
           teams_hour_0?: number
           teams_hour_1?: number
           teams_hour_10?: number
