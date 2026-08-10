@@ -498,6 +498,27 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
       : btImpact ?? mtImpact ?? 0;
 
     try {
+      const original = weatherTriggers?.find(t => t.id === editingTriggerId);
+      // Editing a shared default trigger while a base is selected creates a
+      // base-specific override instead of changing every base at once.
+      if (original && original.base_id === null && selectedBaseId) {
+        await addWeatherTrigger.mutateAsync({
+          name: editingTrigger.name,
+          trigger_type: editingTrigger.trigger_type,
+          condition_min: editingTrigger.condition_min ? parseFloat(editingTrigger.condition_min) : null,
+          condition_max: editingTrigger.condition_max ? parseFloat(editingTrigger.condition_max) : null,
+          impact_percent: legacyImpact,
+          impact_percent_bt: btImpact,
+          impact_percent_mt: mtImpact,
+          description: editingTrigger.description || null,
+          base_id: selectedBaseId,
+          active: true,
+        });
+        toast.success("Gatilho específico criado para esta base!");
+        handleCancelEditTrigger();
+        return;
+      }
+
       await updateWeatherTrigger.mutateAsync({
         id: editingTriggerId,
         name: editingTrigger.name,
@@ -576,7 +597,13 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
   // Filter triggers by selected base
   const filteredTriggers = weatherTriggers?.filter(t => {
     if (!selectedBaseId) return t.base_id === null;
-    return t.base_id === null || t.base_id === selectedBaseId;
+    if (t.base_id === selectedBaseId) return true;
+    if (t.base_id !== null) return false;
+    // Hide the default when this base already has its own override
+    const hasOverride = weatherTriggers.some(
+      o => o.base_id === selectedBaseId && o.trigger_type === t.trigger_type && o.name === t.name
+    );
+    return !hasOverride;
   });
 
   // Calculate structure totals

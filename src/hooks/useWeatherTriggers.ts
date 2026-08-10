@@ -36,7 +36,15 @@ export const useWeatherTriggers = (baseId: string | null = null) => {
       const { data, error } = await query.order("trigger_type").order("condition_min");
       
       if (error) throw error;
-      return data as WeatherTrigger[];
+      const rows = (data ?? []) as WeatherTrigger[];
+
+      // Base-specific triggers override the defaults with the same type + name
+      const overrideKeys = new Set(
+        rows.filter(r => r.base_id !== null).map(r => `${r.trigger_type}|${r.name}`)
+      );
+      return rows.filter(
+        r => r.base_id !== null || !overrideKeys.has(`${r.trigger_type}|${r.name}`)
+      );
     },
   });
 };
