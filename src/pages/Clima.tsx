@@ -1101,15 +1101,18 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
   );
 }
 
-function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, allTypeEntries }: {
+function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, allTypeEntries, plansRealizado, allTypeEntriesRealizado }: {
   regionais: string[];
   allBases: Base[];
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
+  plansRealizado: DailyTeamPlan[];
+  allTypeEntriesRealizado: TeamTypeEntry[];
 }) {
   const [structureRegional, setStructureRegional] = useState<Regional | null>(null);
+  const [structureKind, setStructureKind] = useState<"planejado" | "realizado">("planejado");
 
   const basesInGroup = useMemo(() => {
     const result: { regional: Regional; bases: Base[] }[] = [];
@@ -1181,6 +1184,48 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
     return result;
   }, [basesInGroup, plans, allTypeEntries]);
 
+  // Same computations for the realizado structure
+  const eqhPerRegionalRealizado = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
+    basesInGroup.forEach(({ regional, bases }) => {
+      const baseIds = bases.map(b => b.id);
+      const regionalPlans = plansRealizado.filter(p => baseIds.includes(p.base_id));
+      if (regionalPlans.length === 0) { result[regional.label] = null; return; }
+      const planIds = regionalPlans.map(p => p.id);
+      const entries = allTypeEntriesRealizado.filter(e => planIds.includes(e.daily_plan_id));
+      const countedPerHour = Array(24).fill(0);
+      entries.forEach(e => {
+        if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+          countedPerHour[e.hour] += e.quantity;
+        }
+      });
+      result[regional.label] = sumTurnoAverages(countedPerHour);
+    });
+    return result;
+  }, [basesInGroup, plansRealizado, allTypeEntriesRealizado]);
+
+  const eqhPerBaseRealizado = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
+    basesInGroup.forEach(({ bases }) => {
+      bases.forEach(base => {
+        const basePlans = plansRealizado.filter(p => p.base_id === base.id);
+        if (basePlans.length === 0) { result[base.id] = null; return; }
+        const planIds = basePlans.map(p => p.id);
+        const entries = allTypeEntriesRealizado.filter(e => planIds.includes(e.daily_plan_id));
+        const countedPerHour = Array(24).fill(0);
+        entries.forEach(e => {
+          if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+            countedPerHour[e.hour] += e.quantity;
+          }
+        });
+        result[base.id] = sumTurnoAverages(countedPerHour);
+      });
+    });
+    return result;
+  }, [basesInGroup, plansRealizado, allTypeEntriesRealizado]);
+
   return (
     <>
       <div className={cn(
@@ -1202,7 +1247,10 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
                   eqhTotal={eqhPerRegional[regional.label]}
                   eqhSucursal={eqhPerBase[base.id]}
                   showSucursal={bases.length > 1}
-                  onOpenStructure={() => setStructureRegional(regional)}
+                  eqhTotalRealizado={eqhPerRegionalRealizado[regional.label]}
+                  eqhSucursalRealizado={eqhPerBaseRealizado[base.id]}
+                  onOpenStructure={() => { setStructureKind("planejado"); setStructureRegional(regional); }}
+                  onOpenStructureRealizado={() => { setStructureKind("realizado"); setStructureRegional(regional); }}
                 />
               ))}
             </div>
@@ -1216,8 +1264,9 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
           onClose={() => setStructureRegional(null)}
           regional={structureRegional}
           allBases={allBases}
-          plans={plans}
-          allTypeEntries={allTypeEntries}
+          plans={structureKind === "realizado" ? plansRealizado : plans}
+          allTypeEntries={structureKind === "realizado" ? allTypeEntriesRealizado : allTypeEntries}
+          kind={structureKind}
           selectedDate={selectedDay}
         />
       )}
