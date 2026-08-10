@@ -13,7 +13,7 @@ import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray, useAddTeamStructure } from "@/hooks/useTeamStructures";
 import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields, PlanKind } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
-import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail } from "@/hooks/usePlanChangeLogs";
+import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail, useAllPlanChangeLogs } from "@/hooks/usePlanChangeLogs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
