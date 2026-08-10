@@ -717,9 +717,12 @@ interface ConsolidatedViewProps {
   allTypeEntries: TeamTypeEntry[];
   allBases: { id: string; name: string }[];
   selectedDate: Date;
+  plansB?: DailyTeamPlan[];
+  allTypeEntriesB?: TeamTypeEntry[];
+  compare?: boolean;
 }
 
-const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, selectedDate }: ConsolidatedViewProps) => {
+const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, selectedDate, plansB = [], allTypeEntriesB = [], compare = false }: ConsolidatedViewProps) => {
   // Gather all base IDs for the selected UT
   const utBaseIds = useMemo(() => {
     const ids: string[] = [];
@@ -740,6 +743,15 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
   const utPlans = useMemo(() => plans.filter(p => utBaseIds.includes(p.base_id)), [plans, utBaseIds]);
   const utPlanIds = utPlans.map(p => p.id);
   const utEntries = useMemo(() => allTypeEntries.filter(e => utPlanIds.includes(e.daily_plan_id)), [allTypeEntries, utPlanIds]);
+
+  const utPlansB = useMemo(() => plansB.filter(p => utBaseIds.includes(p.base_id)), [plansB, utBaseIds]);
+  const utEntriesB = useMemo(() => {
+    const ids = utPlansB.map(p => p.id);
+    return allTypeEntriesB.filter(e => ids.includes(e.daily_plan_id));
+  }, [allTypeEntriesB, utPlansB]);
+  const typePerHourB = useMemo(() => typeMapFromEntries(utEntriesB), [utEntriesB]);
+  const teamsPerHourB = useMemo(() => seriesForTypes(utEntriesB, ALL_INCIDENTS_TYPES), [utEntriesB]);
+  const btPerHourB = useMemo(() => seriesForTypes(utEntriesB, BT_ONLY_TYPES), [utEntriesB]);
 
   const allHours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -769,8 +781,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
+  const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
 
-  if (utPlans.length === 0) {
+  if (utPlans.length === 0 && utPlansB.length === 0) {
     return (
       <div className="glass-card p-12 flex flex-col items-center justify-center text-center">
         <Eye className="w-10 h-10 text-muted-foreground mb-3" />
@@ -791,7 +804,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             {regionais.map(r => r.label).join(" · ")} — {format(selectedDate, "dd/MM/yyyy")}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-3 py-1">{declaredTeamsTotal} equipes</Badge>
+        <Badge variant="secondary" className="text-base px-3 py-1 whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
       </div>
 
       {/* Turno averages */}
@@ -799,10 +812,11 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
         {TURNOS.map(turno => {
           const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
           const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
+          const avgTotalB = avg(teamsPerHourB, turno.hours) + avg(btPerHourB, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-3 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className={cn("text-2xl font-bold", colors.cell)}>{avgTotal}</div>
+              <div className={cn("font-bold", compare ? "text-lg" : "text-2xl", colors.cell)}>{pair(compare, avgTotal, avgTotalB)}</div>
             </div>
           );
         })}
