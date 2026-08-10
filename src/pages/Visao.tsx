@@ -626,10 +626,11 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
         {TURNOS.map(turno => {
           const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
           const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
+          const avgTotalB = avg(teamsPerHourB, turno.hours) + avg(btPerHourB, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className={cn("text-base font-bold", colors.cell)}>{avgTotal}</div>
+              <div className={cn("font-bold", compare ? "text-sm" : "text-base", colors.cell)}>{pair(compare, avgTotal, avgTotalB)}</div>
             </div>
           );
         })}
@@ -640,41 +641,45 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
         <div className="border-t border-border/30 pt-2 mb-2 space-y-0.5">
           {GERAIS_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-foreground">{val}</span>
+                <span className="font-semibold text-foreground">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
           {LV_MK_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-muted-foreground/80">{val}</span>
+                <span className="font-semibold text-muted-foreground/80">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
           {APOIO_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-foreground">{val}</span>
+                <span className="font-semibold text-foreground">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
           {BT_ONLY_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-warning">{val}</span>
+                <span className="font-semibold text-warning">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
@@ -686,17 +691,17 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
         <div className="border-t border-border/30 pt-2 flex justify-between text-xs">
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. Totais (24h)</span>
-            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+            <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h + avgBT24h, avgTotalTeams24hB + avgBT24hB)}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. MT (24h)</span>
-            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+            <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h, avgTotalTeams24hB)}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. BT (24h)</span>
-            <span className="font-bold text-sm text-warning">{avgBT24h}</span>
+            <span className="font-bold text-sm text-warning">{pair(compare, avgBT24h, avgBT24hB)}</span>
           </div>
         </div>
       )}
