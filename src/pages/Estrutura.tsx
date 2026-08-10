@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste, History, ClipboardList, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,8 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray, useAddTeamStructure } from "@/hooks/useTeamStructures";
-import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields } from "@/hooks/useDailyTeamPlans";
+import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields, PlanKind } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
+import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail } from "@/hooks/usePlanChangeLogs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
@@ -34,7 +37,8 @@ const SHORT_NAMES: Record<string, string> = {
   "Reguladas": "Regul.",
 };
 
-const Estrutura = () => {
+const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
+  const isRealizado = kind === "realizado";
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>();
@@ -58,6 +62,9 @@ const Estrutura = () => {
   const [saveStructureOpen, setSaveStructureOpen] = useState(false);
   const [structureName, setStructureName] = useState("");
   const [savingStructure, setSavingStructure] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logAuthor, setLogAuthor] = useState("");
+  const [logNote, setLogNote] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,20 +79,22 @@ const Estrutura = () => {
   }, [bases, selectedBaseId]);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
-  const { data: existingPlan, isLoading: planLoading } = useDailyTeamPlan(selectedBaseId || null, dateStr);
+  const { data: existingPlan, isLoading: planLoading } = useDailyTeamPlan(selectedBaseId || null, dateStr, kind);
   const upsertPlan = useUpsertDailyTeamPlan();
   const deletePlan = useDeleteDailyTeamPlan();
   const upsertTypeEntries = useUpsertTeamTypeEntries();
+  const addChangeLog = useAddPlanChangeLog();
+  const { data: changeLogs } = usePlanChangeLogs(isRealizado ? selectedBaseId || null : null, null, "realizado");
 
   const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
 
   const monthStart = format(startOfMonth(selectedDate), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
-  const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd);
+  const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd, kind);
 
   const calendarViewMonthStart = format(startOfMonth(calendarViewMonth), "yyyy-MM-dd");
   const calendarViewMonthEnd = format(endOfMonth(calendarViewMonth), "yyyy-MM-dd");
-  const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd);
+  const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd, kind);
 
   const calendarPlannedDates = useMemo(() => {
     if (!calendarViewMonthPlans) return new Set<string>();
@@ -115,6 +124,7 @@ const Estrutura = () => {
       });
     }
     setTypeData(newTypeData);
+    savedTypeDataRef.current = newTypeData;
   }, [typeEntries]);
 
   const handleTeamChange = (hour: number, value: number) => {
@@ -206,6 +216,7 @@ const Estrutura = () => {
     const planResult = await upsertPlan.mutateAsync({
       base_id: selectedBaseId,
       plan_date: ds,
+      plan_kind: kind,
       ...teamsArrayToPlanFields(teams, lossTeams),
     } as any);
 
@@ -226,16 +237,39 @@ const Estrutura = () => {
   const handleSave = async () => {
     if (!selectedBaseId) return;
     try {
+      const changes: PlanChangeDetail[] = diffTypeData(savedTypeDataRef.current, typeData);
       if (planningMode === "single") {
         await saveSingleDay(selectedDate);
+        if (isRealizado) {
+          await addChangeLog.mutateAsync({
+            base_id: selectedBaseId,
+            plan_date: format(selectedDate, "yyyy-MM-dd"),
+            action: existingPlan ? "update" : "create",
+            author: logAuthor.trim() || null,
+            note: logNote.trim() || null,
+            changes,
+          });
+        }
         toast({ title: "Plano salvo", description: `Equipes para ${format(selectedDate, "dd/MM/yyyy")} salvas.` });
       } else if (selectedEndDate) {
         const days = eachDayOfInterval({ start: selectedDate, end: selectedEndDate });
         for (const day of days) {
           await saveSingleDay(day);
+          if (isRealizado) {
+            await addChangeLog.mutateAsync({
+              base_id: selectedBaseId,
+              plan_date: format(day, "yyyy-MM-dd"),
+              action: "update",
+              author: logAuthor.trim() || null,
+              note: logNote.trim() || null,
+              changes,
+            });
+          }
         }
         toast({ title: "Período salvo", description: `Plano replicado para ${days.length} dias.` });
       }
+      savedTypeDataRef.current = typeData;
+      setLogNote("");
       setIsDirty(false);
     } catch {
       toast({ title: "Erro ao salvar", variant: "destructive" });
