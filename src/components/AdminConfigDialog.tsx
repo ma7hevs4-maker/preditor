@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, RotateCcw, Gauge, MessageSquare } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
@@ -121,6 +121,12 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
       if (mtTgt) setMtTarget(mtTgt.value);
     }
   }, [systemSettings]);
+
+  useEffect(() => {
+    if (!selectedBaseId && bases?.length) {
+      setSelectedBaseId(bases[0].id);
+    }
+  }, [bases, selectedBaseId]);
 
   const handlePasswordSubmit = () => {
     if (password === ADMIN_PASSWORD) {
@@ -1255,13 +1261,12 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
               {/* TRIGGERS TAB */}
               <TabsContent value="triggers" className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Filtrar por Base (gatilhos podem variar por base)</Label>
+                  <Label>Sucursal</Label>
                   <select
                     value={selectedBaseId || ""}
-                    onChange={(e) => setSelectedBaseId(e.target.value || null)}
+                    onChange={(e) => setSelectedBaseId(e.target.value)}
                     className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-foreground"
                   >
-                    <option value="">Padrão (todas as bases)</option>
                     {bases?.map((base) => (
                       <option key={base.id} value={base.id}>{base.name}</option>
                     ))}
@@ -1271,18 +1276,6 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="font-semibold text-foreground">Gatilhos Climáticos</h4>
                   <div className="flex gap-2">
-                    {selectedBaseId && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="gap-1"
-                        onClick={handleCopyDefaultsToBase}
-                        disabled={addWeatherTrigger.isPending}
-                      >
-                        <Copy className="w-3 h-3" />
-                        Copiar Defaults
-                      </Button>
-                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
