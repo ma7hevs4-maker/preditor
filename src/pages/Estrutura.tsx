@@ -685,7 +685,10 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
               {isRealizado && (
-                <Button variant="outline" size="sm" className="h-8" onClick={() => setLogOpen(true)}>
+                <Button variant="outline" size="sm" className="h-8" onClick={() => {
+                  if (logUnlocked) { setLogOpen(true); }
+                  else { setLogPassword(""); setLogPasswordError(false); setLogPasswordOpen(true); }
+                }}>
                   <History className="w-3.5 h-3.5 mr-1" />Log
                 </Button>
               )}
@@ -702,36 +705,75 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               <Button variant="outline" size="sm" className="h-8" onClick={() => { setStructureName(""); setSaveStructureOpen(true); }}>
                 <BookmarkPlus className="w-3.5 h-3.5 mr-1" />Salvar Padrão
               </Button>
-              <Button onClick={handleSave} disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked)} size="sm" className="h-8">
+              <Button
+                onClick={() => {
+                  if (isRealizado) {
+                    setAuthorInput(logAuthor);
+                    setAuthorError(false);
+                    setAuthorDialogOpen(true);
+                  } else {
+                    handleSave();
+                  }
+                }}
+                disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked)}
+                size="sm"
+                className="h-8"
+              >
                 {upsertPlan.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
                 Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
           </div>
 
-          {/* Realizado: author + note for the log */}
-          {isRealizado && (
-            <div className="mt-3 flex flex-wrap items-end gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Responsável (log)</label>
-                <Input
-                  value={logAuthor}
-                  onChange={e => setLogAuthor(e.target.value)}
-                  placeholder="Quem está alterando"
-                  className="h-8 w-[180px] text-xs"
-                />
+          {/* Author dialog before saving a realizado plan */}
+          <Dialog open={authorDialogOpen} onOpenChange={setAuthorDialogOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Quem está salvando?</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">Informe o nome do autor da edição para registrar no log.</p>
+              <Input
+                placeholder="Nome do autor"
+                value={authorInput}
+                onChange={e => { setAuthorInput(e.target.value); setAuthorError(false); }}
+                onKeyDown={e => e.key === "Enter" && handleAuthorConfirm()}
+                className={authorError ? "border-destructive" : ""}
+                autoFocus
+              />
+              {authorError && <p className="text-xs text-destructive">Informe o nome do autor.</p>}
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={() => setAuthorDialogOpen(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleAuthorConfirm} disabled={upsertPlan.isPending}>
+                  {upsertPlan.isPending && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                  Salvar
+                </Button>
               </div>
-              <div className="space-y-1.5 flex-1 min-w-[220px]">
-                <label className="text-xs font-medium text-muted-foreground">Observação (log)</label>
-                <Input
-                  value={logNote}
-                  onChange={e => setLogNote(e.target.value)}
-                  placeholder="Motivo da alteração (opcional)"
-                  className="h-8 text-xs"
-                />
+            </DialogContent>
+          </Dialog>
+
+          {/* Log password dialog */}
+          <Dialog open={logPasswordOpen} onOpenChange={setLogPasswordOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Autenticação necessária</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">Digite a senha para visualizar o log de alterações.</p>
+              <Input
+                type="password"
+                placeholder="Senha"
+                value={logPassword}
+                onChange={e => { setLogPassword(e.target.value); setLogPasswordError(false); }}
+                onKeyDown={e => e.key === "Enter" && handleLogPasswordSubmit()}
+                className={logPasswordError ? "border-destructive" : ""}
+                autoFocus
+              />
+              {logPasswordError && <p className="text-xs text-destructive">Senha incorreta.</p>}
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" size="sm" onClick={() => setLogPasswordOpen(false)}>Cancelar</Button>
+                <Button size="sm" onClick={handleLogPasswordSubmit}>Confirmar</Button>
               </div>
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
 
           {/* Change log dialog */}
           <Dialog open={logOpen} onOpenChange={setLogOpen}>
