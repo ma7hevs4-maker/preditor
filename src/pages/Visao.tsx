@@ -32,14 +32,17 @@ const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...B
 const ALL_INCIDENTS_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as const;
 
 // ---------- Data hooks ----------
-const useAllPlansForDate = (date: string) =>
+export type StructureMode = "planejado" | "realizado" | "comparacao";
+
+const useAllPlansForDate = (date: string, kind: "planejado" | "realizado") =>
   useQuery({
-    queryKey: ["all_daily_plans_date", date],
+    queryKey: ["all_daily_plans_date", date, kind],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_team_plans")
         .select("*")
-        .eq("plan_date", date);
+        .eq("plan_date", date)
+        .eq("plan_kind", kind);
       if (error) throw error;
       return data as DailyTeamPlan[];
     },
@@ -88,6 +91,38 @@ function sumTurnoAverages(...series: number[][]): number {
     const turnoTotal = series.reduce((seriesSum, arr) => seriesSum + avg(arr, turno.hours), 0);
     return sum + turnoTotal;
   }, 0);
+}
+
+// Renders a value; in comparison mode shows "(planejado) - realizado"
+function pair(compare: boolean, a: number, b: number): string {
+  return compare ? `(${a}) - ${b}` : `${a}`;
+}
+
+// Aggregates entries into a per-hour series for a set of team types
+function seriesForTypes(entries: TeamTypeEntry[], types: readonly string[]): number[] {
+  const arr = Array(24).fill(0);
+  entries.forEach(e => {
+    if (types.includes(e.team_type)) arr[e.hour] += e.quantity;
+  });
+  return arr;
+}
+
+function typeMapFromEntries(entries: TeamTypeEntry[]): Record<string, number[]> {
+  const map: Record<string, number[]> = {};
+  ALL_DISPLAY_TYPES.forEach(type => { map[type] = Array(24).fill(0); });
+  entries.forEach(e => { if (map[e.team_type]) map[e.team_type][e.hour] += e.quantity; });
+  return map;
+}
+
+function resolveBaseIds(regional: Regional, allBases: { id: string; name: string }[]): string[] {
+  if (regional.sucursais.length === 0) {
+    const base = allBases.find(b => b.name.toLowerCase() === regional.label.toLowerCase());
+    return base ? [base.id] : [];
+  }
+  return regional.sucursais
+    .map(s => allBases.find(b => b.name.toLowerCase() === s.name.toLowerCase()))
+    .filter(Boolean)
+    .map(b => b!.id);
 }
 
 // ---------- Detail Dialog ----------
