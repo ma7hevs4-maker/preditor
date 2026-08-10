@@ -67,6 +67,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const [logNote, setLogNote] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const savedTypeDataRef = useRef<Record<string, number[]>>({});
 
   const { data: bases } = useBases();
   const { data: teamStructures } = useTeamStructures(selectedBaseId || null);
@@ -524,8 +525,14 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
       <div className="w-full mx-auto">
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-foreground">Planejamento de Equipes</h1>
-          <p className="text-sm text-muted-foreground">Defina a quantidade de equipes por tipo e hora para dias específicos</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isRealizado ? "Estrutura Realizada" : "Estrutura Planejada"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isRealizado
+              ? "Registre a estrutura que realmente operou por tipo e hora — edição liberada, com log de alterações"
+              : "Defina a quantidade de equipes por tipo e hora para dias específicos"}
+          </p>
         </div>
 
         {/* Controls */}
@@ -650,12 +657,17 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
 
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
-              {existingPlan && !editUnlocked && (
+              {isRealizado && (
+                <Button variant="outline" size="sm" className="h-8" onClick={() => setLogOpen(true)}>
+                  <History className="w-3.5 h-3.5 mr-1" />Log
+                </Button>
+              )}
+              {!isRealizado && existingPlan && !editUnlocked && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => { setEditDialogOpen(true); setEditPassword(""); setEditPasswordError(false); }}>
                   <Pencil className="w-3.5 h-3.5 mr-1" />Editar
                 </Button>
               )}
-              {existingPlan && editUnlocked && (
+              {!isRealizado && existingPlan && editUnlocked && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => setEditUnlocked(false)}>
                   <X className="w-3.5 h-3.5 mr-1" />Cancelar
                 </Button>
@@ -663,12 +675,89 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               <Button variant="outline" size="sm" className="h-8" onClick={() => { setStructureName(""); setSaveStructureOpen(true); }}>
                 <BookmarkPlus className="w-3.5 h-3.5 mr-1" />Salvar Padrão
               </Button>
-              <Button onClick={handleSave} disabled={(!isDirty || upsertPlan.isPending) || (!!existingPlan && !editUnlocked)} size="sm" className="h-8">
+              <Button onClick={handleSave} disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked)} size="sm" className="h-8">
                 {upsertPlan.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
                 Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
           </div>
+
+          {/* Realizado: author + note for the log */}
+          {isRealizado && (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Responsável (log)</label>
+                <Input
+                  value={logAuthor}
+                  onChange={e => setLogAuthor(e.target.value)}
+                  placeholder="Quem está alterando"
+                  className="h-8 w-[180px] text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 flex-1 min-w-[220px]">
+                <label className="text-xs font-medium text-muted-foreground">Observação (log)</label>
+                <Input
+                  value={logNote}
+                  onChange={e => setLogNote(e.target.value)}
+                  placeholder="Motivo da alteração (opcional)"
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Change log dialog */}
+          <Dialog open={logOpen} onOpenChange={setLogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" />
+                  Log de alterações — {bases?.find(b => b.id === selectedBaseId)?.name ?? "base"}
+                </DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-3">
+                {!changeLogs || changeLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma alteração registrada ainda.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {changeLogs.map(log => {
+                      const details = Array.isArray(log.changes) ? (log.changes as PlanChangeDetail[]) : [];
+                      return (
+                        <div key={log.id} className="rounded-lg border border-border/50 p-3">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                              {format(new Date(log.plan_date + "T00:00:00"), "dd/MM/yyyy")}
+                              <span className="text-muted-foreground font-normal">
+                                · {log.action === "create" ? "criação" : "edição"}
+                              </span>
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
+                              {log.author ? ` · ${log.author}` : ""}
+                            </span>
+                          </div>
+                          {log.note && <p className="text-xs text-muted-foreground mt-1">{log.note}</p>}
+                          {details.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {details.slice(0, 40).map((d, i) => (
+                                <span key={i} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/50 text-foreground">
+                                  {SHORT_NAMES[d.type] ?? d.type} {String(d.hour).padStart(2, "0")}h: {d.from}→{d.to}
+                                </span>
+                              ))}
+                              {details.length > 40 && (
+                                <span className="text-[10px] text-muted-foreground">+{details.length - 40} alterações</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
 
           {/* Edit password dialog */}
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -748,7 +837,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               const turnoBT = BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0);
               const hoursCount = turno.hours.length;
 
-              const isLocked = !!existingPlan && !editUnlocked;
+              const isLocked = !isRealizado && !!existingPlan && !editUnlocked;
 
               return (
                 <div key={turno.letter} className={`glass-card p-3 ${turnoColors.cardBorder}`}>
@@ -862,6 +951,29 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const Estrutura = () => {
+  const [tab, setTab] = useState<PlanKind>("planejado");
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Tabs value={tab} onValueChange={v => setTab(v as PlanKind)} className="w-full">
+        <div className="px-4 lg:px-6 pl-16 pt-4">
+          <TabsList>
+            <TabsTrigger value="planejado">Estrutura Planejada</TabsTrigger>
+            <TabsTrigger value="realizado">Estrutura Realizada</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="planejado" className="mt-0">
+          <StructurePlanner kind="planejado" />
+        </TabsContent>
+        <TabsContent value="realizado" className="mt-0">
+          <StructurePlanner kind="realizado" />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
