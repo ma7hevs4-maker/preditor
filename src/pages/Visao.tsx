@@ -329,7 +329,8 @@ const RegionalDetailDialog = ({
                   {/* GERAIS types */}
                   {GERAIS_TYPES.map((type, idx) => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
@@ -339,10 +340,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -356,7 +357,8 @@ const RegionalDetailDialog = ({
                   {/* LV/MK types (display only, not counted in totals) */}
                   {LV_MK_TYPES.map(type => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
@@ -366,10 +368,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60 whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -383,7 +385,8 @@ const RegionalDetailDialog = ({
                   {/* Apoio types (counted for all incidents) */}
                   {APOIO_TYPES.map(type => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
@@ -393,10 +396,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -410,7 +413,8 @@ const RegionalDetailDialog = ({
                   {/* BT ONLY types */}
                   {BT_ONLY_TYPES.map(type => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
@@ -420,10 +424,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-warning/80 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell, "text-warning")}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -441,6 +445,11 @@ const RegionalDetailDialog = ({
                       const r = typePerHour[type] || [];
                       r.forEach((v, h) => { totalRow[h] += v; });
                     });
+                    const totalRowB = Array(24).fill(0);
+                    COUNTED_TYPES.forEach(type => {
+                      const r = typePerHourB[type] || [];
+                      r.forEach((v, h) => { totalRowB[h] += v; });
+                    });
                     return (
                       <tr className="font-semibold">
                         <td className="py-1 pr-2 text-foreground sticky left-0 bg-background z-10">Total Processos</td>
@@ -449,10 +458,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                                <td key={h} className="text-center py-1 font-mono text-foreground whitespace-nowrap">{pair(compare, totalRow[h], totalRowB[h])}</td>
                               ))}
-                              <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>
-                                {avg(totalRow, turno.hours)}
+                              <td className={cn("text-center py-1 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(totalRow, turno.hours), avg(totalRowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -469,17 +478,17 @@ const RegionalDetailDialog = ({
             <div className="flex gap-6 mt-3 pt-3 border-t border-border/30 flex-wrap">
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
-                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+                <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h + avgBT24h, avgTotalTeams24hB + avgBT24hB)}</span>
               </div>
               <div className="w-px bg-border/50 self-stretch" />
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
-                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+                <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h, avgTotalTeams24hB)}</span>
               </div>
               <div className="w-px bg-border/50 self-stretch" />
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
-                <span className="font-bold text-sm text-warning">{avgBT24h}</span>
+                <span className="font-bold text-sm text-warning">{pair(compare, avgBT24h, avgBT24hB)}</span>
               </div>
             </div>
           </>
