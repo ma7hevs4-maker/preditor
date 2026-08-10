@@ -46,6 +46,28 @@ export const usePlanChangeLogs = (
   });
 };
 
+// Logs across all bases (optionally a specific date), most recent first
+export const useAllPlanChangeLogs = (
+  planKind: string = "realizado",
+  planDate?: string | null
+) => {
+  return useQuery({
+    queryKey: ["plan_change_logs", "all", planDate, planKind],
+    queryFn: async () => {
+      let query = supabase
+        .from("daily_plan_change_logs")
+        .select("*")
+        .eq("plan_kind", planKind)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (planDate) query = query.eq("plan_date", planDate);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as PlanChangeLog[];
+    },
+  });
+};
+
 export const useAddPlanChangeLog = () => {
   const queryClient = useQueryClient();
 
