@@ -135,10 +135,14 @@ interface RegionalDetailDialogProps {
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
   selectedDate: Date;
+  plansB?: DailyTeamPlan[];
+  allTypeEntriesB?: TeamTypeEntry[];
+  compare?: boolean;
 }
 
 const RegionalDetailDialog = ({
   open, onClose, regional, basesMap, allBases, plans, allTypeEntries, selectedDate,
+  plansB = [], allTypeEntriesB = [], compare = false,
 }: RegionalDetailDialogProps) => {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
 
@@ -175,6 +179,24 @@ const RegionalDetailDialog = ({
     () => allTypeEntries.filter(e => filteredPlanIds.includes(e.daily_plan_id)),
     [allTypeEntries, filteredPlanIds]
   );
+
+  // Comparison dataset (realizado)
+  const filteredPlansB = useMemo(() => {
+    const scoped = plansB.filter(p => regionalBaseIds.includes(p.base_id));
+    if (selectedSucursal === "todas" || !hasSucursais) return scoped;
+    const sucursalBase = allBases.find(b => b.name.toLowerCase() === selectedSucursal.toLowerCase());
+    if (!sucursalBase) return [];
+    return scoped.filter(p => p.base_id === sucursalBase.id);
+  }, [plansB, regionalBaseIds, selectedSucursal, hasSucursais, allBases]);
+
+  const filteredEntriesB = useMemo(() => {
+    const ids = filteredPlansB.map(p => p.id);
+    return allTypeEntriesB.filter(e => ids.includes(e.daily_plan_id));
+  }, [allTypeEntriesB, filteredPlansB]);
+
+  const typePerHourB = useMemo(() => typeMapFromEntries(filteredEntriesB), [filteredEntriesB]);
+  const teamsPerHourB = useMemo(() => seriesForTypes(filteredEntriesB, ALL_INCIDENTS_TYPES), [filteredEntriesB]);
+  const btPerHourB = useMemo(() => seriesForTypes(filteredEntriesB, BT_ONLY_TYPES), [filteredEntriesB]);
 
   const teamsPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
@@ -222,6 +244,9 @@ const RegionalDetailDialog = ({
   }, 0);
   const avgBT24h = Math.round(totalBT24h / 24);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
+  const avgTotalTeams24hB = avg(teamsPerHourB, allHours);
+  const avgBT24hB = avg(btPerHourB, allHours);
+  const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
@@ -230,6 +255,7 @@ const RegionalDetailDialog = ({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <DialogTitle>
               Detalhe - {regional.label} - {format(selectedDate, "dd/MM/yyyy")}
+              {compare && <span className="text-xs text-muted-foreground ml-2">(planejado) - realizado</span>}
             </DialogTitle>
             {hasSucursais && (
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
@@ -247,7 +273,7 @@ const RegionalDetailDialog = ({
           </div>
         </DialogHeader>
 
-        {filteredPlans.length === 0 ? (
+        {filteredPlans.length === 0 && filteredPlansB.length === 0 ? (
           <div className="py-10 text-center text-muted-foreground text-sm">
             Nenhum plano encontrado para esta seleção.
           </div>
