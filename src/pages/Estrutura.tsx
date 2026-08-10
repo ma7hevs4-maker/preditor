@@ -64,7 +64,13 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const [savingStructure, setSavingStructure] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [logAuthor, setLogAuthor] = useState("");
-  const [logNote, setLogNote] = useState("");
+  const [authorDialogOpen, setAuthorDialogOpen] = useState(false);
+  const [authorInput, setAuthorInput] = useState("");
+  const [authorError, setAuthorError] = useState(false);
+  const [logUnlocked, setLogUnlocked] = useState(false);
+  const [logPasswordOpen, setLogPasswordOpen] = useState(false);
+  const [logPassword, setLogPassword] = useState("");
+  const [logPasswordError, setLogPasswordError] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const savedTypeDataRef = useRef<Record<string, number[]>>({});
@@ -235,8 +241,9 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (authorName?: string) => {
     if (!selectedBaseId) return;
+    const author = (authorName ?? logAuthor).trim() || null;
     try {
       const changes: PlanChangeDetail[] = diffTypeData(savedTypeDataRef.current, typeData);
       if (planningMode === "single") {
@@ -246,8 +253,8 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
             base_id: selectedBaseId,
             plan_date: format(selectedDate, "yyyy-MM-dd"),
             action: existingPlan ? "update" : "create",
-            author: logAuthor.trim() || null,
-            note: logNote.trim() || null,
+            author,
+            note: null,
             changes,
           });
         }
@@ -261,8 +268,8 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               base_id: selectedBaseId,
               plan_date: format(day, "yyyy-MM-dd"),
               action: "update",
-              author: logAuthor.trim() || null,
-              note: logNote.trim() || null,
+              author,
+              note: null,
               changes,
             });
           }
@@ -270,10 +277,30 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
         toast({ title: "Período salvo", description: `Plano replicado para ${days.length} dias.` });
       }
       savedTypeDataRef.current = typeData;
-      setLogNote("");
       setIsDirty(false);
     } catch {
       toast({ title: "Erro ao salvar", variant: "destructive" });
+    }
+  };
+
+  const handleAuthorConfirm = async () => {
+    const name = authorInput.trim();
+    if (!name) { setAuthorError(true); return; }
+    setLogAuthor(name);
+    setAuthorDialogOpen(false);
+    setAuthorError(false);
+    await handleSave(name);
+  };
+
+  const handleLogPasswordSubmit = () => {
+    if (logPassword === ADMIN_PASSWORD) {
+      setLogUnlocked(true);
+      setLogPasswordOpen(false);
+      setLogPassword("");
+      setLogPasswordError(false);
+      setLogOpen(true);
+    } else {
+      setLogPasswordError(true);
     }
   };
 
