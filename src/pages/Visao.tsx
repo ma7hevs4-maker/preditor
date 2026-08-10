@@ -999,17 +999,17 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
       <div className="flex gap-6 mt-4 pt-3 border-t border-border/30 flex-wrap">
         <div className="flex flex-col items-center">
           <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
-          <span className="font-bold text-lg text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+          <span className="font-bold text-lg text-foreground">{pair(compare, avgTotalTeams24h + avgBT24h, avg(teamsPerHourB, allHours) + avg(btPerHourB, allHours))}</span>
         </div>
         <div className="w-px bg-border/50 self-stretch" />
         <div className="flex flex-col items-center">
           <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
-          <span className="font-bold text-lg text-foreground">{avgTotalTeams24h}</span>
+          <span className="font-bold text-lg text-foreground">{pair(compare, avgTotalTeams24h, avg(teamsPerHourB, allHours))}</span>
         </div>
         <div className="w-px bg-border/50 self-stretch" />
         <div className="flex flex-col items-center">
           <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
-          <span className="font-bold text-lg text-warning">{avgBT24h}</span>
+          <span className="font-bold text-lg text-warning">{pair(compare, avgBT24h, avg(btPerHourB, allHours))}</span>
         </div>
       </div>
     </div>
@@ -1022,15 +1022,26 @@ const Visao = () => {
   const [selectedUT, setSelectedUT] = useState<UT>("UTS");
   const [openRegional, setOpenRegional] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"cards" | "consolidated">("cards");
+  const [structureMode, setStructureMode] = useState<StructureMode>("planejado");
 
   const { data: bases } = useBases();
   const allBases = useMemo(() => bases || [], [bases]);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
-  const { data: plans } = useAllPlansForDate(dateStr);
+  const { data: plannedPlans } = useAllPlansForDate(dateStr, "planejado");
+  const { data: realizedPlans } = useAllPlansForDate(dateStr, "realizado");
 
-  const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
-  const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
+  const plannedPlanIds = useMemo(() => (plannedPlans || []).map(p => p.id), [plannedPlans]);
+  const realizedPlanIds = useMemo(() => (realizedPlans || []).map(p => p.id), [realizedPlans]);
+  const { data: plannedEntries } = useTeamTypeEntriesByPlans(plannedPlanIds);
+  const { data: realizedEntries } = useTeamTypeEntriesByPlans(realizedPlanIds);
+
+  const compare = structureMode === "comparacao";
+  // Primary dataset: planejado (also the left side in comparison mode)
+  const plans = structureMode === "realizado" ? realizedPlans : plannedPlans;
+  const allTypeEntries = structureMode === "realizado" ? realizedEntries : plannedEntries;
+  const plansB = compare ? realizedPlans || [] : [];
+  const allTypeEntriesB = compare ? realizedEntries || [] : [];
 
   const basesMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -1054,7 +1065,13 @@ const Visao = () => {
       <div className="w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Visão de Estrutura</h1>
-          <p className="text-sm text-muted-foreground">Visualização das equipes planejadas por regional</p>
+          <p className="text-sm text-muted-foreground">
+            {compare
+              ? "Comparação por polo — (planejado) - realizado"
+              : structureMode === "realizado"
+              ? "Visualização das equipes realizadas por polo"
+              : "Visualização das equipes planejadas por polo"}
+          </p>
         </div>
 
         {/* Controls */}
@@ -1074,6 +1091,30 @@ const Visao = () => {
                   )}
                 >
                   {ut}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-6 bg-border" />
+
+            {/* Structure mode selector */}
+            <div className="flex rounded-lg overflow-hidden border border-border">
+              {([
+                { value: "planejado", label: "Planejado" },
+                { value: "realizado", label: "Realizado" },
+                { value: "comparacao", label: "Comparação" },
+              ] as { value: StructureMode; label: string }[]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStructureMode(opt.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium transition-colors",
+                    structureMode === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -1154,6 +1195,9 @@ const Visao = () => {
                 allTypeEntries={allTypeEntries || []}
                 allBases={allBases}
                 onOpen={() => setOpenRegional(regional.label)}
+                plansB={plansB}
+                allTypeEntriesB={allTypeEntriesB}
+                compare={compare}
               />
             ))}
           </div>
@@ -1165,16 +1209,19 @@ const Visao = () => {
             allTypeEntries={allTypeEntries || []}
             allBases={allBases}
             selectedDate={selectedDate}
+            plansB={plansB}
+            allTypeEntriesB={allTypeEntriesB}
+            compare={compare}
           />
         )}
 
         {/* No plans at all */}
-        {(!plans || plans.length === 0) && (
+        {(!plans || plans.length === 0) && (!compare || plansB.length === 0) && (
           <div className="glass-card p-12 flex flex-col items-center justify-center text-center mt-4">
             <Eye className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum plano encontrado</h3>
             <p className="text-sm text-muted-foreground">
-              Não há planejamento para {format(selectedDate, "dd/MM/yyyy")}. Crie um na aba Estrutura.
+              Não há estrutura {structureMode === "realizado" ? "realizada" : "planejada"} para {format(selectedDate, "dd/MM/yyyy")}. Crie uma na aba Estrutura.
             </p>
           </div>
         )}
@@ -1191,6 +1238,9 @@ const Visao = () => {
           plans={plans || []}
           allTypeEntries={allTypeEntries || []}
           selectedDate={selectedDate}
+          plansB={plansB}
+          allTypeEntriesB={allTypeEntriesB}
+          compare={compare}
         />
       )}
     </div>
