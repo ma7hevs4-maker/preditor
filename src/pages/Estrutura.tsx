@@ -13,7 +13,7 @@ import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray, useAddTeamStructure } from "@/hooks/useTeamStructures";
 import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields, PlanKind } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
-import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail } from "@/hooks/usePlanChangeLogs";
+import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail, useAllPlanChangeLogs } from "@/hooks/usePlanChangeLogs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
@@ -63,6 +63,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const [structureName, setStructureName] = useState("");
   const [savingStructure, setSavingStructure] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [logBaseFilter, setLogBaseFilter] = useState<string>("all");
   const [logAuthor, setLogAuthor] = useState("");
   const [authorDialogOpen, setAuthorDialogOpen] = useState(false);
   const [authorInput, setAuthorInput] = useState("");
@@ -91,7 +92,13 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const deletePlan = useDeleteDailyTeamPlan();
   const upsertTypeEntries = useUpsertTeamTypeEntries();
   const addChangeLog = useAddPlanChangeLog();
-  const { data: changeLogs } = usePlanChangeLogs(isRealizado ? selectedBaseId || null : null, null, "realizado");
+  const { data: allChangeLogs } = useAllPlanChangeLogs("realizado");
+
+  const changeLogs = useMemo(() => {
+    if (!allChangeLogs) return [];
+    if (logBaseFilter === "all") return allChangeLogs;
+    return allChangeLogs.filter(log => log.base_id === logBaseFilter);
+  }, [allChangeLogs, logBaseFilter]);
 
   const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
 
@@ -781,9 +788,28 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <ClipboardList className="w-4 h-4" />
-                  Log de alterações — {bases?.find(b => b.id === selectedBaseId)?.name ?? "base"}
+                  Log de alterações
                 </DialogTitle>
               </DialogHeader>
+
+              <div className="flex items-center gap-2 mb-3">
+                <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">Base:</label>
+                <Select value={logBaseFilter} onValueChange={setLogBaseFilter}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs">
+                    <SelectValue placeholder="Filtrar base" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as bases</SelectItem>
+                    {bases?.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {changeLogs.length} registro(s)
+                </span>
+              </div>
+
               <ScrollArea className="max-h-[60vh] pr-3">
                 {!changeLogs || changeLogs.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma alteração registrada ainda.</p>
@@ -799,6 +825,9 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                               {format(new Date(log.plan_date + "T00:00:00"), "dd/MM/yyyy")}
                               <span className="text-muted-foreground font-normal">
                                 · {log.action === "create" ? "criação" : "edição"}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-foreground">
+                                {bases?.find(b => b.id === log.base_id)?.name ?? log.base_id}
                               </span>
                             </span>
                             <span className="text-[11px] text-muted-foreground">
