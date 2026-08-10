@@ -97,14 +97,15 @@ function getTriggerNameColor(trigger: WeatherTrigger) {
 }
 
 // Hook to fetch all plans for a date
-const useAllPlansForDate = (date: string) =>
+const useAllPlansForDate = (date: string, kind: "planejado" | "realizado" = "planejado") =>
   useQuery({
-    queryKey: ["all_daily_plans_date_clima", date],
+    queryKey: ["all_daily_plans_date_clima", date, kind],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_team_plans")
         .select("*")
-        .eq("plan_date", date);
+        .eq("plan_date", date)
+        .eq("plan_kind", kind);
       if (error) throw error;
       return data as DailyTeamPlan[];
     },
@@ -120,9 +121,10 @@ interface StructureDetailDialogProps {
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
   selectedDate: Date;
+  kind?: "planejado" | "realizado";
 }
 
-const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTypeEntries, selectedDate }: StructureDetailDialogProps) => {
+const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTypeEntries, selectedDate, kind = "planejado" }: StructureDetailDialogProps) => {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
   const [showHourly, setShowHourly] = useState(false);
   const hasSucursais = regional.sucursais.length > 0;
@@ -230,7 +232,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
               )}
-              Estrutura Declarada - {regional.label}
+              Estrutura {kind === "realizado" ? "Realizada" : "Planejada"} - {regional.label}
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
