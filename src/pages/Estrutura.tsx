@@ -63,6 +63,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const [structureName, setStructureName] = useState("");
   const [savingStructure, setSavingStructure] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [logBaseFilter, setLogBaseFilter] = useState<string>("all");
   const [logAuthor, setLogAuthor] = useState("");
   const [authorDialogOpen, setAuthorDialogOpen] = useState(false);
   const [authorInput, setAuthorInput] = useState("");
