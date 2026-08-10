@@ -597,7 +597,13 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
   // Filter triggers by selected base
   const filteredTriggers = weatherTriggers?.filter(t => {
     if (!selectedBaseId) return t.base_id === null;
-    return t.base_id === null || t.base_id === selectedBaseId;
+    if (t.base_id === selectedBaseId) return true;
+    if (t.base_id !== null) return false;
+    // Hide the default when this base already has its own override
+    const hasOverride = weatherTriggers.some(
+      o => o.base_id === selectedBaseId && o.trigger_type === t.trigger_type && o.name === t.name
+    );
+    return !hasOverride;
   });
 
   // Calculate structure totals
