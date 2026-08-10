@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste, History, ClipboardList, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -11,8 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray, useAddTeamStructure } from "@/hooks/useTeamStructures";
-import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields } from "@/hooks/useDailyTeamPlans";
+import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields, PlanKind } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
+import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail } from "@/hooks/usePlanChangeLogs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
@@ -34,7 +37,8 @@ const SHORT_NAMES: Record<string, string> = {
   "Reguladas": "Regul.",
 };
 
-const Estrutura = () => {
+const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
+  const isRealizado = kind === "realizado";
   const [selectedBaseId, setSelectedBaseId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>();
@@ -58,8 +62,12 @@ const Estrutura = () => {
   const [saveStructureOpen, setSaveStructureOpen] = useState(false);
   const [structureName, setStructureName] = useState("");
   const [savingStructure, setSavingStructure] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logAuthor, setLogAuthor] = useState("");
+  const [logNote, setLogNote] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const savedTypeDataRef = useRef<Record<string, number[]>>({});
 
   const { data: bases } = useBases();
   const { data: teamStructures } = useTeamStructures(selectedBaseId || null);
@@ -72,20 +80,22 @@ const Estrutura = () => {
   }, [bases, selectedBaseId]);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
-  const { data: existingPlan, isLoading: planLoading } = useDailyTeamPlan(selectedBaseId || null, dateStr);
+  const { data: existingPlan, isLoading: planLoading } = useDailyTeamPlan(selectedBaseId || null, dateStr, kind);
   const upsertPlan = useUpsertDailyTeamPlan();
   const deletePlan = useDeleteDailyTeamPlan();
   const upsertTypeEntries = useUpsertTeamTypeEntries();
+  const addChangeLog = useAddPlanChangeLog();
+  const { data: changeLogs } = usePlanChangeLogs(isRealizado ? selectedBaseId || null : null, null, "realizado");
 
   const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
 
   const monthStart = format(startOfMonth(selectedDate), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
-  const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd);
+  const { data: monthPlans } = useDailyTeamPlans(selectedBaseId || null, monthStart, monthEnd, kind);
 
   const calendarViewMonthStart = format(startOfMonth(calendarViewMonth), "yyyy-MM-dd");
   const calendarViewMonthEnd = format(endOfMonth(calendarViewMonth), "yyyy-MM-dd");
-  const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd);
+  const { data: calendarViewMonthPlans } = useDailyTeamPlans(selectedBaseId || null, calendarViewMonthStart, calendarViewMonthEnd, kind);
 
   const calendarPlannedDates = useMemo(() => {
     if (!calendarViewMonthPlans) return new Set<string>();
@@ -115,6 +125,7 @@ const Estrutura = () => {
       });
     }
     setTypeData(newTypeData);
+    savedTypeDataRef.current = newTypeData;
   }, [typeEntries]);
 
   const handleTeamChange = (hour: number, value: number) => {
@@ -206,6 +217,7 @@ const Estrutura = () => {
     const planResult = await upsertPlan.mutateAsync({
       base_id: selectedBaseId,
       plan_date: ds,
+      plan_kind: kind,
       ...teamsArrayToPlanFields(teams, lossTeams),
     } as any);
 
@@ -226,16 +238,39 @@ const Estrutura = () => {
   const handleSave = async () => {
     if (!selectedBaseId) return;
     try {
+      const changes: PlanChangeDetail[] = diffTypeData(savedTypeDataRef.current, typeData);
       if (planningMode === "single") {
         await saveSingleDay(selectedDate);
+        if (isRealizado) {
+          await addChangeLog.mutateAsync({
+            base_id: selectedBaseId,
+            plan_date: format(selectedDate, "yyyy-MM-dd"),
+            action: existingPlan ? "update" : "create",
+            author: logAuthor.trim() || null,
+            note: logNote.trim() || null,
+            changes,
+          });
+        }
         toast({ title: "Plano salvo", description: `Equipes para ${format(selectedDate, "dd/MM/yyyy")} salvas.` });
       } else if (selectedEndDate) {
         const days = eachDayOfInterval({ start: selectedDate, end: selectedEndDate });
         for (const day of days) {
           await saveSingleDay(day);
+          if (isRealizado) {
+            await addChangeLog.mutateAsync({
+              base_id: selectedBaseId,
+              plan_date: format(day, "yyyy-MM-dd"),
+              action: "update",
+              author: logAuthor.trim() || null,
+              note: logNote.trim() || null,
+              changes,
+            });
+          }
         }
         toast({ title: "Período salvo", description: `Plano replicado para ${days.length} dias.` });
       }
+      savedTypeDataRef.current = typeData;
+      setLogNote("");
       setIsDirty(false);
     } catch {
       toast({ title: "Erro ao salvar", variant: "destructive" });
@@ -490,8 +525,14 @@ const Estrutura = () => {
       <div className="w-full mx-auto">
         {/* Header */}
         <div className="mb-4">
-          <h1 className="text-2xl font-bold text-foreground">Planejamento de Equipes</h1>
-          <p className="text-sm text-muted-foreground">Defina a quantidade de equipes por tipo e hora para dias específicos</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isRealizado ? "Estrutura Realizada" : "Estrutura Planejada"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isRealizado
+              ? "Registre a estrutura que realmente operou por tipo e hora — edição liberada, com log de alterações"
+              : "Defina a quantidade de equipes por tipo e hora para dias específicos"}
+          </p>
         </div>
 
         {/* Controls */}
@@ -616,12 +657,17 @@ const Estrutura = () => {
 
             {/* Actions */}
             <div className="flex gap-2 ml-auto">
-              {existingPlan && !editUnlocked && (
+              {isRealizado && (
+                <Button variant="outline" size="sm" className="h-8" onClick={() => setLogOpen(true)}>
+                  <History className="w-3.5 h-3.5 mr-1" />Log
+                </Button>
+              )}
+              {!isRealizado && existingPlan && !editUnlocked && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => { setEditDialogOpen(true); setEditPassword(""); setEditPasswordError(false); }}>
                   <Pencil className="w-3.5 h-3.5 mr-1" />Editar
                 </Button>
               )}
-              {existingPlan && editUnlocked && (
+              {!isRealizado && existingPlan && editUnlocked && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => setEditUnlocked(false)}>
                   <X className="w-3.5 h-3.5 mr-1" />Cancelar
                 </Button>
@@ -629,12 +675,89 @@ const Estrutura = () => {
               <Button variant="outline" size="sm" className="h-8" onClick={() => { setStructureName(""); setSaveStructureOpen(true); }}>
                 <BookmarkPlus className="w-3.5 h-3.5 mr-1" />Salvar Padrão
               </Button>
-              <Button onClick={handleSave} disabled={(!isDirty || upsertPlan.isPending) || (!!existingPlan && !editUnlocked)} size="sm" className="h-8">
+              <Button onClick={handleSave} disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked)} size="sm" className="h-8">
                 {upsertPlan.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Save className="w-3.5 h-3.5 mr-1" />}
                 Salvar {planningMode === "period" ? "Período" : "Dia"}
               </Button>
             </div>
           </div>
+
+          {/* Realizado: author + note for the log */}
+          {isRealizado && (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Responsável (log)</label>
+                <Input
+                  value={logAuthor}
+                  onChange={e => setLogAuthor(e.target.value)}
+                  placeholder="Quem está alterando"
+                  className="h-8 w-[180px] text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 flex-1 min-w-[220px]">
+                <label className="text-xs font-medium text-muted-foreground">Observação (log)</label>
+                <Input
+                  value={logNote}
+                  onChange={e => setLogNote(e.target.value)}
+                  placeholder="Motivo da alteração (opcional)"
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Change log dialog */}
+          <Dialog open={logOpen} onOpenChange={setLogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" />
+                  Log de alterações — {bases?.find(b => b.id === selectedBaseId)?.name ?? "base"}
+                </DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-3">
+                {!changeLogs || changeLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma alteração registrada ainda.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {changeLogs.map(log => {
+                      const details = Array.isArray(log.changes) ? (log.changes as PlanChangeDetail[]) : [];
+                      return (
+                        <div key={log.id} className="rounded-lg border border-border/50 p-3">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                              {format(new Date(log.plan_date + "T00:00:00"), "dd/MM/yyyy")}
+                              <span className="text-muted-foreground font-normal">
+                                · {log.action === "create" ? "criação" : "edição"}
+                              </span>
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm")}
+                              {log.author ? ` · ${log.author}` : ""}
+                            </span>
+                          </div>
+                          {log.note && <p className="text-xs text-muted-foreground mt-1">{log.note}</p>}
+                          {details.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {details.slice(0, 40).map((d, i) => (
+                                <span key={i} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/50 text-foreground">
+                                  {SHORT_NAMES[d.type] ?? d.type} {String(d.hour).padStart(2, "0")}h: {d.from}→{d.to}
+                                </span>
+                              ))}
+                              {details.length > 40 && (
+                                <span className="text-[10px] text-muted-foreground">+{details.length - 40} alterações</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
 
           {/* Edit password dialog */}
           <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -714,7 +837,7 @@ const Estrutura = () => {
               const turnoBT = BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0);
               const hoursCount = turno.hours.length;
 
-              const isLocked = !!existingPlan && !editUnlocked;
+              const isLocked = !isRealizado && !!existingPlan && !editUnlocked;
 
               return (
                 <div key={turno.letter} className={`glass-card p-3 ${turnoColors.cardBorder}`}>
@@ -828,6 +951,29 @@ const Estrutura = () => {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const Estrutura = () => {
+  const [tab, setTab] = useState<PlanKind>("planejado");
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Tabs value={tab} onValueChange={v => setTab(v as PlanKind)} className="w-full">
+        <div className="px-4 lg:px-6 pl-16 pt-4">
+          <TabsList>
+            <TabsTrigger value="planejado">Estrutura Planejada</TabsTrigger>
+            <TabsTrigger value="realizado">Estrutura Realizada</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="planejado" className="mt-0">
+          <StructurePlanner kind="planejado" />
+        </TabsContent>
+        <TabsContent value="realizado" className="mt-0">
+          <StructurePlanner kind="realizado" />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

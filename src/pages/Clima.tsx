@@ -97,14 +97,15 @@ function getTriggerNameColor(trigger: WeatherTrigger) {
 }
 
 // Hook to fetch all plans for a date
-const useAllPlansForDate = (date: string) =>
+const useAllPlansForDate = (date: string, kind: "planejado" | "realizado" = "planejado") =>
   useQuery({
-    queryKey: ["all_daily_plans_date_clima", date],
+    queryKey: ["all_daily_plans_date_clima", date, kind],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_team_plans")
         .select("*")
-        .eq("plan_date", date);
+        .eq("plan_date", date)
+        .eq("plan_kind", kind);
       if (error) throw error;
       return data as DailyTeamPlan[];
     },
@@ -120,9 +121,10 @@ interface StructureDetailDialogProps {
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
   selectedDate: Date;
+  kind?: "planejado" | "realizado";
 }
 
-const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTypeEntries, selectedDate }: StructureDetailDialogProps) => {
+const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTypeEntries, selectedDate, kind = "planejado" }: StructureDetailDialogProps) => {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
   const [showHourly, setShowHourly] = useState(false);
   const hasSucursais = regional.sucursais.length > 0;
@@ -230,7 +232,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
               )}
-              Estrutura Declarada - {regional.label}
+              Estrutura {kind === "realizado" ? "Realizada" : "Planejada"} - {regional.label}
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
@@ -714,7 +716,7 @@ function BaseDetailDialog({ open, onOpenChange, base, dayHours, triggers, select
 }
 
 // ---------- Weather card for a single base ----------
-function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, showSucursal, onOpenStructure }: {
+function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, showSucursal, onOpenStructure, eqhTotalRealizado, eqhSucursalRealizado, onOpenStructureRealizado }: {
   base: Base;
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
@@ -722,6 +724,9 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
   eqhSucursal?: number | null;
   showSucursal?: boolean;
   onOpenStructure?: () => void;
+  eqhTotalRealizado?: number | null;
+  eqhSucursalRealizado?: number | null;
+  onOpenStructureRealizado?: () => void;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const { data, isLoading } = useWeather(base.lat, base.lon, 168, provider, "day");
@@ -1022,7 +1027,7 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
                 </span>
               </div>
             </div>
-            {/* Estrutura Declarada */}
+            {/* Estrutura Sucursal (planejada) */}
             {showSucursal && eqhSucursal !== null && eqhSucursal !== undefined && (
               <div className="border-t border-border/30 pt-1.5 mt-1">
                 <div className="flex items-center justify-between text-xs">
@@ -1032,8 +1037,17 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
                   </span>
                   <span className="font-mono font-bold text-foreground">{eqhSucursal}</span>
                 </div>
+                {eqhSucursalRealizado !== null && eqhSucursalRealizado !== undefined && (
+                  <div className="flex items-center justify-between text-xs mt-0.5">
+                    <span className="text-muted-foreground/80 flex items-center gap-1 pl-4">
+                      Sucursal (realizada)
+                    </span>
+                    <span className="font-mono font-bold text-muted-foreground">{eqhSucursalRealizado}</span>
+                  </div>
+                )}
               </div>
             )}
+            {/* Estrutura Planejada / Realizada */}
             {eqhTotal !== null && (
               <div className="border-t border-border/30 pt-1.5 mt-1">
                 <div
@@ -1045,9 +1059,24 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
                 >
                   <span className="text-muted-foreground font-semibold flex items-center gap-1">
                     <Users className="w-3 h-3" />
-                    Estrutura Declarada
+                    Estrutura Planejada
                   </span>
                   <span className="font-mono font-bold text-primary">{eqhTotal}</span>
+                </div>
+                <div
+                  className="flex items-center justify-between text-xs cursor-pointer hover:bg-muted/20 rounded px-1 py-0.5 -mx-1 transition-colors mt-0.5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenStructureRealizado?.();
+                  }}
+                >
+                  <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Estrutura Realizada
+                  </span>
+                  <span className="font-mono font-bold text-warning">
+                    {eqhTotalRealizado ?? "—"}
+                  </span>
                 </div>
               </div>
             )}
@@ -1072,15 +1101,18 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
   );
 }
 
-function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, allTypeEntries }: {
+function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, allTypeEntries, plansRealizado, allTypeEntriesRealizado }: {
   regionais: string[];
   allBases: Base[];
   provider: "openmeteo" | "openweathermap";
   selectedDay: Date;
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
+  plansRealizado: DailyTeamPlan[];
+  allTypeEntriesRealizado: TeamTypeEntry[];
 }) {
   const [structureRegional, setStructureRegional] = useState<Regional | null>(null);
+  const [structureKind, setStructureKind] = useState<"planejado" | "realizado">("planejado");
 
   const basesInGroup = useMemo(() => {
     const result: { regional: Regional; bases: Base[] }[] = [];
@@ -1152,6 +1184,48 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
     return result;
   }, [basesInGroup, plans, allTypeEntries]);
 
+  // Same computations for the realizado structure
+  const eqhPerRegionalRealizado = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
+    basesInGroup.forEach(({ regional, bases }) => {
+      const baseIds = bases.map(b => b.id);
+      const regionalPlans = plansRealizado.filter(p => baseIds.includes(p.base_id));
+      if (regionalPlans.length === 0) { result[regional.label] = null; return; }
+      const planIds = regionalPlans.map(p => p.id);
+      const entries = allTypeEntriesRealizado.filter(e => planIds.includes(e.daily_plan_id));
+      const countedPerHour = Array(24).fill(0);
+      entries.forEach(e => {
+        if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+          countedPerHour[e.hour] += e.quantity;
+        }
+      });
+      result[regional.label] = sumTurnoAverages(countedPerHour);
+    });
+    return result;
+  }, [basesInGroup, plansRealizado, allTypeEntriesRealizado]);
+
+  const eqhPerBaseRealizado = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    const EXCLUDED: readonly string[] = [...LV_MK_TYPES];
+    basesInGroup.forEach(({ bases }) => {
+      bases.forEach(base => {
+        const basePlans = plansRealizado.filter(p => p.base_id === base.id);
+        if (basePlans.length === 0) { result[base.id] = null; return; }
+        const planIds = basePlans.map(p => p.id);
+        const entries = allTypeEntriesRealizado.filter(e => planIds.includes(e.daily_plan_id));
+        const countedPerHour = Array(24).fill(0);
+        entries.forEach(e => {
+          if (!EXCLUDED.includes(e.team_type) && (ALL_DISPLAY_TYPES as readonly string[]).includes(e.team_type)) {
+            countedPerHour[e.hour] += e.quantity;
+          }
+        });
+        result[base.id] = sumTurnoAverages(countedPerHour);
+      });
+    });
+    return result;
+  }, [basesInGroup, plansRealizado, allTypeEntriesRealizado]);
+
   return (
     <>
       <div className={cn(
@@ -1173,7 +1247,10 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
                   eqhTotal={eqhPerRegional[regional.label]}
                   eqhSucursal={eqhPerBase[base.id]}
                   showSucursal={bases.length > 1}
-                  onOpenStructure={() => setStructureRegional(regional)}
+                  eqhTotalRealizado={eqhPerRegionalRealizado[regional.label]}
+                  eqhSucursalRealizado={eqhPerBaseRealizado[base.id]}
+                  onOpenStructure={() => { setStructureKind("planejado"); setStructureRegional(regional); }}
+                  onOpenStructureRealizado={() => { setStructureKind("realizado"); setStructureRegional(regional); }}
                 />
               ))}
             </div>
@@ -1187,8 +1264,9 @@ function UTGroupSection({ regionais, allBases, provider, selectedDay, plans, all
           onClose={() => setStructureRegional(null)}
           regional={structureRegional}
           allBases={allBases}
-          plans={plans}
-          allTypeEntries={allTypeEntries}
+          plans={structureKind === "realizado" ? plansRealizado : plans}
+          allTypeEntries={structureKind === "realizado" ? allTypeEntriesRealizado : allTypeEntries}
+          kind={structureKind}
           selectedDate={selectedDay}
         />
       )}
@@ -1229,9 +1307,13 @@ export default function Clima() {
   const maxDays = 6;
 
   const dateStr = format(selectedDay, "yyyy-MM-dd");
-  const { data: plans } = useAllPlansForDate(dateStr);
+  const { data: plans } = useAllPlansForDate(dateStr, "planejado");
   const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
   const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
+
+  const { data: plansRealizado } = useAllPlansForDate(dateStr, "realizado");
+  const planIdsRealizado = useMemo(() => (plansRealizado || []).map(p => p.id), [plansRealizado]);
+  const { data: allTypeEntriesRealizado } = useTeamTypeEntriesByPlans(planIdsRealizado);
 
   // OpenWeatherMap only returns future 3-hour blocks, so late in the day it
   // cannot provide a complete 00h–23h grid for today. Open-Meteo can.
@@ -1362,6 +1444,8 @@ export default function Clima() {
           selectedDay={selectedDay}
           plans={plans || []}
           allTypeEntries={allTypeEntries || []}
+          plansRealizado={plansRealizado || []}
+          allTypeEntriesRealizado={allTypeEntriesRealizado || []}
         />
       ) : (
         <div className="text-center py-12 text-muted-foreground">

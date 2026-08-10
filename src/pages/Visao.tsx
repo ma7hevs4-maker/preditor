@@ -32,14 +32,17 @@ const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...B
 const ALL_INCIDENTS_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as const;
 
 // ---------- Data hooks ----------
-const useAllPlansForDate = (date: string) =>
+export type StructureMode = "planejado" | "realizado" | "comparacao";
+
+const useAllPlansForDate = (date: string, kind: "planejado" | "realizado") =>
   useQuery({
-    queryKey: ["all_daily_plans_date", date],
+    queryKey: ["all_daily_plans_date", date, kind],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("daily_team_plans")
         .select("*")
-        .eq("plan_date", date);
+        .eq("plan_date", date)
+        .eq("plan_kind", kind);
       if (error) throw error;
       return data as DailyTeamPlan[];
     },
@@ -90,6 +93,38 @@ function sumTurnoAverages(...series: number[][]): number {
   }, 0);
 }
 
+// Renders a value; in comparison mode shows "(planejado) - realizado"
+function pair(compare: boolean, a: number, b: number): string {
+  return compare ? `(${a}) - ${b}` : `${a}`;
+}
+
+// Aggregates entries into a per-hour series for a set of team types
+function seriesForTypes(entries: TeamTypeEntry[], types: readonly string[]): number[] {
+  const arr = Array(24).fill(0);
+  entries.forEach(e => {
+    if (types.includes(e.team_type)) arr[e.hour] += e.quantity;
+  });
+  return arr;
+}
+
+function typeMapFromEntries(entries: TeamTypeEntry[]): Record<string, number[]> {
+  const map: Record<string, number[]> = {};
+  ALL_DISPLAY_TYPES.forEach(type => { map[type] = Array(24).fill(0); });
+  entries.forEach(e => { if (map[e.team_type]) map[e.team_type][e.hour] += e.quantity; });
+  return map;
+}
+
+function resolveBaseIds(regional: Regional, allBases: { id: string; name: string }[]): string[] {
+  if (regional.sucursais.length === 0) {
+    const base = allBases.find(b => b.name.toLowerCase() === regional.label.toLowerCase());
+    return base ? [base.id] : [];
+  }
+  return regional.sucursais
+    .map(s => allBases.find(b => b.name.toLowerCase() === s.name.toLowerCase()))
+    .filter(Boolean)
+    .map(b => b!.id);
+}
+
 // ---------- Detail Dialog ----------
 interface RegionalDetailDialogProps {
   open: boolean;
@@ -100,10 +135,14 @@ interface RegionalDetailDialogProps {
   plans: DailyTeamPlan[];
   allTypeEntries: TeamTypeEntry[];
   selectedDate: Date;
+  plansB?: DailyTeamPlan[];
+  allTypeEntriesB?: TeamTypeEntry[];
+  compare?: boolean;
 }
 
 const RegionalDetailDialog = ({
   open, onClose, regional, basesMap, allBases, plans, allTypeEntries, selectedDate,
+  plansB = [], allTypeEntriesB = [], compare = false,
 }: RegionalDetailDialogProps) => {
   const [selectedSucursal, setSelectedSucursal] = useState<string>("todas");
 
@@ -140,6 +179,24 @@ const RegionalDetailDialog = ({
     () => allTypeEntries.filter(e => filteredPlanIds.includes(e.daily_plan_id)),
     [allTypeEntries, filteredPlanIds]
   );
+
+  // Comparison dataset (realizado)
+  const filteredPlansB = useMemo(() => {
+    const scoped = plansB.filter(p => regionalBaseIds.includes(p.base_id));
+    if (selectedSucursal === "todas" || !hasSucursais) return scoped;
+    const sucursalBase = allBases.find(b => b.name.toLowerCase() === selectedSucursal.toLowerCase());
+    if (!sucursalBase) return [];
+    return scoped.filter(p => p.base_id === sucursalBase.id);
+  }, [plansB, regionalBaseIds, selectedSucursal, hasSucursais, allBases]);
+
+  const filteredEntriesB = useMemo(() => {
+    const ids = filteredPlansB.map(p => p.id);
+    return allTypeEntriesB.filter(e => ids.includes(e.daily_plan_id));
+  }, [allTypeEntriesB, filteredPlansB]);
+
+  const typePerHourB = useMemo(() => typeMapFromEntries(filteredEntriesB), [filteredEntriesB]);
+  const teamsPerHourB = useMemo(() => seriesForTypes(filteredEntriesB, ALL_INCIDENTS_TYPES), [filteredEntriesB]);
+  const btPerHourB = useMemo(() => seriesForTypes(filteredEntriesB, BT_ONLY_TYPES), [filteredEntriesB]);
 
   const teamsPerHour = useMemo(() => {
     const arr = Array(24).fill(0);
@@ -187,6 +244,9 @@ const RegionalDetailDialog = ({
   }, 0);
   const avgBT24h = Math.round(totalBT24h / 24);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
+  const avgTotalTeams24hB = avg(teamsPerHourB, allHours);
+  const avgBT24hB = avg(btPerHourB, allHours);
+  const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
@@ -195,6 +255,7 @@ const RegionalDetailDialog = ({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <DialogTitle>
               Detalhe - {regional.label} - {format(selectedDate, "dd/MM/yyyy")}
+              {compare && <span className="text-xs text-muted-foreground ml-2">(planejado) - realizado</span>}
             </DialogTitle>
             {hasSucursais && (
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
@@ -212,7 +273,7 @@ const RegionalDetailDialog = ({
           </div>
         </DialogHeader>
 
-        {filteredPlans.length === 0 ? (
+        {filteredPlans.length === 0 && filteredPlansB.length === 0 ? (
           <div className="py-10 text-center text-muted-foreground text-sm">
             Nenhum plano encontrado para esta seleção.
           </div>
@@ -268,7 +329,8 @@ const RegionalDetailDialog = ({
                   {/* GERAIS types */}
                   {GERAIS_TYPES.map((type, idx) => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
@@ -278,10 +340,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -295,7 +357,8 @@ const RegionalDetailDialog = ({
                   {/* LV/MK types (display only, not counted in totals) */}
                   {LV_MK_TYPES.map(type => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
@@ -305,10 +368,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60 whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -322,7 +385,8 @@ const RegionalDetailDialog = ({
                   {/* Apoio types (counted for all incidents) */}
                   {APOIO_TYPES.map(type => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
@@ -332,10 +396,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-foreground whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -349,7 +413,8 @@ const RegionalDetailDialog = ({
                   {/* BT ONLY types */}
                   {BT_ONLY_TYPES.map(type => {
                     const row = typePerHour[type] || [];
-                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                    const rowB = typePerHourB[type] || [];
+                    const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
@@ -359,10 +424,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                                <td key={h} className="text-center py-0.5 font-mono text-warning/80 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                               ))}
-                              <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>
-                                {avg(row, turno.hours)}
+                              <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell, "text-warning")}>
+                                {pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -380,6 +445,11 @@ const RegionalDetailDialog = ({
                       const r = typePerHour[type] || [];
                       r.forEach((v, h) => { totalRow[h] += v; });
                     });
+                    const totalRowB = Array(24).fill(0);
+                    COUNTED_TYPES.forEach(type => {
+                      const r = typePerHourB[type] || [];
+                      r.forEach((v, h) => { totalRowB[h] += v; });
+                    });
                     return (
                       <tr className="font-semibold">
                         <td className="py-1 pr-2 text-foreground sticky left-0 bg-background z-10">Total Processos</td>
@@ -388,10 +458,10 @@ const RegionalDetailDialog = ({
                           return (
                             <React.Fragment key={turno.letter}>
                               {turno.hours.map(h => (
-                                <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                                <td key={h} className="text-center py-1 font-mono text-foreground whitespace-nowrap">{pair(compare, totalRow[h], totalRowB[h])}</td>
                               ))}
-                              <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>
-                                {avg(totalRow, turno.hours)}
+                              <td className={cn("text-center py-1 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>
+                                {pair(compare, avg(totalRow, turno.hours), avg(totalRowB, turno.hours))}
                               </td>
                               {turno.letter !== "C" && <td className="w-2" />}
                             </React.Fragment>
@@ -408,17 +478,17 @@ const RegionalDetailDialog = ({
             <div className="flex gap-6 mt-3 pt-3 border-t border-border/30 flex-wrap">
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
-                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+                <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h + avgBT24h, avgTotalTeams24hB + avgBT24hB)}</span>
               </div>
               <div className="w-px bg-border/50 self-stretch" />
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
-                <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+                <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h, avgTotalTeams24hB)}</span>
               </div>
               <div className="w-px bg-border/50 self-stretch" />
               <div className="flex flex-col items-center">
                 <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
-                <span className="font-bold text-sm text-warning">{avgBT24h}</span>
+                <span className="font-bold text-sm text-warning">{pair(compare, avgBT24h, avgBT24hB)}</span>
               </div>
             </div>
           </>
@@ -435,9 +505,12 @@ interface RegionalCardProps {
   allTypeEntries: TeamTypeEntry[];
   allBases: { id: string; name: string }[];
   onOpen: () => void;
+  plansB?: DailyTeamPlan[];
+  allTypeEntriesB?: TeamTypeEntry[];
+  compare?: boolean;
 }
 
-const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: RegionalCardProps) => {
+const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plansB = [], allTypeEntriesB = [], compare = false }: RegionalCardProps) => {
   const hasSucursais = regional.sucursais.length > 0;
 
   const regionalBaseIds = useMemo(() => {
@@ -484,7 +557,19 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
-  const hasData = regionalPlans.length > 0;
+
+  const regionalEntriesB = useMemo(() => {
+    const ids = plansB.filter(p => regionalBaseIds.includes(p.base_id)).map(p => p.id);
+    return allTypeEntriesB.filter(e => ids.includes(e.daily_plan_id));
+  }, [allTypeEntriesB, plansB, regionalBaseIds]);
+
+  const teamsPerHourB = useMemo(() => seriesForTypes(regionalEntriesB, ALL_INCIDENTS_TYPES), [regionalEntriesB]);
+  const btPerHourB = useMemo(() => seriesForTypes(regionalEntriesB, BT_ONLY_TYPES), [regionalEntriesB]);
+  const avgTotalTeams24hB = avg(teamsPerHourB, allHours);
+  const avgBT24hB = avg(btPerHourB, allHours);
+  const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
+
+  const hasData = regionalPlans.length > 0 || (compare && regionalEntriesB.length > 0);
 
   // Per-type 24h averages (all types including LV/MK)
   const typeAvg24h = useMemo(() => {
@@ -502,6 +587,19 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     return result;
   }, [regionalEntries]);
 
+  const typeAvg24hB = useMemo(() => {
+    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES];
+    const result: Record<string, number> = {};
+    allTypes.forEach(type => {
+      const arr = Array(24).fill(0);
+      regionalEntriesB.forEach(e => {
+        if (e.team_type === type) arr[e.hour] += e.quantity;
+      });
+      result[type] = TURNOS.reduce((sum, turno) => sum + avg(arr, turno.hours), 0);
+    });
+    return result;
+  }, [regionalEntriesB]);
+
   return (
     <div
       onClick={hasData ? onOpen : undefined}
@@ -513,7 +611,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
+          <Badge variant="secondary" className="text-sm whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
@@ -528,10 +626,11 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         {TURNOS.map(turno => {
           const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
           const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
+          const avgTotalB = avg(teamsPerHourB, turno.hours) + avg(btPerHourB, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-2 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className={cn("text-base font-bold", colors.cell)}>{avgTotal}</div>
+              <div className={cn("font-bold", compare ? "text-sm" : "text-base", colors.cell)}>{pair(compare, avgTotal, avgTotalB)}</div>
             </div>
           );
         })}
@@ -542,41 +641,45 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         <div className="border-t border-border/30 pt-2 mb-2 space-y-0.5">
           {GERAIS_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-foreground">{val}</span>
+                <span className="font-semibold text-foreground">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
           {LV_MK_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-muted-foreground/80">{val}</span>
+                <span className="font-semibold text-muted-foreground/80">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
           {APOIO_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-foreground">{val}</span>
+                <span className="font-semibold text-foreground">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
           {BT_ONLY_TYPES.map(type => {
             const val = typeAvg24h[type] || 0;
-            if (val === 0) return null;
+            const valB = typeAvg24hB[type] || 0;
+            if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{type}</span>
-                <span className="font-semibold text-warning">{val}</span>
+                <span className="font-semibold text-warning">{pair(compare, val, valB)}</span>
               </div>
             );
           })}
@@ -588,17 +691,17 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
         <div className="border-t border-border/30 pt-2 flex justify-between text-xs">
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. Totais (24h)</span>
-            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+            <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h + avgBT24h, avgTotalTeams24hB + avgBT24hB)}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. MT (24h)</span>
-            <span className="font-bold text-sm text-foreground">{avgTotalTeams24h}</span>
+            <span className="font-bold text-sm text-foreground">{pair(compare, avgTotalTeams24h, avgTotalTeams24hB)}</span>
           </div>
           <div className="w-px bg-border/50" />
           <div className="flex flex-col items-center">
             <span className="text-muted-foreground">Eq. BT (24h)</span>
-            <span className="font-bold text-sm text-warning">{avgBT24h}</span>
+            <span className="font-bold text-sm text-warning">{pair(compare, avgBT24h, avgBT24hB)}</span>
           </div>
         </div>
       )}
@@ -614,9 +717,12 @@ interface ConsolidatedViewProps {
   allTypeEntries: TeamTypeEntry[];
   allBases: { id: string; name: string }[];
   selectedDate: Date;
+  plansB?: DailyTeamPlan[];
+  allTypeEntriesB?: TeamTypeEntry[];
+  compare?: boolean;
 }
 
-const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, selectedDate }: ConsolidatedViewProps) => {
+const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, selectedDate, plansB = [], allTypeEntriesB = [], compare = false }: ConsolidatedViewProps) => {
   // Gather all base IDs for the selected UT
   const utBaseIds = useMemo(() => {
     const ids: string[] = [];
@@ -637,6 +743,15 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
   const utPlans = useMemo(() => plans.filter(p => utBaseIds.includes(p.base_id)), [plans, utBaseIds]);
   const utPlanIds = utPlans.map(p => p.id);
   const utEntries = useMemo(() => allTypeEntries.filter(e => utPlanIds.includes(e.daily_plan_id)), [allTypeEntries, utPlanIds]);
+
+  const utPlansB = useMemo(() => plansB.filter(p => utBaseIds.includes(p.base_id)), [plansB, utBaseIds]);
+  const utEntriesB = useMemo(() => {
+    const ids = utPlansB.map(p => p.id);
+    return allTypeEntriesB.filter(e => ids.includes(e.daily_plan_id));
+  }, [allTypeEntriesB, utPlansB]);
+  const typePerHourB = useMemo(() => typeMapFromEntries(utEntriesB), [utEntriesB]);
+  const teamsPerHourB = useMemo(() => seriesForTypes(utEntriesB, ALL_INCIDENTS_TYPES), [utEntriesB]);
+  const btPerHourB = useMemo(() => seriesForTypes(utEntriesB, BT_ONLY_TYPES), [utEntriesB]);
 
   const allHours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -666,8 +781,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
+  const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
 
-  if (utPlans.length === 0) {
+  if (utPlans.length === 0 && utPlansB.length === 0) {
     return (
       <div className="glass-card p-12 flex flex-col items-center justify-center text-center">
         <Eye className="w-10 h-10 text-muted-foreground mb-3" />
@@ -688,7 +804,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             {regionais.map(r => r.label).join(" · ")} — {format(selectedDate, "dd/MM/yyyy")}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-3 py-1">{declaredTeamsTotal} equipes</Badge>
+        <Badge variant="secondary" className="text-base px-3 py-1 whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
       </div>
 
       {/* Turno averages */}
@@ -696,10 +812,11 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
         {TURNOS.map(turno => {
           const colors = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
           const avgTotal = avg(teamsPerHour, turno.hours) + avg(btPerHour, turno.hours);
+          const avgTotalB = avg(teamsPerHourB, turno.hours) + avg(btPerHourB, turno.hours);
           return (
             <div key={turno.letter} className={cn("rounded-md p-3 text-center border", colors.bg, colors.border)}>
               <div className={cn("text-xs font-medium mb-0.5", colors.cell)}>{turno.letter}</div>
-              <div className={cn("text-2xl font-bold", colors.cell)}>{avgTotal}</div>
+              <div className={cn("font-bold", compare ? "text-lg" : "text-2xl", colors.cell)}>{pair(compare, avgTotal, avgTotalB)}</div>
             </div>
           );
         })}
@@ -748,7 +865,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             ].map(({ types, color, labelColor }) =>
               types.map((type, idx) => {
                 const row = typePerHour[type] || [];
-                const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+                const rowB = typePerHourB[type] || [];
+                const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
                 if (!hasAny) return null;
                 return (
                   <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
@@ -758,9 +876,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                       return (
                         <React.Fragment key={turno.letter}>
                           {turno.hours.map(h => (
-                            <td key={h} className={cn("text-center py-0.5 font-mono", color)}>{row[h] || 0}</td>
+                            <td key={h} className={cn("text-center py-0.5 font-mono whitespace-nowrap", color)}>{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                           ))}
-                          <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                          <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                           {turno.letter !== "C" && <td className="w-2" />}
                         </React.Fragment>
                       );
@@ -772,7 +890,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
             {LV_MK_TYPES.map(type => {
               const row = typePerHour[type] || [];
-              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              const rowB = typePerHourB[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
@@ -782,9 +901,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60">{row[h] || 0}</td>
+                          <td key={h} className="text-center py-0.5 font-mono text-muted-foreground/60 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                         ))}
-                        <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm opacity-60 whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -795,7 +914,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
             {APOIO_TYPES.map(type => {
               const row = typePerHour[type] || [];
-              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              const rowB = typePerHourB[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
@@ -805,9 +925,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-0.5 font-mono text-foreground">{row[h] || 0}</td>
+                          <td key={h} className="text-center py-0.5 font-mono text-foreground whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                         ))}
-                        <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell)}>{avg(row, turno.hours)}</td>
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -818,7 +938,8 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             <tr><td colSpan={100}><div className="border-t border-border/20 my-1" /></td></tr>
             {BT_ONLY_TYPES.map(type => {
               const row = typePerHour[type] || [];
-              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0));
+              const rowB = typePerHourB[type] || [];
+              const hasAny = TURNOS.some(t => t.hours.some(h => (row[h] || 0) > 0 || (compare && (rowB[h] || 0) > 0)));
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
@@ -828,9 +949,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-0.5 font-mono text-warning/80">{row[h] || 0}</td>
+                          <td key={h} className="text-center py-0.5 font-mono text-warning/80 whitespace-nowrap">{pair(compare, row[h] || 0, rowB[h] || 0)}</td>
                         ))}
-                        <td className={cn("text-center py-0.5 font-mono rounded-sm", tc.avgCell, "text-warning")}>{avg(row, turno.hours)}</td>
+                        <td className={cn("text-center py-0.5 font-mono rounded-sm whitespace-nowrap", tc.avgCell, "text-warning")}>{pair(compare, avg(row, turno.hours), avg(rowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -847,6 +968,11 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                 const r = typePerHour[type] || [];
                 r.forEach((v, h) => { totalRow[h] += v; });
               });
+              const totalRowB = Array(24).fill(0);
+              COUNTED_TYPES.forEach(type => {
+                const r = typePerHourB[type] || [];
+                r.forEach((v, h) => { totalRowB[h] += v; });
+              });
               return (
                 <tr className="font-semibold">
                   <td className="py-1 pr-2 text-foreground sticky left-0 bg-card z-10">Total Processos</td>
@@ -855,9 +981,9 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                     return (
                       <React.Fragment key={turno.letter}>
                         {turno.hours.map(h => (
-                          <td key={h} className="text-center py-1 font-mono text-foreground">{totalRow[h]}</td>
+                          <td key={h} className="text-center py-1 font-mono text-foreground whitespace-nowrap">{pair(compare, totalRow[h], totalRowB[h])}</td>
                         ))}
-                        <td className={cn("text-center py-1 font-mono rounded-sm", tc.avgCell)}>{avg(totalRow, turno.hours)}</td>
+                        <td className={cn("text-center py-1 font-mono rounded-sm whitespace-nowrap", tc.avgCell)}>{pair(compare, avg(totalRow, turno.hours), avg(totalRowB, turno.hours))}</td>
                         {turno.letter !== "C" && <td className="w-2" />}
                       </React.Fragment>
                     );
@@ -873,17 +999,17 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
       <div className="flex gap-6 mt-4 pt-3 border-t border-border/30 flex-wrap">
         <div className="flex flex-col items-center">
           <span className="text-xs text-muted-foreground">Eq. Totais (24h)</span>
-          <span className="font-bold text-lg text-foreground">{avgTotalTeams24h + avgBT24h}</span>
+          <span className="font-bold text-lg text-foreground">{pair(compare, avgTotalTeams24h + avgBT24h, avg(teamsPerHourB, allHours) + avg(btPerHourB, allHours))}</span>
         </div>
         <div className="w-px bg-border/50 self-stretch" />
         <div className="flex flex-col items-center">
           <span className="text-xs text-muted-foreground">Eq. MT (24h)</span>
-          <span className="font-bold text-lg text-foreground">{avgTotalTeams24h}</span>
+          <span className="font-bold text-lg text-foreground">{pair(compare, avgTotalTeams24h, avg(teamsPerHourB, allHours))}</span>
         </div>
         <div className="w-px bg-border/50 self-stretch" />
         <div className="flex flex-col items-center">
           <span className="text-xs text-muted-foreground">Eq. BT (24h)</span>
-          <span className="font-bold text-lg text-warning">{avgBT24h}</span>
+          <span className="font-bold text-lg text-warning">{pair(compare, avgBT24h, avg(btPerHourB, allHours))}</span>
         </div>
       </div>
     </div>
@@ -896,15 +1022,26 @@ const Visao = () => {
   const [selectedUT, setSelectedUT] = useState<UT>("UTS");
   const [openRegional, setOpenRegional] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"cards" | "consolidated">("cards");
+  const [structureMode, setStructureMode] = useState<StructureMode>("planejado");
 
   const { data: bases } = useBases();
   const allBases = useMemo(() => bases || [], [bases]);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
-  const { data: plans } = useAllPlansForDate(dateStr);
+  const { data: plannedPlans } = useAllPlansForDate(dateStr, "planejado");
+  const { data: realizedPlans } = useAllPlansForDate(dateStr, "realizado");
 
-  const planIds = useMemo(() => (plans || []).map(p => p.id), [plans]);
-  const { data: allTypeEntries } = useTeamTypeEntriesByPlans(planIds);
+  const plannedPlanIds = useMemo(() => (plannedPlans || []).map(p => p.id), [plannedPlans]);
+  const realizedPlanIds = useMemo(() => (realizedPlans || []).map(p => p.id), [realizedPlans]);
+  const { data: plannedEntries } = useTeamTypeEntriesByPlans(plannedPlanIds);
+  const { data: realizedEntries } = useTeamTypeEntriesByPlans(realizedPlanIds);
+
+  const compare = structureMode === "comparacao";
+  // Primary dataset: planejado (also the left side in comparison mode)
+  const plans = structureMode === "realizado" ? realizedPlans : plannedPlans;
+  const allTypeEntries = structureMode === "realizado" ? realizedEntries : plannedEntries;
+  const plansB = compare ? realizedPlans || [] : [];
+  const allTypeEntriesB = compare ? realizedEntries || [] : [];
 
   const basesMap = useMemo(() => {
     const m: Record<string, string> = {};
@@ -928,7 +1065,13 @@ const Visao = () => {
       <div className="w-full mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Visão de Estrutura</h1>
-          <p className="text-sm text-muted-foreground">Visualização das equipes planejadas por regional</p>
+          <p className="text-sm text-muted-foreground">
+            {compare
+              ? "Comparação por polo — (planejado) - realizado"
+              : structureMode === "realizado"
+              ? "Visualização das equipes realizadas por polo"
+              : "Visualização das equipes planejadas por polo"}
+          </p>
         </div>
 
         {/* Controls */}
@@ -948,6 +1091,30 @@ const Visao = () => {
                   )}
                 >
                   {ut}
+                </button>
+              ))}
+            </div>
+
+            <div className="w-px h-6 bg-border" />
+
+            {/* Structure mode selector */}
+            <div className="flex rounded-lg overflow-hidden border border-border">
+              {([
+                { value: "planejado", label: "Planejado" },
+                { value: "realizado", label: "Realizado" },
+                { value: "comparacao", label: "Comparação" },
+              ] as { value: StructureMode; label: string }[]).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStructureMode(opt.value)}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium transition-colors",
+                    structureMode === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -1028,6 +1195,9 @@ const Visao = () => {
                 allTypeEntries={allTypeEntries || []}
                 allBases={allBases}
                 onOpen={() => setOpenRegional(regional.label)}
+                plansB={plansB}
+                allTypeEntriesB={allTypeEntriesB}
+                compare={compare}
               />
             ))}
           </div>
@@ -1039,16 +1209,19 @@ const Visao = () => {
             allTypeEntries={allTypeEntries || []}
             allBases={allBases}
             selectedDate={selectedDate}
+            plansB={plansB}
+            allTypeEntriesB={allTypeEntriesB}
+            compare={compare}
           />
         )}
 
         {/* No plans at all */}
-        {(!plans || plans.length === 0) && (
+        {(!plans || plans.length === 0) && (!compare || plansB.length === 0) && (
           <div className="glass-card p-12 flex flex-col items-center justify-center text-center mt-4">
             <Eye className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum plano encontrado</h3>
             <p className="text-sm text-muted-foreground">
-              Não há planejamento para {format(selectedDate, "dd/MM/yyyy")}. Crie um na aba Estrutura.
+              Não há estrutura {structureMode === "realizado" ? "realizada" : "planejada"} para {format(selectedDate, "dd/MM/yyyy")}. Crie uma na aba Estrutura.
             </p>
           </div>
         )}
@@ -1065,6 +1238,9 @@ const Visao = () => {
           plans={plans || []}
           allTypeEntries={allTypeEntries || []}
           selectedDate={selectedDate}
+          plansB={plansB}
+          allTypeEntriesB={allTypeEntriesB}
+          compare={compare}
         />
       )}
     </div>

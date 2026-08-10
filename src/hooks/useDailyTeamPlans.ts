@@ -1,10 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type PlanKind = "planejado" | "realizado";
+
 export interface DailyTeamPlan {
   id: string;
   base_id: string;
   plan_date: string;
+  plan_kind: string;
   teams_hour_0: number;
   teams_hour_1: number;
   teams_hour_2: number;
@@ -57,9 +60,14 @@ export interface DailyTeamPlan {
   updated_at: string;
 }
 
-export const useDailyTeamPlans = (baseId: string | null, startDate?: string, endDate?: string) => {
+export const useDailyTeamPlans = (
+  baseId: string | null,
+  startDate?: string,
+  endDate?: string,
+  kind: PlanKind = "planejado"
+) => {
   return useQuery({
-    queryKey: ["daily_team_plans", baseId, startDate, endDate],
+    queryKey: ["daily_team_plans", baseId, startDate, endDate, kind],
     queryFn: async () => {
       if (!baseId) return [];
       
@@ -67,6 +75,7 @@ export const useDailyTeamPlans = (baseId: string | null, startDate?: string, end
         .from("daily_team_plans")
         .select("*")
         .eq("base_id", baseId)
+        .eq("plan_kind", kind)
         .order("plan_date");
       
       if (startDate) query = query.gte("plan_date", startDate);
@@ -80,9 +89,13 @@ export const useDailyTeamPlans = (baseId: string | null, startDate?: string, end
   });
 };
 
-export const useDailyTeamPlan = (baseId: string | null, date: string | null) => {
+export const useDailyTeamPlan = (
+  baseId: string | null,
+  date: string | null,
+  kind: PlanKind = "planejado"
+) => {
   return useQuery({
-    queryKey: ["daily_team_plan", baseId, date],
+    queryKey: ["daily_team_plan", baseId, date, kind],
     queryFn: async () => {
       if (!baseId || !date) return null;
       
@@ -91,6 +104,7 @@ export const useDailyTeamPlan = (baseId: string | null, date: string | null) => 
         .select("*")
         .eq("base_id", baseId)
         .eq("plan_date", date)
+        .eq("plan_kind", kind)
         .maybeSingle();
       
       if (error) throw error;
@@ -105,18 +119,20 @@ export const useUpsertDailyTeamPlan = () => {
   
   return useMutation({
     mutationFn: async (plan: Omit<DailyTeamPlan, "id" | "created_at" | "updated_at">) => {
+      const kind = plan.plan_kind || "planejado";
       // Try update first, then insert
       const { data: existing } = await supabase
         .from("daily_team_plans")
         .select("id")
         .eq("base_id", plan.base_id)
         .eq("plan_date", plan.plan_date)
+        .eq("plan_kind", kind)
         .maybeSingle();
       
       if (existing) {
         const { data, error } = await supabase
           .from("daily_team_plans")
-          .update(plan)
+          .update({ ...plan, plan_kind: kind })
           .eq("id", existing.id)
           .select()
           .single();
@@ -125,7 +141,7 @@ export const useUpsertDailyTeamPlan = () => {
       } else {
         const { data, error } = await supabase
           .from("daily_team_plans")
-          .insert([plan])
+          .insert([{ ...plan, plan_kind: kind }])
           .select()
           .single();
         if (error) throw error;
