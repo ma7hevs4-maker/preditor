@@ -505,9 +505,12 @@ interface RegionalCardProps {
   allTypeEntries: TeamTypeEntry[];
   allBases: { id: string; name: string }[];
   onOpen: () => void;
+  plansB?: DailyTeamPlan[];
+  allTypeEntriesB?: TeamTypeEntry[];
+  compare?: boolean;
 }
 
-const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: RegionalCardProps) => {
+const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plansB = [], allTypeEntriesB = [], compare = false }: RegionalCardProps) => {
   const hasSucursais = regional.sucursais.length > 0;
 
   const regionalBaseIds = useMemo(() => {
@@ -554,7 +557,19 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
-  const hasData = regionalPlans.length > 0;
+
+  const regionalEntriesB = useMemo(() => {
+    const ids = plansB.filter(p => regionalBaseIds.includes(p.base_id)).map(p => p.id);
+    return allTypeEntriesB.filter(e => ids.includes(e.daily_plan_id));
+  }, [allTypeEntriesB, plansB, regionalBaseIds]);
+
+  const teamsPerHourB = useMemo(() => seriesForTypes(regionalEntriesB, ALL_INCIDENTS_TYPES), [regionalEntriesB]);
+  const btPerHourB = useMemo(() => seriesForTypes(regionalEntriesB, BT_ONLY_TYPES), [regionalEntriesB]);
+  const avgTotalTeams24hB = avg(teamsPerHourB, allHours);
+  const avgBT24hB = avg(btPerHourB, allHours);
+  const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
+
+  const hasData = regionalPlans.length > 0 || (compare && regionalEntriesB.length > 0);
 
   // Per-type 24h averages (all types including LV/MK)
   const typeAvg24h = useMemo(() => {
@@ -572,6 +587,19 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
     return result;
   }, [regionalEntries]);
 
+  const typeAvg24hB = useMemo(() => {
+    const allTypes = [...GERAIS_TYPES, ...BT_ONLY_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES];
+    const result: Record<string, number> = {};
+    allTypes.forEach(type => {
+      const arr = Array(24).fill(0);
+      regionalEntriesB.forEach(e => {
+        if (e.team_type === type) arr[e.hour] += e.quantity;
+      });
+      result[type] = TURNOS.reduce((sum, turno) => sum + avg(arr, turno.hours), 0);
+    });
+    return result;
+  }, [regionalEntriesB]);
+
   return (
     <div
       onClick={hasData ? onOpen : undefined}
@@ -583,7 +611,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen }: Reg
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
+          <Badge variant="secondary" className="text-sm whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
