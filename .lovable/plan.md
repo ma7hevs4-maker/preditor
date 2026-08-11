@@ -1,57 +1,26 @@
+# Hoje na Central Climática: híbrido OpenWeatherMap + Open-Meteo
 
+## Contexto
 
-# Otimização do Sistema de Salvamento/Carregamento Mensal
+O cálculo dos cards da Central Climática soma as **24 horas do dia selecionado** (00h–23h), e isso permanece assim. Por isso as horas já passadas importam: sem elas os totais de chuva, entrada e equipes necessárias ficariam incompletos.
 
-## Problema Atual
+Hoje o código força o Open-Meteo para o dia atual justamente porque o plano gratuito do OpenWeatherMap só devolve blocos futuros de 3 horas — depois do início do dia, as horas passadas voltam vazias.
 
-Com ~7.7k linhas de incidentes (27 MB) e ~3.8k M300 (8 MB) para um único snapshot, o sistema já ocupa 35 MB. Para acumulação mensal (estimativa de 30-50k linhas únicas), o problema é duplo:
+## O que muda
 
-1. **Salvamento lento**: Apaga tudo e reinsere tudo a cada vez (22+ chamadas API)
-2. **Carregamento lento**: Busca todas as linhas em páginas de 1000, depois processa tudo no client-side
+Para respeitar a regra "OpenWeatherMap nos 5 primeiros dias, Open-Meteo nos 2 últimos" sem perder as horas passadas:
 
-## Solução Proposta (3 frentes)
+- **Hoje (dia 0)**: passa a usar **OpenWeatherMap para as horas a partir da hora atual** e **Open-Meteo apenas para as horas já passadas** do dia, montando uma grade completa 00h–23h.
+- **Dias 1 a 4**: continuam 100% OpenWeatherMap (como já é hoje).
+- **Dias 5 e 6**: continuam 100% Open-Meteo (como já é hoje).
+- O selo de API no cabeçalho passa a indicar, no dia de hoje, que a fonte é híbrida.
 
-### 1. Upsert com chave única (elimina delete+reinsert)
+Os cálculos operacionais (entradas, remoção operador, equipes necessárias, gatilhos, decay) continuam idênticos — muda apenas a origem dos dados horários.
 
-- Adicionar coluna `row_hash` (TEXT) às tabelas `saved_inc_rows` e `saved_m300_rows` com constraint UNIQUE
-- O hash será gerado a partir de campos-chave do incidente (Número + Equipe + Data)
-- No salvamento, usar **upsert** (`ON CONFLICT DO UPDATE`) em vez de deletar tudo e reinserir
-- Resultado: ~90% das linhas que já existem são ignoradas, só insere/atualiza o que mudou
+## Detalhes técnicos
 
-### 2. Cache de dados processados
-
-- Criar tabela `saved_processed_cache` com uma coluna JSONB comprimida contendo o resultado do `processRawData`
-- Após cada salvamento, armazenar o resultado processado
-- No carregamento, buscar direto o cache processado (1 única query) em vez de buscar todas as linhas raw e reprocessar
-- Invalidar o cache quando novos dados são salvos
-
-### 3. Limpeza de dados raw antes de salvar
-
-- Remover colunas desnecessárias do JSONB antes de persistir (reduz ~40-60% do tamanho)
-- Manter apenas as colunas que `processRawData` realmente utiliza
-
-## Mudanças Técnicas
-
-### Migração SQL
-- Adicionar coluna `row_hash TEXT` + índice UNIQUE em `saved_inc_rows` e `saved_m300_rows`
-- Criar tabela `saved_processed_cache` (id, meta_id, processed_data JSONB, created_at)
-- Habilitar UPDATE nas políticas RLS de `saved_inc_rows` e `saved_m300_rows` (necessário para upsert)
-
-### `useSavedDashboard.ts`
-- Gerar hash por linha antes do insert
-- Substituir `deleteAll + batchInsert` por `batchUpsert` 
-- Após salvar, armazenar cache processado
-- No `loadSavedData`, tentar carregar do cache primeiro; se não existir, fazer o fetch raw + processamento
-
-### `Meu.tsx`
-- Adicionar botão "Limpar base mensal" para resetar quando o usuário quiser começar novo mês
-- Mostrar progresso mais detalhado (X de Y linhas novas)
-
-## Impacto Esperado
-
-| Métrica | Antes | Depois |
-|---------|-------|--------|
-| Salvamento (90% repetido) | ~22 API calls | ~3-4 API calls |
-| Carregamento | ~12 API calls + processamento | 1 API call (cache) |
-| Espaço mensal (~30k linhas) | ~120 MB | ~50-70 MB (colunas limpas) |
-
+- `supabase/functions/weather-forecast/index.ts`: no provedor `openweathermap`, quando o pedido cobrir o dia atual, buscar também o Open-Meteo e usar suas horas para preencher as posições anteriores à hora atual local; devolver `provider: "hybrid"` nesse caso.
+- `src/pages/Clima.tsx`: remover a exceção `dayOffset === 0` de `activeProvider` (linha ~1320), deixando a regra `dayOffset > 4 ? "openmeteo" : "openweathermap"`.
+- `PROVIDER_LABELS`: adicionar rótulo para o modo híbrido e exibi-lo quando `dayOffset === 0`.
+- `src/hooks/useWeather.ts`: sem mudança de assinatura; a chave de cache já inclui provider e `startMode`.
+- Fallback preservado: se o OpenWeatherMap falhar ou a chave não existir, tudo volta para Open-Meteo puro.
