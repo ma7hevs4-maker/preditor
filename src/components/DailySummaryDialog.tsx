@@ -12,7 +12,7 @@ import { SimulationRow } from "@/hooks/useSimulation";
 import { BarChart3, Zap, CloudRain, TrendingDown, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getHalfLifeBucket } from "@/hooks/useHalfLife";
+
 
 interface DailySummaryDialogProps {
   simulationData: SimulationRow[];
@@ -405,7 +405,7 @@ export const DailySummaryDialog = ({ simulationData }: DailySummaryDialogProps) 
                                   row.tslr !== null && row.tslr > 0 ? "text-amber-400" : "text-muted-foreground"
                                 )}>
                                   {row.tslr !== null && row.tslr > 0
-                                    ? `${(row.decayMultiplier * 100).toFixed(0)}%`
+                                    ? `+${row.tslr}h · +${row.uplift_bt_residual_pct.toFixed(0)}%`
                                     : "—"
                                   }
                                 </td>

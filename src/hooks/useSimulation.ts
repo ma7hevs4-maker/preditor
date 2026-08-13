@@ -3,8 +3,8 @@ import { HistoricalDataRow } from "./useHistoricalData";
 import { WeatherHour } from "./useWeather";
 import { SystemSetting } from "./useSystemSettings";
 import { WeatherTrigger } from "./useWeatherTriggers";
-import { calculateWeatherUplift, calculateActiveTriggersUplift } from "./useWeatherUplift";
-import { calculateDecayInfo, DecayInfo, setLastRainUplifts, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
+import { computeWeatherUplifts } from "./useWeatherDecay";
+import { DecayCurve } from "./useDecayCurves";
 import { OperationalOverride } from "@/components/OperationalOverrideDialog";
 
 export interface SimulationConfig {
@@ -62,11 +62,15 @@ export interface SimulationRow {
   eq_ideal_total: number; // total de equipes ideal
   remoto_bt_retirado: number; // quantidade retirada pelo remoto nesta hora
   // Decay info
-  tslr: number | null; // Time since last rain (hours)
-  lastEpisodeSumMm: number | null; // Sum of last rain episode (mm)
-  decayMultiplier: number; // 0-1, how much uplift remains after decay
+  tslr: number | null; // Horas desde o fim do último gatilho (decay)
+  lastEpisodeSumMm: number | null; // legado (não usado nas curvas)
+  decayMultiplier: number; // residual / impacto original do gatilho (0-1)
   uplift_bt_raw_pct: number; // Uplift before decay
   uplift_mt_raw_pct: number; // Uplift before decay
+  decay_source_name: string | null; // gatilho que originou o residual
+  uplift_bt_residual_pct: number; // parte residual (curva de decay)
+  uplift_mt_residual_pct: number;
+  active_trigger_names: string[];
 }
 
 export const useSimulation = (
@@ -76,7 +80,8 @@ export const useSimulation = (
   systemSettings?: SystemSetting[],
   weatherImpactEnabled: boolean = true,
   weatherTriggers?: WeatherTrigger[],
-  operationalOverride?: OperationalOverride
+  operationalOverride?: OperationalOverride,
+  decayCurves?: DecayCurve[]
 ) => {
   return useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
@@ -97,29 +102,10 @@ export const useSimulation = (
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Calculate decay info for weather data (includes episode detection)
-    const { decayInfos, episodes } = weatherData 
-      ? calculateDecayInfo(weatherData) 
-      : { decayInfos: [] as DecayInfo[], episodes: [] };
-    
-    // First pass: Calculate raw uplifts for all hours to capture rain hour uplifts
-    const upliftsByHour: { upliftBT: number; upliftMT: number }[] = [];
-    if (weatherData && weatherImpactEnabled) {
-      for (let i = 0; i < config.horizonHours; i++) {
-        const weather = weatherData[i] || { precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 };
-        const { upliftBT, upliftMT } = calculateActiveTriggersUplift(
-          weatherTriggers,
-          weather.precip_mm,
-          weather.wind_kmh,
-          weather.temp_c,
-          weather.gust_kmh
-        );
-        upliftsByHour.push({ upliftBT, upliftMT });
-      }
-      
-      // Set the last rain uplifts in decayInfos based on actual rain hour uplifts
-      setLastRainUplifts(decayInfos, episodes, upliftsByHour);
-    }
+    // Uplift horário: gatilhos ativos + residual pelas curvas de decay da base
+    const upliftInfos = weatherData && weatherImpactEnabled
+      ? computeWeatherUplifts(weatherData, weatherTriggers, decayCurves, config.horizonHours)
+      : [];
     
     // Backlog inicial (sem redução prévia - agora aplicamos por hora)
     let backlog_bt = config.btInitialBacklog;
@@ -176,58 +162,15 @@ export const useSimulation = (
         description: "",
       };
 
-      // Get decay info for this hour
-      const decayInfo: DecayInfo = decayInfos[i] || {
-        tslr: null,
-        lastEpisodeSumMm: null,
-        decayMultiplier: 1,
-        lastRainUpliftBT: null,
-        lastRainUpliftMT: null,
-      };
-
-      // Apply weather uplift using database triggers (only if weather impact is enabled)
-      let uplift_bt = 0;
-      let uplift_mt = 0;
-      let uplift_bt_raw = 0;
-      let uplift_mt_raw = 0;
-      
-      if (weatherImpactEnabled) {
-        const rawUplift = upliftsByHour[i] || { upliftBT: 0, upliftMT: 0 };
-        uplift_bt_raw = rawUplift.upliftBT;
-        uplift_mt_raw = rawUplift.upliftMT;
-        
-        // If currently raining (has active triggers), use raw uplift
-        // If not raining but has decay info, apply decay to last rain uplift
-        const isNotRaining = weather.precip_mm < 0.2;
-        const hasDecayInfo = decayInfo.tslr !== null && decayInfo.lastRainUpliftBT !== null;
-        
-        if (isNotRaining && hasDecayInfo) {
-          // Apply decay to the ACTUAL uplift from the last rain hour
-          const halfLifeBT = getHalfLifeHours("bt_total", decayInfo.lastEpisodeSumMm!);
-          const halfLifeMT = getHalfLifeHours("mt_total", decayInfo.lastEpisodeSumMm!);
-          
-          const decayMultiplierBT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeBT);
-          const decayMultiplierMT = calculateDecayMultiplier(decayInfo.tslr!, halfLifeMT);
-          
-          // Get non-rain uplifts that are currently active (wind, gust, temp)
-          const { nonRainUpliftBT, nonRainUpliftMT } = calculateActiveTriggersUplift(
-            weatherTriggers,
-            0, // No rain
-            weather.wind_kmh,
-            weather.temp_c,
-            weather.gust_kmh,
-            true // excludeRainTriggers
-          );
-          
-          // Final uplift = active non-rain triggers + decayed rain uplift
-          uplift_bt = nonRainUpliftBT + (decayInfo.lastRainUpliftBT! * decayMultiplierBT);
-          uplift_mt = nonRainUpliftMT + (decayInfo.lastRainUpliftMT! * decayMultiplierMT);
-        } else {
-          // Use raw uplift (raining or no previous rain episode)
-          uplift_bt = uplift_bt_raw;
-          uplift_mt = uplift_mt_raw;
-        }
-      }
+      // Uplift desta hora (gatilhos ativos + residual das curvas de decay)
+      const upliftInfo = upliftInfos[i];
+      const uplift_bt = weatherImpactEnabled ? upliftInfo?.upliftBT ?? 0 : 0;
+      const uplift_mt = weatherImpactEnabled ? upliftInfo?.upliftMT ?? 0 : 0;
+      const uplift_bt_raw = weatherImpactEnabled ? upliftInfo?.rawBT ?? 0 : 0;
+      const uplift_mt_raw = weatherImpactEnabled ? upliftInfo?.rawMT ?? 0 : 0;
+      const residual_bt = weatherImpactEnabled ? upliftInfo?.residualBT ?? 0 : 0;
+      const residual_mt = weatherImpactEnabled ? upliftInfo?.residualMT ?? 0 : 0;
+      const mainResidual = upliftInfo?.residualSources?.[0] ?? null;
 
       // Entrada ajustada = entrada histórica * (1 + uplift do clima)
       const entrada_bt_adj = historical.bt_entry_rate * (1 + uplift_bt);
@@ -336,12 +279,16 @@ export const useSimulation = (
         saldo_mt_ideal,
         eq_ideal_total,
         remoto_bt_retirado: Math.round(remoto_bt_retirado * 100) / 100,
-        // Decay info
-        tslr: decayInfo.tslr,
-        lastEpisodeSumMm: decayInfo.lastEpisodeSumMm,
-        decayMultiplier: decayInfo.decayMultiplier,
+        // Decay info (curvas por base)
+        tslr: mainResidual ? mainResidual.hoursSince : null,
+        lastEpisodeSumMm: null,
+        decayMultiplier: uplift_bt_raw > 0 || residual_bt === 0 ? 1 : residual_bt / Math.max(uplift_bt, 0.0001),
         uplift_bt_raw_pct: uplift_bt_raw * 100,
         uplift_mt_raw_pct: uplift_mt_raw * 100,
+        decay_source_name: mainResidual ? mainResidual.name : null,
+        uplift_bt_residual_pct: residual_bt * 100,
+        uplift_mt_residual_pct: residual_mt * 100,
+        active_trigger_names: upliftInfo?.activeNames ?? [],
       });
 
       // Atualiza backlog para próxima iteração

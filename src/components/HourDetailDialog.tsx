@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { CloudRain, Thermometer, Wind, Users, TrendingDown, TrendingUp, Target, Zap, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getHalfLifeBucket } from "@/hooks/useHalfLife";
+
 
 interface HourDetailDialogProps {
   row: SimulationRow | null;
@@ -110,34 +110,30 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
             />
           </div>
 
-          {/* Half-Life / Decay */}
+          {/* Curva de Decay */}
           <div className="space-y-1 p-3 rounded-lg bg-secondary/30 border border-border/30">
-            <SectionTitle icon={Timer} title="Half-Life (Decay)" color="text-amber-400" />
+            <SectionTitle icon={Timer} title="Decay (curva da base)" color="text-amber-400" />
             {row.tslr !== null ? (
               <>
                 <DataRow 
-                  label="Horas após chuva" 
-                  value={`${row.tslr}h`} 
+                  label="Horas após o gatilho" 
+                  value={`+${row.tslr}h`} 
                   color="text-amber-400"
                 />
                 <DataRow 
-                  label="Episódio anterior" 
-                  value={`${row.lastEpisodeSumMm?.toFixed(1) ?? 0} mm`} 
+                  label="Gatilho de origem" 
+                  value={row.decay_source_name ?? "—"} 
                 />
                 <DataRow 
-                  label="Categoria" 
-                  value={getHalfLifeBucket(row.lastEpisodeSumMm ?? 0)} 
-                />
-                <DataRow 
-                  label="Fator de decay" 
-                  value={`${(row.decayMultiplier * 100).toFixed(0)}%`} 
-                  color={row.decayMultiplier < 0.5 ? "text-success" : "text-amber-400"}
+                  label="Residual BT / MT" 
+                  value={`+${row.uplift_bt_residual_pct.toFixed(0)}% / +${row.uplift_mt_residual_pct.toFixed(0)}%`} 
+                  color="text-amber-400"
                 />
                 {(row.uplift_bt_pct > 0 || row.uplift_mt_pct > 0) ? (
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
                     <p>Impacto residual BT: <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span></p>
                     <p className="mt-1">Impacto residual MT: <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span></p>
-                    <p className="mt-1 text-amber-400">Decaindo com half-life baseado no episódio anterior</p>
+                    <p className="mt-1 text-amber-400">Valores da curva de decay cadastrada para a base</p>
                   </div>
                 ) : (
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">

@@ -20,6 +20,7 @@ import { useWeatherProvider } from "@/hooks/useWeatherProvider";
 import { useWeatherImpact } from "@/hooks/useWeatherImpact";
 import { useSimulationHistory, SimulationHistoryEntry, SaveSimulationParams } from "@/hooks/useSimulationHistory";
 import { useWeatherTriggers } from "@/hooks/useWeatherTriggers";
+import { useDecayCurves } from "@/hooks/useDecayCurves";
 import { format } from "date-fns";
 
 const defaultTeamsPerHour = [
@@ -81,6 +82,7 @@ const Index = () => {
 
   // Fetch weather triggers for selected base
   const { data: weatherTriggers } = useWeatherTriggers(config.baseId || null);
+  const { data: decayCurves } = useDecayCurves(config.baseId || null);
 
   // Weather provider state
   const { provider: weatherProvider, setProvider: setWeatherProvider } = useWeatherProvider();
@@ -168,7 +170,8 @@ const Index = () => {
     systemSettings,
     weatherImpactEnabled,
     stableWeatherTriggers,
-    operationalOverride.enabled ? operationalOverride : undefined
+    operationalOverride.enabled ? operationalOverride : undefined,
+    decayCurves
   );
 
   // Use loaded simulation or live data

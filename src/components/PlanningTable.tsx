@@ -74,9 +74,10 @@ export const PlanningTable = ({ data, baseName }: PlanningTableProps) => {
       "Impacto Climático BT (%)": row.uplift_bt_raw_pct.toFixed(1),
       "Impacto Climático MT (%)": row.uplift_mt_raw_pct.toFixed(1),
       // Decay (half-life)
-      "Horas Após Chuva": row.tslr ?? "",
-      "Episódio Anterior (mm)": row.lastEpisodeSumMm?.toFixed(1) ?? "",
-      "Fator Decay (%)": row.decayMultiplier ? (row.decayMultiplier * 100).toFixed(0) : "",
+      "Horas Após Gatilho": row.tslr ?? "",
+      "Gatilho do Decay": row.decay_source_name ?? "",
+      "Residual BT (%)": row.uplift_bt_residual_pct ? row.uplift_bt_residual_pct.toFixed(0) : "",
+      "Residual MT (%)": row.uplift_mt_residual_pct ? row.uplift_mt_residual_pct.toFixed(0) : "",
       // Impacto Final (climático + decay)
       "Impacto Final BT (%)": row.uplift_bt_pct.toFixed(1),
       "Impacto Final MT (%)": row.uplift_mt_pct.toFixed(1),
