@@ -1543,9 +1543,13 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 </div>
               </TabsContent>
 
+              {/* DECAY TAB */}
+              <TabsContent value="decay" className="space-y-4 mt-4">
+                <DecayCurvesTab bases={bases ?? []} />
+              </TabsContent>
+
               {/* CONTINGENCY LEVELS TAB */}
               <TabsContent value="contingency" className="space-y-4 mt-4">
-                {/* placeholder anchor */}
                 <ContingencyLevelsConfig />
               </TabsContent>
 
