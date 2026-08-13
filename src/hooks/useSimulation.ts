@@ -279,12 +279,16 @@ export const useSimulation = (
         saldo_mt_ideal,
         eq_ideal_total,
         remoto_bt_retirado: Math.round(remoto_bt_retirado * 100) / 100,
-        // Decay info
-        tslr: decayInfo.tslr,
-        lastEpisodeSumMm: decayInfo.lastEpisodeSumMm,
-        decayMultiplier: decayInfo.decayMultiplier,
+        // Decay info (curvas por base)
+        tslr: mainResidual ? mainResidual.hoursSince : null,
+        lastEpisodeSumMm: null,
+        decayMultiplier: uplift_bt_raw > 0 || residual_bt === 0 ? 1 : residual_bt / Math.max(uplift_bt, 0.0001),
         uplift_bt_raw_pct: uplift_bt_raw * 100,
         uplift_mt_raw_pct: uplift_mt_raw * 100,
+        decay_source_name: mainResidual ? mainResidual.name : null,
+        uplift_bt_residual_pct: residual_bt * 100,
+        uplift_mt_residual_pct: residual_mt * 100,
+        active_trigger_names: upliftInfo?.activeNames ?? [],
       });
 
       // Atualiza backlog para próxima iteração
