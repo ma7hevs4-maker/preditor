@@ -904,6 +904,10 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
 
         {/* Mini rain chart */}
         <div>
+          <div className="flex items-center gap-1 mb-0.5">
+            <CloudRain className="w-3 h-3 text-blue-400" />
+            <span className="text-[10px] text-muted-foreground">Chuva</span>
+          </div>
           <div className="flex items-end gap-[1px] h-6">
             {dayHours.map((h, i) => {
               const maxP = Math.max(summary.maxPrecip, 1);
@@ -925,6 +929,37 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
               );
             })}
           </div>
+
+          {/* Mini gust chart */}
+          <div className="flex items-center gap-1 mt-1.5 mb-0.5">
+            <Wind className="w-3 h-3 text-cyan-400" />
+            <span className="text-[10px] text-muted-foreground">
+              Rajada <span className="font-mono">{summary.maxGust.toFixed(0)}km/h</span>
+            </span>
+          </div>
+          <div className="flex items-end gap-[1px] h-6">
+            {dayHours.map((h, i) => {
+              const g = h.gust_kmh ?? 0;
+              const maxG = Math.max(summary.maxGust, 40);
+              const height = Math.max((g / maxG) * 100, g > 0 ? 8 : 0);
+              return (
+                <div
+                  key={i}
+                  className="flex-1 rounded-t-sm transition-all"
+                  style={{
+                    height: `${height}%`,
+                    backgroundColor: g >= 70 ? 'hsl(var(--destructive))' :
+                      g >= 50 ? 'hsl(var(--warning))' :
+                      g >= 30 ? 'hsl(190 90% 50%)' :
+                      g > 0 ? 'hsl(190 90% 50% / 0.4)' : 'hsl(var(--muted))',
+                    minHeight: g > 0 ? '2px' : '0px'
+                  }}
+                  title={`${h.hour}h: rajada ${g.toFixed(0)} km/h`}
+                />
+              );
+            })}
+          </div>
+
           <div className="flex justify-between mt-0.5">
             <span className="text-[10px] text-muted-foreground">0h</span>
             <span className="text-[10px] text-muted-foreground">12h</span>
