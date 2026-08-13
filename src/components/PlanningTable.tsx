@@ -13,6 +13,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Cloud, CloudRain, Download, Thermometer, Wind } from "lucide-react";
 import { HourDetailDialog } from "./HourDetailDialog";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import * as XLSX from "xlsx";
 
 interface PlanningTableProps {
@@ -31,17 +32,26 @@ export const PlanningTable = ({ data, baseName }: PlanningTableProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const currentHour = new Date().getHours();
 
-  // Color thresholds: BT: verde ≤70, laranja ≤150, vermelho >150
-  // MT: verde ≤10, laranja ≤15, vermelho >15
+  // Metas configuráveis (Configurações do sistema)
+  const { data: systemSettings } = useSystemSettings();
+  const getSetting = (key: string, fallback: number) => {
+    const s = systemSettings?.find((x) => x.key === key);
+    const v = s ? parseFloat(s.value) : NaN;
+    return Number.isFinite(v) ? v : fallback;
+  };
+  const targetBt = getSetting("bt_target", 70);
+  const targetMt = getSetting("mt_target", 10);
+
+  // Verde ≤ meta, laranja até ~2x a meta (BT) / 1,5x (MT), vermelho acima
   const getBtStatusColor = (value: number) => {
-    if (value > 150) return "text-destructive";
-    if (value > 70) return "text-warning";
+    if (value > targetBt * 2) return "text-destructive";
+    if (value > targetBt) return "text-warning";
     return "text-success";
   };
 
   const getMtStatusColor = (value: number) => {
-    if (value > 15) return "text-destructive";
-    if (value > 10) return "text-warning";
+    if (value > targetMt * 1.5) return "text-destructive";
+    if (value > targetMt) return "text-warning";
     return "text-success";
   };
 
