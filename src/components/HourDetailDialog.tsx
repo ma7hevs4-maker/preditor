@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { CloudRain, Thermometer, Wind, Users, TrendingDown, TrendingUp, Target, Zap, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getHalfLifeBucket } from "@/hooks/useHalfLife";
+
 
 interface HourDetailDialogProps {
   row: SimulationRow | null;
