@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
@@ -27,6 +27,7 @@ import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, u
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
 import { toast } from "sonner";
 import { FeedbacksTab } from "@/components/admin/FeedbacksTab";
+import { DecayCurvesTab } from "@/components/admin/DecayCurvesTab";
 import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "dys";
@@ -691,7 +692,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
             </DialogHeader>
             
             <Tabs defaultValue="bases" className="mt-4">
-              <TabsList className="grid w-full grid-cols-8 bg-secondary">
+              <TabsList className="grid w-full grid-cols-9 bg-secondary">
                 <TabsTrigger value="bases" className="gap-1 text-xs">
                   <MapPin className="w-3 h-3" />
                   Bases
@@ -707,6 +708,10 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 <TabsTrigger value="triggers" className="gap-1 text-xs">
                   <AlertTriangle className="w-3 h-3" />
                   Gatilhos
+                </TabsTrigger>
+                <TabsTrigger value="decay" className="gap-1 text-xs">
+                  <TrendingDown className="w-3 h-3" />
+                  Decay
                 </TabsTrigger>
                 <TabsTrigger value="contingency" className="gap-1 text-xs">
                   <Gauge className="w-3 h-3" />
