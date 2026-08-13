@@ -3,8 +3,8 @@ import { HistoricalDataRow } from "./useHistoricalData";
 import { WeatherHour } from "./useWeather";
 import { SystemSetting } from "./useSystemSettings";
 import { WeatherTrigger } from "./useWeatherTriggers";
-import { calculateWeatherUplift, calculateActiveTriggersUplift } from "./useWeatherUplift";
-import { calculateDecayInfo, DecayInfo, setLastRainUplifts, getHalfLifeHours, calculateDecayMultiplier } from "./useHalfLife";
+import { computeWeatherUplifts } from "./useWeatherDecay";
+import { DecayCurve } from "./useDecayCurves";
 import { OperationalOverride } from "@/components/OperationalOverrideDialog";
 
 export interface SimulationConfig {
@@ -62,11 +62,15 @@ export interface SimulationRow {
   eq_ideal_total: number; // total de equipes ideal
   remoto_bt_retirado: number; // quantidade retirada pelo remoto nesta hora
   // Decay info
-  tslr: number | null; // Time since last rain (hours)
-  lastEpisodeSumMm: number | null; // Sum of last rain episode (mm)
-  decayMultiplier: number; // 0-1, how much uplift remains after decay
+  tslr: number | null; // Horas desde o fim do último gatilho (decay)
+  lastEpisodeSumMm: number | null; // legado (não usado nas curvas)
+  decayMultiplier: number; // residual / impacto original do gatilho (0-1)
   uplift_bt_raw_pct: number; // Uplift before decay
   uplift_mt_raw_pct: number; // Uplift before decay
+  decay_source_name: string | null; // gatilho que originou o residual
+  uplift_bt_residual_pct: number; // parte residual (curva de decay)
+  uplift_mt_residual_pct: number;
+  active_trigger_names: string[];
 }
 
 export const useSimulation = (
@@ -76,7 +80,8 @@ export const useSimulation = (
   systemSettings?: SystemSetting[],
   weatherImpactEnabled: boolean = true,
   weatherTriggers?: WeatherTrigger[],
-  operationalOverride?: OperationalOverride
+  operationalOverride?: OperationalOverride,
+  decayCurves?: DecayCurve[]
 ) => {
   return useMemo(() => {
     if (!historicalData || historicalData.length === 0) {
