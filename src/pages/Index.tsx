@@ -168,7 +168,8 @@ const Index = () => {
     systemSettings,
     weatherImpactEnabled,
     stableWeatherTriggers,
-    operationalOverride.enabled ? operationalOverride : undefined
+    operationalOverride.enabled ? operationalOverride : undefined,
+    decayCurves
   );
 
   // Use loaded simulation or live data
