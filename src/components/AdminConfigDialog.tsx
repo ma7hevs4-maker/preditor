@@ -1545,6 +1545,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
 
               {/* CONTINGENCY LEVELS TAB */}
               <TabsContent value="contingency" className="space-y-4 mt-4">
+                {/* placeholder anchor */}
                 <ContingencyLevelsConfig />
               </TabsContent>
 
