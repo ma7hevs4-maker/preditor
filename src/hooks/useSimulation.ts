@@ -102,29 +102,10 @@ export const useSimulation = (
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Calculate decay info for weather data (includes episode detection)
-    const { decayInfos, episodes } = weatherData 
-      ? calculateDecayInfo(weatherData) 
-      : { decayInfos: [] as DecayInfo[], episodes: [] };
-    
-    // First pass: Calculate raw uplifts for all hours to capture rain hour uplifts
-    const upliftsByHour: { upliftBT: number; upliftMT: number }[] = [];
-    if (weatherData && weatherImpactEnabled) {
-      for (let i = 0; i < config.horizonHours; i++) {
-        const weather = weatherData[i] || { precip_mm: 0, wind_kmh: 10, gust_kmh: 15, temp_c: 25 };
-        const { upliftBT, upliftMT } = calculateActiveTriggersUplift(
-          weatherTriggers,
-          weather.precip_mm,
-          weather.wind_kmh,
-          weather.temp_c,
-          weather.gust_kmh
-        );
-        upliftsByHour.push({ upliftBT, upliftMT });
-      }
-      
-      // Set the last rain uplifts in decayInfos based on actual rain hour uplifts
-      setLastRainUplifts(decayInfos, episodes, upliftsByHour);
-    }
+    // Uplift horário: gatilhos ativos + residual pelas curvas de decay da base
+    const upliftInfos = weatherData && weatherImpactEnabled
+      ? computeWeatherUplifts(weatherData, weatherTriggers, decayCurves, config.horizonHours)
+      : [];
     
     // Backlog inicial (sem redução prévia - agora aplicamos por hora)
     let backlog_bt = config.btInitialBacklog;
