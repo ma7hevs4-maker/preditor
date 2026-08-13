@@ -920,6 +920,83 @@ export type Database = {
         }
         Relationships: []
       }
+      weather_decay_curves: {
+        Row: {
+          base_id: string
+          created_at: string
+          hour_1: number
+          hour_10: number
+          hour_11: number
+          hour_12: number
+          hour_2: number
+          hour_3: number
+          hour_4: number
+          hour_5: number
+          hour_6: number
+          hour_7: number
+          hour_8: number
+          hour_9: number
+          id: string
+          level: string
+          period: string
+          trigger_name: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          base_id: string
+          created_at?: string
+          hour_1?: number
+          hour_10?: number
+          hour_11?: number
+          hour_12?: number
+          hour_2?: number
+          hour_3?: number
+          hour_4?: number
+          hour_5?: number
+          hour_6?: number
+          hour_7?: number
+          hour_8?: number
+          hour_9?: number
+          id?: string
+          level: string
+          period?: string
+          trigger_name: string
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          base_id?: string
+          created_at?: string
+          hour_1?: number
+          hour_10?: number
+          hour_11?: number
+          hour_12?: number
+          hour_2?: number
+          hour_3?: number
+          hour_4?: number
+          hour_5?: number
+          hour_6?: number
+          hour_7?: number
+          hour_8?: number
+          hour_9?: number
+          id?: string
+          level?: string
+          period?: string
+          trigger_name?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weather_decay_curves_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weather_triggers: {
         Row: {
           active: boolean
