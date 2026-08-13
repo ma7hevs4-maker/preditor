@@ -133,7 +133,7 @@ export const HourDetailDialog = ({ row, open, onOpenChange }: HourDetailDialogPr
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
                     <p>Impacto residual BT: <span className="text-warning">{row.uplift_bt_pct.toFixed(0)}%</span></p>
                     <p className="mt-1">Impacto residual MT: <span className="text-warning">{row.uplift_mt_pct.toFixed(0)}%</span></p>
-                    <p className="mt-1 text-amber-400">Decaindo com half-life baseado no episódio anterior</p>
+                    <p className="mt-1 text-amber-400">Valores da curva de decay cadastrada para a base</p>
                   </div>
                 ) : (
                   <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
