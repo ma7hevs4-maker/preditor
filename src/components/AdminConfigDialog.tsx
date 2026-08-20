@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -1651,6 +1652,25 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                           Metas de backlog estável ao final do horizonte de simulação. 
                           Usado para calcular equipes adicionais necessárias.
                         </p>
+                      </div>
+
+                      <div className="border-t border-border pt-4 space-y-2">
+                        <h5 className="font-medium text-foreground">Salvamento do Dashboard Operacional</h5>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <Label className="text-xs">Permitir salvar / acessar base mensal</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Quando desligado, os botões "Salvar", "Acessar última atualização" e
+                              "Limpar base mensal" ficam ocultos no dashboard.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={(systemSettings?.find(s => s.key === "dashboard_saving_enabled")?.value ?? "true") !== "false"}
+                            onCheckedChange={(checked) =>
+                              updateSystemSetting.mutate({ key: "dashboard_saving_enabled", value: checked ? "true" : "false" })
+                            }
+                          />
+                        </div>
                       </div>
 
                       <Button 

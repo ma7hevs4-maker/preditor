@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
+import { useSettingValue } from "@/hooks/useSystemSettings";
 import { useSavedDashboard } from "@/hooks/useSavedDashboard";
 import { toast } from "sonner";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -127,6 +128,7 @@ interface DashboardProps {
 export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
+  const savingEnabled = useSettingValue("dashboard_saving_enabled", "true") !== "false";
   const { data: systemSettings } = useSystemSettings();
   const rankingWeights = useMemo(() => parseWeightsFromSettings(systemSettings), [systemSettings]);
   const [passwordInput, setPasswordInput] = useState("");
@@ -1965,16 +1967,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           )}
 
           {/* Save button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => setPendingAction("save")}
-            disabled={isSaving || !rawInc || rawInc.length === 0}
-          >
-            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            Salvar
-          </Button>
+          {savingEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setPendingAction("save")}
+              disabled={isSaving || !rawInc || rawInc.length === 0}
+            >
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Salvar
+            </Button>
+          )}
 
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
