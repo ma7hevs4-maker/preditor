@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
 import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
+import { useSettingValue } from "@/hooks/useSystemSettings";
 import { useSavedDashboard } from "@/hooks/useSavedDashboard";
 import { toast } from "sonner";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
