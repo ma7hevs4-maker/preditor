@@ -1965,16 +1965,18 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
           )}
 
           {/* Save button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => setPendingAction("save")}
-            disabled={isSaving || !rawInc || rawInc.length === 0}
-          >
-            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            Salvar
-          </Button>
+          {savingEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setPendingAction("save")}
+              disabled={isSaving || !rawInc || rawInc.length === 0}
+            >
+              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Salvar
+            </Button>
+          )}
 
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
