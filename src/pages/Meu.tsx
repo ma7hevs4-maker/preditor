@@ -174,7 +174,7 @@ export default function Meu() {
             )}
           </button>
 
-          {isLoadingMeta ? (
+          {!savingEnabled ? null : isLoadingMeta ? (
             <div className="flex items-center justify-center py-3 text-muted-foreground text-sm">
               <Loader2 className="animate-spin mr-2 h-4 w-4" />
               Verificando dados salvos...
