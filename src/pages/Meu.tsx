@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSettingValue } from "@/hooks/useSystemSettings";
 import { FeedbackDialog } from "@/components/meu/FeedbackDialog";
 
 export default function Meu() {
@@ -27,6 +28,7 @@ export default function Meu() {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [clearPassword, setClearPassword] = useState("");
   const [clearPasswordError, setClearPasswordError] = useState(false);
+  const savingEnabled = useSettingValue("dashboard_saving_enabled", "true") !== "false";
   const { meta, isLoadingMeta, loadMeta, saveRawData, isSaving, saveProgress, loadSavedData, clearAllData } = useSavedDashboard();
 
   useEffect(() => { loadMeta(); }, []);
@@ -177,7 +179,7 @@ export default function Meu() {
               <Loader2 className="animate-spin mr-2 h-4 w-4" />
               Verificando dados salvos...
             </div>
-          ) : meta ? (
+          ) : meta && savingEnabled ? (
             <div className="space-y-2">
               <button
                 onClick={handleLoadSaved}
