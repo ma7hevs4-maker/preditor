@@ -127,6 +127,7 @@ interface DashboardProps {
 export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 }: DashboardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { saveRawData, isSaving, saveProgress } = useSavedDashboard();
+  const savingEnabled = useSettingValue("dashboard_saving_enabled", "true") !== "false";
   const { data: systemSettings } = useSystemSettings();
   const rankingWeights = useMemo(() => parseWeightsFromSettings(systemSettings), [systemSettings]);
   const [passwordInput, setPasswordInput] = useState("");
