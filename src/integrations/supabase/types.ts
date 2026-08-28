@@ -406,6 +406,56 @@ export type Database = {
           },
         ]
       }
+      plan_edit_unlocks: {
+        Row: {
+          active: boolean
+          base_id: string
+          consumed_dates: string[]
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          note: string | null
+          plan_kind: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          base_id: string
+          consumed_dates?: string[]
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          note?: string | null
+          plan_kind?: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          base_id?: string
+          consumed_dates?: string[]
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          note?: string | null
+          plan_kind?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_edit_unlocks_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_inc_rows: {
         Row: {
           id: number
