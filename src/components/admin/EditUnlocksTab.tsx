@@ -84,16 +84,9 @@ export const EditUnlocksTab = ({ bases }: { bases: Base[] }) => {
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Tipo de Estrutura</Label>
-            <Select value={planKind} onValueChange={(v) => setPlanKind(v as PlanKind)}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planejado">Planejada</SelectItem>
-                <SelectItem value="realizado">Realizada</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input value="Planejada" disabled className="bg-secondary border-border" />
           </div>
+
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Data Inicial</Label>
             <Input
