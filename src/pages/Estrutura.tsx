@@ -66,9 +66,6 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   const [logOpen, setLogOpen] = useState(false);
   const [logBaseFilter, setLogBaseFilter] = useState<string>("all");
   const [logAuthor, setLogAuthor] = useState("");
-  const [authorDialogOpen, setAuthorDialogOpen] = useState(false);
-  const [authorInput, setAuthorInput] = useState("");
-  const [authorError, setAuthorError] = useState(false);
   const [logUnlocked, setLogUnlocked] = useState(false);
   const [logPasswordOpen, setLogPasswordOpen] = useState(false);
   const [logPassword, setLogPassword] = useState("");
@@ -302,15 +299,6 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
     } catch {
       toast({ title: "Erro ao salvar", variant: "destructive" });
     }
-  };
-
-  const handleAuthorConfirm = async () => {
-    const name = authorInput.trim();
-    if (!name) { setAuthorError(true); return; }
-    setLogAuthor(name);
-    setAuthorDialogOpen(false);
-    setAuthorError(false);
-    await handleSave(name);
   };
 
   const handleLogPasswordSubmit = () => {
@@ -733,15 +721,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                 <BookmarkPlus className="w-3.5 h-3.5 mr-1" />Salvar Padrão
               </Button>
               <Button
-                onClick={() => {
-                  if (isRealizado) {
-                    setAuthorInput(logAuthor);
-                    setAuthorError(false);
-                    setAuthorDialogOpen(true);
-                  } else {
-                    handleSave();
-                  }
-                }}
+                onClick={() => handleSave()}
                 disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked && !activeUnlock)}
                 size="sm"
                 className="h-8"
@@ -752,31 +732,6 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
             </div>
           </div>
 
-          {/* Author dialog before saving a realizado plan */}
-          <Dialog open={authorDialogOpen} onOpenChange={setAuthorDialogOpen}>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>Quem está salvando?</DialogTitle>
-              </DialogHeader>
-              <p className="text-sm text-muted-foreground">Informe o nome do autor da edição para registrar no log.</p>
-              <Input
-                placeholder="Nome do autor"
-                value={authorInput}
-                onChange={e => { setAuthorInput(e.target.value); setAuthorError(false); }}
-                onKeyDown={e => e.key === "Enter" && handleAuthorConfirm()}
-                className={authorError ? "border-destructive" : ""}
-                autoFocus
-              />
-              {authorError && <p className="text-xs text-destructive">Informe o nome do autor.</p>}
-              <div className="flex justify-end gap-2 mt-2">
-                <Button variant="outline" size="sm" onClick={() => setAuthorDialogOpen(false)}>Cancelar</Button>
-                <Button size="sm" onClick={handleAuthorConfirm} disabled={upsertPlan.isPending}>
-                  {upsertPlan.isPending && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-                  Salvar
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
 
           {/* Log password dialog */}
           <Dialog open={logPasswordOpen} onOpenChange={setLogPasswordOpen}>
