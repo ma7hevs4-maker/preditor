@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown, KeyRound } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
@@ -29,6 +29,7 @@ import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDele
 import { toast } from "sonner";
 import { FeedbacksTab } from "@/components/admin/FeedbacksTab";
 import { DecayCurvesTab } from "@/components/admin/DecayCurvesTab";
+import { EditUnlocksTab } from "@/components/admin/EditUnlocksTab";
 import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "dys";
@@ -1551,6 +1552,11 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
               {/* DECAY TAB */}
               <TabsContent value="decay" className="space-y-4 mt-4">
                 <DecayCurvesTab bases={bases ?? []} />
+              </TabsContent>
+
+              {/* EDIT UNLOCKS TAB */}
+              <TabsContent value="unlocks" className="space-y-4 mt-4">
+                <EditUnlocksTab bases={bases ?? []} />
               </TabsContent>
 
               {/* CONTINGENCY LEVELS TAB */}
