@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export const EditUnlocksTab = ({ bases }: { bases: Base[] }) => {
   const [baseId, setBaseId] = useState<string>("");
-  const [planKind, setPlanKind] = useState<PlanKind>("planejado");
+  const planKind: PlanKind = "planejado";
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [author, setAuthor] = useState("");
@@ -84,16 +84,9 @@ export const EditUnlocksTab = ({ bases }: { bases: Base[] }) => {
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Tipo de Estrutura</Label>
-            <Select value={planKind} onValueChange={(v) => setPlanKind(v as PlanKind)}>
-              <SelectTrigger className="bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planejado">Planejada</SelectItem>
-                <SelectItem value="realizado">Realizada</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input value="Planejada" disabled className="bg-secondary border-border" />
           </div>
+
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Data Inicial</Label>
             <Input
