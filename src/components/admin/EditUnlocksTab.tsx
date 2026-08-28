@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export const EditUnlocksTab = ({ bases }: { bases: Base[] }) => {
   const [baseId, setBaseId] = useState<string>("");
-  const [planKind, setPlanKind] = useState<PlanKind>("planejado");
+  const planKind: PlanKind = "planejado";
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [author, setAuthor] = useState("");
