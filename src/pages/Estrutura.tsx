@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { format, addDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste, History, ClipboardList, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Copy, Trash2, ChevronLeft, ChevronRight, CalendarDays, X, Pencil, BookmarkPlus, Download, Upload, ClipboardPaste, History, ClipboardList, CheckCircle2, Unlock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,6 +13,7 @@ import { useBases } from "@/hooks/useBases";
 import { useTeamStructures, structureToTeamsArray, structureToLossTeamsArray, useAddTeamStructure } from "@/hooks/useTeamStructures";
 import { useDailyTeamPlan, useUpsertDailyTeamPlan, useDeleteDailyTeamPlan, useDailyTeamPlans, planToTeamsArray, planToLossTeamsArray, teamsArrayToPlanFields, PlanKind } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntries, entriesToMap, useUpsertTeamTypeEntries } from "@/hooks/useTeamTypeEntries";
+import { usePlanEditUnlocks, useConsumePlanEditUnlock, findUnlockForDate } from "@/hooks/usePlanEditUnlocks";
 import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail, useAllPlanChangeLogs } from "@/hooks/usePlanChangeLogs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -101,6 +102,10 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   }, [allChangeLogs, logBaseFilter]);
 
   const { data: typeEntries } = useTeamTypeEntries(existingPlan?.id ?? null);
+
+  const { data: editUnlocks } = usePlanEditUnlocks(kind);
+  const consumeUnlock = useConsumePlanEditUnlock();
+  const activeUnlock = findUnlockForDate(editUnlocks, selectedBaseId, dateStr);
 
   const monthStart = format(startOfMonth(selectedDate), "yyyy-MM-dd");
   const monthEnd = format(endOfMonth(selectedDate), "yyyy-MM-dd");
@@ -282,6 +287,15 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
           }
         }
         toast({ title: "Período salvo", description: `Plano replicado para ${days.length} dias.` });
+      }
+      if (activeUnlock) {
+        const savedDates = planningMode === "single" || !selectedEndDate
+          ? [format(selectedDate, "yyyy-MM-dd")]
+          : eachDayOfInterval({ start: selectedDate, end: selectedEndDate }).map(d => format(d, "yyyy-MM-dd"));
+        try {
+          await consumeUnlock.mutateAsync({ unlock: activeUnlock, dates: savedDates });
+          toast({ title: "Edição bloqueada novamente", description: "A liberação foi consumida para o(s) dia(s) salvo(s)." });
+        } catch { /* non-blocking */ }
       }
       savedTypeDataRef.current = typeData;
       setIsDirty(false);
@@ -690,7 +704,13 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2 ml-auto items-center">
+              {activeUnlock && (
+                <span className="text-xs px-2 py-1 rounded-md bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
+                  <Unlock className="w-3 h-3" />
+                  Edição liberada até {format(new Date(`${activeUnlock.end_date}T00:00:00`), "dd/MM")}
+                </span>
+              )}
               {isRealizado && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => {
                   if (logUnlocked) { setLogOpen(true); }
@@ -699,12 +719,12 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                   <History className="w-3.5 h-3.5 mr-1" />Log
                 </Button>
               )}
-              {!isRealizado && existingPlan && !editUnlocked && (
+              {!isRealizado && existingPlan && !editUnlocked && !activeUnlock && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => { setEditDialogOpen(true); setEditPassword(""); setEditPasswordError(false); }}>
                   <Pencil className="w-3.5 h-3.5 mr-1" />Editar
                 </Button>
               )}
-              {!isRealizado && existingPlan && editUnlocked && (
+              {!isRealizado && existingPlan && editUnlocked && !activeUnlock && (
                 <Button variant="outline" size="sm" className="h-8" onClick={() => setEditUnlocked(false)}>
                   <X className="w-3.5 h-3.5 mr-1" />Cancelar
                 </Button>
@@ -722,7 +742,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                     handleSave();
                   }
                 }}
-                disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked)}
+                disabled={(!isDirty || upsertPlan.isPending) || (!isRealizado && !!existingPlan && !editUnlocked && !activeUnlock)}
                 size="sm"
                 className="h-8"
               >
@@ -935,7 +955,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
               const turnoBT = BT_ONLY_TYPES.reduce((s, t) => s + turno.hours.reduce((a, h) => a + (typeData[t]?.[h] ?? 0), 0), 0);
               const hoursCount = turno.hours.length;
 
-              const isLocked = !isRealizado && !!existingPlan && !editUnlocked;
+              const isLocked = !isRealizado && !!existingPlan && !editUnlocked && !activeUnlock;
 
               return (
                 <div key={turno.letter} className={`glass-card p-3 ${turnoColors.cardBorder}`}>
