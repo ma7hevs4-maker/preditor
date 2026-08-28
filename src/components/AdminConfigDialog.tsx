@@ -693,7 +693,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
             </DialogHeader>
             
             <Tabs defaultValue="bases" className="mt-4">
-              <TabsList className="grid w-full grid-cols-9 bg-secondary">
+              <TabsList className="grid w-full grid-cols-10 bg-secondary">
                 <TabsTrigger value="bases" className="gap-1 text-xs">
                   <MapPin className="w-3 h-3" />
                   Bases
