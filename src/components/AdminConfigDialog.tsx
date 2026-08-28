@@ -726,6 +726,10 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                   <Percent className="w-3 h-3" />
                   Geral
                 </TabsTrigger>
+                <TabsTrigger value="unlocks" className="gap-1 text-xs">
+                  <KeyRound className="w-3 h-3" />
+                  Liberar
+                </TabsTrigger>
                 <TabsTrigger value="feedbacks" className="gap-1 text-xs">
                   <MessageSquare className="w-3 h-3" />
                   Feedbacks
