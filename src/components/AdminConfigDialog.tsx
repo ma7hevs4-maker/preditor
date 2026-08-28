@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown } from "lucide-react";
+import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown, KeyRound } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
 import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
@@ -29,6 +29,7 @@ import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDele
 import { toast } from "sonner";
 import { FeedbacksTab } from "@/components/admin/FeedbacksTab";
 import { DecayCurvesTab } from "@/components/admin/DecayCurvesTab";
+import { EditUnlocksTab } from "@/components/admin/EditUnlocksTab";
 import { cn } from "@/lib/utils";
 
 const ADMIN_PASSWORD = "dys";
@@ -693,7 +694,7 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
             </DialogHeader>
             
             <Tabs defaultValue="bases" className="mt-4">
-              <TabsList className="grid w-full grid-cols-9 bg-secondary">
+              <TabsList className="grid w-full grid-cols-10 bg-secondary">
                 <TabsTrigger value="bases" className="gap-1 text-xs">
                   <MapPin className="w-3 h-3" />
                   Bases
@@ -725,6 +726,10 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                 <TabsTrigger value="settings" className="gap-1 text-xs">
                   <Percent className="w-3 h-3" />
                   Geral
+                </TabsTrigger>
+                <TabsTrigger value="unlocks" className="gap-1 text-xs">
+                  <KeyRound className="w-3 h-3" />
+                  Liberar
                 </TabsTrigger>
                 <TabsTrigger value="feedbacks" className="gap-1 text-xs">
                   <MessageSquare className="w-3 h-3" />
@@ -1547,6 +1552,11 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
               {/* DECAY TAB */}
               <TabsContent value="decay" className="space-y-4 mt-4">
                 <DecayCurvesTab bases={bases ?? []} />
+              </TabsContent>
+
+              {/* EDIT UNLOCKS TAB */}
+              <TabsContent value="unlocks" className="space-y-4 mt-4">
+                <EditUnlocksTab bases={bases ?? []} />
               </TabsContent>
 
               {/* CONTINGENCY LEVELS TAB */}
