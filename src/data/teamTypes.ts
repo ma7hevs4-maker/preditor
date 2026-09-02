@@ -13,6 +13,7 @@ export const TEAM_TYPES = [
   "Corte e Religa",
   "Perdas",
   "Reguladas",
+  "Sob Aviso",
 ] as const;
 
 export type TeamType = typeof TEAM_TYPES[number];

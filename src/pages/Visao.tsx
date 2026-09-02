@@ -24,7 +24,7 @@ const UTN_LABELS = ["Campos", "Macaé", "Lagos", "Noroeste"];
 type UT = "UTS" | "UTN";
 
 const GERAIS_TYPES = ["Emergência", "Gestores", "Poda", "Cesto Manutenção", "Cesto Obras"] as const;
-const LV_MK_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras", "Reguladas"] as const;
+const LV_MK_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras", "Reguladas", "Sob Aviso"] as const;
 const APOIO_TYPES = ["Apoio UTS", "Apoio UTN"] as const;
 const BT_ONLY_TYPES = ["Corte e Religa", "Perdas"] as const;
 const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...BT_ONLY_TYPES] as const;
