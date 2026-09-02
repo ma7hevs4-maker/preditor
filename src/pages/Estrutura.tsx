@@ -36,6 +36,7 @@ const SHORT_NAMES: Record<string, string> = {
   "Apoio UTN": "Ap. UTN",
   "Corte e Religa": "Corte/Rel.",
   "Reguladas": "Regul.",
+  "Sob Aviso": "Sob Aviso",
 };
 
 const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
@@ -413,7 +414,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
   }, [monthPlans]);
 
   const BT_ONLY_TYPES = ["Perdas", "Corte e Religa"] as const;
-  const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras", "Reguladas"] as const;
+  const EXCLUDED_TYPES = ["LV Manutenção", "LV Obras", "MK Manutenção", "MK Obras", "Reguladas", "Sob Aviso"] as const;
 
   const totalAllIncidents = TEAM_TYPES
     .filter(t => !EXCLUDED_TYPES.includes(t as any) && !BT_ONLY_TYPES.includes(t as any))
