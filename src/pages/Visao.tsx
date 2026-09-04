@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBases } from "@/hooks/useBases";
 import { DailyTeamPlan, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntriesByPlans, TeamTypeEntry } from "@/hooks/useTeamTypeEntries";
-import { TURNOS } from "@/data/teamTypes";
+import { TURNOS, teamTypeLabel } from "@/data/teamTypes";
 import { REGIONAIS, Regional } from "@/data/basesConfig";
 
 // ---------- Constants ----------
@@ -334,7 +334,7 @@ const RegionalDetailDialog = ({
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
-                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -362,7 +362,7 @@ const RegionalDetailDialog = ({
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -390,7 +390,7 @@ const RegionalDetailDialog = ({
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -418,7 +418,7 @@ const RegionalDetailDialog = ({
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -645,7 +645,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
             if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{type}</span>
+                <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                 <span className="font-semibold text-foreground">{pair(compare, val, valB)}</span>
               </div>
             );
@@ -656,7 +656,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
             if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{type}</span>
+                <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                 <span className="font-semibold text-muted-foreground/80">{pair(compare, val, valB)}</span>
               </div>
             );
@@ -667,7 +667,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
             if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{type}</span>
+                <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                 <span className="font-semibold text-foreground">{pair(compare, val, valB)}</span>
               </div>
             );
@@ -678,7 +678,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
             if (val === 0 && !(compare && valB > 0)) return null;
             return (
               <div key={type} className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{type}</span>
+                <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                 <span className="font-semibold text-warning">{pair(compare, val, valB)}</span>
               </div>
             );
@@ -870,7 +870,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
                 if (!hasAny) return null;
                 return (
                   <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
-                    <td className={cn("py-0.5 pr-2 sticky left-0 bg-card z-10", labelColor)}>{type}</td>
+                    <td className={cn("py-0.5 pr-2 sticky left-0 bg-card z-10", labelColor)}>{teamTypeLabel(type)}</td>
                     {TURNOS.map(turno => {
                       const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                       return (
@@ -895,7 +895,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
-                  <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-card z-10">{type}</td>
+                  <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-card z-10">{teamTypeLabel(type)}</td>
                   {TURNOS.map(turno => {
                     const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                     return (
@@ -919,7 +919,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
-                  <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-card z-10">{type}</td>
+                  <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-card z-10">{teamTypeLabel(type)}</td>
                   {TURNOS.map(turno => {
                     const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                     return (
@@ -943,7 +943,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
               if (!hasAny) return null;
               return (
                 <tr key={type} className="hover:bg-muted/20">
-                  <td className="py-0.5 text-warning pr-2 sticky left-0 bg-card z-10">{type}</td>
+                  <td className="py-0.5 text-warning pr-2 sticky left-0 bg-card z-10">{teamTypeLabel(type)}</td>
                   {TURNOS.map(turno => {
                     const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                     return (
