@@ -18,7 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DailyTeamPlan, planToTeamsArray, planToLossTeamsArray } from "@/hooks/useDailyTeamPlans";
 import { useTeamTypeEntriesByPlans, TeamTypeEntry } from "@/hooks/useTeamTypeEntries";
-import { TURNOS } from "@/data/teamTypes";
+import { TURNOS, teamTypeLabel } from "@/data/teamTypes";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -305,7 +305,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                       if (!hasAny) return null;
                       return (
                         <tr key={type} className={cn("hover:bg-muted/20", idx === 0 && "border-t border-border/30")}>
-                          <td className={cn("py-0.5 pr-2 sticky left-0 bg-background z-10", labelCls)}>{type}</td>
+                          <td className={cn("py-0.5 pr-2 sticky left-0 bg-background z-10", labelCls)}>{teamTypeLabel(type)}</td>
                           {TURNOS.map(turno => {
                             const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                             return (
@@ -329,7 +329,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-muted-foreground/60 pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -352,7 +352,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-muted-foreground pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -375,7 +375,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                     if (!hasAny) return null;
                     return (
                       <tr key={type} className="hover:bg-muted/20">
-                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{type}</td>
+                        <td className="py-0.5 text-warning pr-2 sticky left-0 bg-background z-10">{teamTypeLabel(type)}</td>
                         {TURNOS.map(turno => {
                           const tc = TURNO_COLORS[turno.letter as keyof typeof TURNO_COLORS];
                           return (
@@ -435,7 +435,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                 if (val === 0) return null;
                 return (
                   <div key={type} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{type}</span>
+                    <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                     <span className="font-semibold text-foreground">{val}</span>
                   </div>
                 );
@@ -445,7 +445,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                 if (val === 0) return null;
                 return (
                   <div key={type} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{type}</span>
+                    <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                     <span className="font-semibold text-muted-foreground/60">{val}</span>
                   </div>
                 );
@@ -455,7 +455,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                 if (val === 0) return null;
                 return (
                   <div key={type} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{type}</span>
+                    <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                     <span className="font-semibold text-foreground">{val}</span>
                   </div>
                 );
@@ -465,7 +465,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
                 if (val === 0) return null;
                 return (
                   <div key={type} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{type}</span>
+                    <span className="text-muted-foreground">{teamTypeLabel(type)}</span>
                     <span className="font-semibold text-warning">{val}</span>
                   </div>
                 );

@@ -36,7 +36,7 @@ const SHORT_NAMES: Record<string, string> = {
   "Apoio UTN": "Ap. UTN",
   "Corte e Religa": "Corte/Rel.",
   "Reguladas": "Regul.",
-  "Sob Aviso": "Sob Aviso",
+  "Sob Aviso": "Sobreaviso",
 };
 
 const StructurePlanner = ({ kind }: { kind: PlanKind }) => {

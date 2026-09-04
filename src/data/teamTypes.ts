@@ -18,6 +18,29 @@ export const TEAM_TYPES = [
 
 export type TeamType = typeof TEAM_TYPES[number];
 
+export const TEAM_TYPE_LABELS: Record<TeamType, string> = {
+  "Emergência": "Emergência",
+  "Gestores": "Gestores",
+  "Poda": "Poda",
+  "Cesto Manutenção": "Cesto Manutenção",
+  "Cesto Obras": "Cesto Obras",
+  "LV Manutenção": "LV Manutenção",
+  "LV Obras": "LV Obras",
+  "MK Manutenção": "MK Manutenção",
+  "MK Obras": "MK Obras",
+  "Apoio UTS": "Apoio UTS",
+  "Apoio UTN": "Apoio UTN",
+  "Corte e Religa": "Corte e Religa",
+  "Perdas": "Perdas",
+  "Reguladas": "Reguladas",
+  "Sob Aviso": "Sobreaviso",
+};
+
+export function teamTypeLabel(type: string): string {
+  return TEAM_TYPE_LABELS[type as TeamType] ?? type;
+}
+
+
 export const TURNOS = [
   { letter: "A", label: "Turno A (0h-7h)", hours: [0, 1, 2, 3, 4, 5, 6, 7] },
   { letter: "B", label: "Turno B (8h-15h)", hours: [8, 9, 10, 11, 12, 13, 14, 15] },
