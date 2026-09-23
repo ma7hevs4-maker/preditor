@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, ChevronLeft, ChevronRight, Eye, LayoutGrid, Rows3 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { CalendarIcon, Download, ChevronLeft, ChevronRight, Eye, LayoutGrid, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -112,6 +113,39 @@ function typeMapFromEntries(entries: TeamTypeEntry[]): Record<string, number[]> 
   ALL_DISPLAY_TYPES.forEach(type => { map[type] = Array(24).fill(0); });
   entries.forEach(e => { if (map[e.team_type]) map[e.team_type][e.hour] += e.quantity; });
   return map;
+}
+
+// ---------- Export ----------
+function buildStructureSheet(typePerHour: Record<string, number[]>) {
+  const header = ["Tipo", ...Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}h`), ...TURNOS.map(t => `Média ${t.letter}`)];
+  const rows: (string | number)[][] = [header];
+  const total = Array(24).fill(0);
+  ALL_DISPLAY_TYPES.forEach(type => {
+    const arr = typePerHour[type] || Array(24).fill(0);
+    if (!(LV_MK_TYPES as readonly string[]).includes(type)) arr.forEach((v, h) => { total[h] += v; });
+    rows.push([teamTypeLabel(type), ...arr, ...TURNOS.map(t => avg(arr, t.hours))]);
+  });
+  rows.push(["Total (sem LV/MK/Reguladas/Sobreaviso)", ...total, ...TURNOS.map(t => avg(total, t.hours))]);
+  return XLSX.utils.aoa_to_sheet(rows);
+}
+
+function exportStructure(
+  fileLabel: string,
+  date: Date,
+  typePerHour: Record<string, number[]>,
+  compare: boolean,
+  typePerHourB?: Record<string, number[]>,
+  mode: StructureMode = "planejado",
+) {
+  const wb = XLSX.utils.book_new();
+  if (compare && typePerHourB) {
+    XLSX.utils.book_append_sheet(wb, buildStructureSheet(typePerHour), "Planejado");
+    XLSX.utils.book_append_sheet(wb, buildStructureSheet(typePerHourB), "Realizado");
+  } else {
+    XLSX.utils.book_append_sheet(wb, buildStructureSheet(typePerHour), mode === "realizado" ? "Realizado" : "Planejado");
+  }
+  const safe = fileLabel.replace(/[^\p{L}\p{N}_-]+/gu, "_");
+  XLSX.writeFile(wb, `Estrutura_${safe}_${format(date, "yyyy-MM-dd")}.xlsx`);
 }
 
 function resolveBaseIds(regional: Regional, allBases: { id: string; name: string }[]): string[] {
@@ -257,6 +291,13 @@ const RegionalDetailDialog = ({
               Detalhe - {regional.label} - {format(selectedDate, "dd/MM/yyyy")}
               {compare && <span className="text-xs text-muted-foreground ml-2">(planejado) - realizado</span>}
             </DialogTitle>
+            <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-8" onClick={() => exportStructure(
+              selectedSucursal === "todas" || !hasSucursais ? `${regional.label}${hasSucursais ? "_Todas" : ""}` : `${regional.label}_${selectedSucursal}`,
+              selectedDate, typePerHour, compare, typePerHourB,
+            )}>
+              <Download className="w-4 h-4 mr-1" /> Baixar
+            </Button>
             {hasSucursais && (
               <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
                 <SelectTrigger className="w-[200px] h-8 text-sm">
@@ -270,6 +311,7 @@ const RegionalDetailDialog = ({
                 </SelectContent>
               </Select>
             )}
+            </div>
           </div>
         </DialogHeader>
 
@@ -804,7 +846,12 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
             {regionais.map(r => r.label).join(" · ")} — {format(selectedDate, "dd/MM/yyyy")}
           </p>
         </div>
-        <Badge variant="secondary" className="text-base px-3 py-1 whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => exportStructure(`${ut}_Consolidado`, selectedDate, typePerHour, compare, typePerHourB)}>
+            <Download className="w-4 h-4 mr-1" /> Baixar
+          </Button>
+          <Badge variant="secondary" className="text-base px-3 py-1 whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
+        </div>
       </div>
 
       {/* Turno averages */}
