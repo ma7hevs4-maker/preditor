@@ -568,7 +568,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
           <p className="text-sm text-muted-foreground">
             {isRealizado
               ? "Registre a estrutura que realmente operou por tipo e hora — edição liberada, com log de alterações"
-              : "Defina a quantidade de equipes por tipo e hora para dias específicos"}
+              : "Defina a quantidade máxima de equipes da estrutura por tipo e hora para dias específicos"}
           </p>
         </div>
 
