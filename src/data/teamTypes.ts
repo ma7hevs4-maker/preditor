@@ -30,9 +30,9 @@ export const TEAM_TYPE_LABELS: Record<TeamType, string> = {
   "MK Obras": "MK Obras",
   "Apoio UTS": "Apoio UTS",
   "Apoio UTN": "Apoio UTN",
-  "Corte e Religa": "Corte e Religa",
+  "Corte e Religa": "Corte",
   "Perdas": "Perdas",
-  "Reguladas": "Reguladas",
+  "Reguladas": "Reguladas (Ligação N. + Religa)",
   "Sob Aviso": "Sobreaviso",
 };
 

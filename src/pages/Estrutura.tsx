@@ -17,7 +17,7 @@ import { usePlanEditUnlocks, useConsumePlanEditUnlock, findUnlockForDate } from 
 import { usePlanChangeLogs, useAddPlanChangeLog, diffTypeData, PlanChangeDetail, useAllPlanChangeLogs } from "@/hooks/usePlanChangeLogs";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TEAM_TYPES, TURNOS } from "@/data/teamTypes";
+import { TEAM_TYPES, TURNOS, teamTypeLabel } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 
@@ -34,8 +34,8 @@ const SHORT_NAMES: Record<string, string> = {
   "MK Obras": "MK Obr.",
   "Apoio UTS": "Ap. UTS",
   "Apoio UTN": "Ap. UTN",
-  "Corte e Religa": "Corte/Rel.",
-  "Reguladas": "Regul.",
+  "Corte e Religa": "Corte",
+  "Reguladas": "Reguladas (Ligação N. + Religa)",
   "Sob Aviso": "Sobreaviso",
 };
 
@@ -426,12 +426,12 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
     const wb = XLSX.utils.book_new();
     const headers = ["Tipo de Equipe", ...Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}h`)];
     const rows = TEAM_TYPES.map(type => {
-      const row: (string | number)[] = [type];
+      const row: (string | number)[] = [teamTypeLabel(type)];
       for (let h = 0; h < 24; h++) row.push(typeData[type]?.[h] ?? 0);
       return row;
     });
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws["!cols"] = [{ wch: 20 }, ...Array(24).fill({ wch: 6 })];
+    ws["!cols"] = [{ wch: 34 }, ...Array(24).fill({ wch: 6 })];
     XLSX.utils.book_append_sheet(wb, ws, "Estrutura");
     const baseName = bases?.find(b => b.id === selectedBaseId)?.name ?? "base";
     XLSX.writeFile(wb, `Estrutura_${baseName}_${format(selectedDate, "yyyy-MM-dd")}.xlsx`);
@@ -462,7 +462,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
           const row = rows[r];
           const typeName = String(row[0] ?? "").trim();
           if (!typeName) continue;
-          const matched = TEAM_TYPES.find(t => t.toLowerCase() === typeName.toLowerCase());
+          const matched = TEAM_TYPES.find(t => t.toLowerCase() === typeName.toLowerCase() || teamTypeLabel(t).toLowerCase() === typeName.toLowerCase());
           if (!matched) continue;
           for (let h = 0; h < 24; h++) {
             newTypeData[matched][h] = Math.max(0, parseInt(String(row[h + 1] ?? 0)) || 0);
@@ -525,7 +525,8 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
           const tLower = t.toLowerCase();
           const inputLower = typeName.toLowerCase();
           const shortLower = (SHORT_NAMES[t] ?? "").toLowerCase();
-          return tLower === inputLower || shortLower === inputLower || tLower.startsWith(inputLower) || inputLower.startsWith(tLower);
+          const labelLower = teamTypeLabel(t).toLowerCase();
+          return tLower === inputLower || labelLower === inputLower || shortLower === inputLower || tLower.startsWith(inputLower) || labelLower.startsWith(inputLower) || inputLower.startsWith(tLower);
         });
 
         if (!matched) continue;
@@ -950,11 +951,11 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                   </div>
 
                   {/* Fixed grid - no horizontal scroll */}
-                  <div className="overflow-hidden">
-                    <table className="w-full text-[11px] table-fixed">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[420px] text-[11px] table-fixed">
                       <thead>
                         <tr>
-                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium w-[72px]">Tipo</th>
+                          <th className="text-left py-0.5 pr-1 text-muted-foreground font-medium w-[146px]">Tipo</th>
                           {turno.hours.map(h => (
                             <th key={h} className={`text-center py-0.5 font-mono ${turnoColors.text}`}>
                               {String(h).padStart(2, "0")}
@@ -968,7 +969,7 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
                           const isBTOnly = BT_ONLY_TYPES.includes(type as any);
                           return (
                             <tr key={type} className={`hover:bg-muted/30 ${typeIdx === 0 ? "border-t border-border" : ""}`}>
-                              <td className={`py-0.5 pr-1 truncate text-[10px] whitespace-nowrap ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={type}>
+                              <td className={`py-0.5 pr-1 text-[10px] break-words ${isBTOnly ? "text-orange-400" : "text-foreground"}`} title={teamTypeLabel(type)}>
                                 {SHORT_NAMES[type] ?? type}
                               </td>
                               {turno.hours.map(h => (
