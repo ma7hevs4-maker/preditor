@@ -526,7 +526,10 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
           const inputLower = typeName.toLowerCase();
           const shortLower = (SHORT_NAMES[t] ?? "").toLowerCase();
           const labelLower = teamTypeLabel(t).toLowerCase();
-          return tLower === inputLower || labelLower === inputLower || shortLower === inputLower || tLower.startsWith(inputLower) || labelLower.startsWith(inputLower) || inputLower.startsWith(tLower);
+          return tLower === inputLower || labelLower === inputLower || shortLower === inputLower ||
+            (t === "Corte e Religa" && inputLower === "corte/rel.") ||
+            (t === "Reguladas" && inputLower === "regul.") ||
+            tLower.startsWith(inputLower) || labelLower.startsWith(inputLower) || inputLower.startsWith(tLower);
         });
 
         if (!matched) continue;
