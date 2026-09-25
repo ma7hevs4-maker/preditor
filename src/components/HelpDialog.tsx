@@ -163,7 +163,7 @@ const ClimaHelp = () => (
         <div>
           <p className="font-medium text-foreground">Estrutura declarada (Eq/h)</p>
           <code className="bg-muted px-2 py-1 rounded block mt-1">Eq/h = média do Turno A + média do Turno B + média do Turno C</code>
-          <p className="text-muted-foreground mt-1">Cada média usa as 8 horas do turno. LV, MK, Reguladas e Sobreaviso são excluídas. Em Polos com mais de uma sucursal, a Estrutura Sucursal usa somente a base do card; a Estrutura Declarada consolida o Polo.</p>
+          <p className="text-muted-foreground mt-1">Cada média usa as 8 horas do turno. LV, MK, Reguladas (Ligação N. + Religa) e Sobreaviso são excluídas. Em Polos com mais de uma sucursal, a Estrutura Sucursal usa somente a base do card; a Estrutura Declarada consolida o Polo.</p>
         </div>
       </div>
     </div>
@@ -212,11 +212,11 @@ const EstruturaHelp = () => (
         </div>
         <div>
           <p className="font-medium text-foreground">BT Only (exclusivas para BT):</p>
-          <p>Corte e Religa, Perdas — contribuem apenas para a resolução de incidentes BT.</p>
+          <p>Corte, Perdas — contribuem apenas para a resolução de incidentes BT.</p>
         </div>
         <div>
           <p className="font-medium text-foreground">Excluídas dos cálculos:</p>
-          <p>LV Manutenção, LV Obras, MK Manutenção, MK Obras, Reguladas, Sobreaviso — exibidas para planejamento, mas não impactam a capacidade de resolução.</p>
+          <p>LV Manutenção, LV Obras, MK Manutenção, MK Obras, Reguladas (Ligação N. + Religa), Sobreaviso — exibidas para planejamento, mas não impactam a capacidade de resolução.</p>
         </div>
         <div>
           <p className="font-medium text-foreground">Excluídas do cálculo:</p>

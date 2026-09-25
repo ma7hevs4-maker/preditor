@@ -125,7 +125,7 @@ function buildStructureSheet(typePerHour: Record<string, number[]>) {
     if (!(LV_MK_TYPES as readonly string[]).includes(type)) arr.forEach((v, h) => { total[h] += v; });
     rows.push([teamTypeLabel(type), ...arr, ...TURNOS.map(t => avg(arr, t.hours))]);
   });
-  rows.push(["Total (sem LV/MK/Reguladas/Sobreaviso)", ...total, ...TURNOS.map(t => avg(total, t.hours))]);
+  rows.push([`Total (sem LV/MK/${teamTypeLabel("Reguladas")}/Sobreaviso)`, ...total, ...TURNOS.map(t => avg(total, t.hours))]);
   return XLSX.utils.aoa_to_sheet(rows);
 }
 
