@@ -205,12 +205,18 @@ export async function readExcelToJson(file: File): Promise<any[]> {
 }
 
 // Clean column names helper
+// Também normaliza valores "vazios" da base: células contendo apenas traços
+// ("-", "--", "---") são tratadas como vazias ("")
 const cleanKeys = (obj: any) => {
   if (!obj || typeof obj !== 'object') return {};
   const newObj: any = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      newObj[key.trim()] = obj[key];
+      let value = obj[key];
+      if (typeof value === 'string' && /^-+$/.test(value.trim())) {
+        value = "";
+      }
+      newObj[key.trim()] = value;
     }
   }
   return newObj;
