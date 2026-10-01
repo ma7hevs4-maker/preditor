@@ -240,8 +240,8 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   const dataFilteredByBasics = useMemo(() => {
     return data.filter((d) => {
       if (d.isM300Only) return false;
-      if (d["Equipe Desl."] === "---") return false;
-      
+      if (d["Equipe Desl."] === "---" || d["Equipe Desl."] === "") return false;
+
       const rowDateStr = d["Data Turno"] || d["Data Ação"];
       if (!matchesSelectedDateFilter(rowDateStr)) return false;
 
@@ -1837,7 +1837,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     // Evolução ignora filtro de dia/período — usa toda a base, aplicando apenas filtros categóricos
     const evolucaoData = data.filter((d) => {
       if (d.isM300Only) return false;
-      if (d["Equipe Desl."] === "---") return false;
+      if (d["Equipe Desl."] === "---" || d["Equipe Desl."] === "") return false;
       if (selectedPolos.length > 0 && !selectedPolos.includes(d.Polo)) return false;
       if (selectedProcessos.length > 0 && !selectedProcessos.includes(d.Processo)) return false;
       if (selectedTiposEquipe.length > 0 && !selectedTiposEquipe.includes(d["Enel / Parceira DESLOC"])) return false;
