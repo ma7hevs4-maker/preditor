@@ -598,7 +598,9 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
 
   const avgTotalTeams24h = avg(teamsPerHour, allHours);
   const avgBT24h = avg(btPerHour, allHours);
+  const lvMkPerHour = useMemo(() => seriesForTypes(regionalEntries, LV_MK_TYPES), [regionalEntries]);
   const declaredTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour);
+  const fullTeamsTotal = sumTurnoAverages(teamsPerHour, btPerHour, lvMkPerHour);
 
   const regionalEntriesB = useMemo(() => {
     const ids = plansB.filter(p => regionalBaseIds.includes(p.base_id)).map(p => p.id);
@@ -609,7 +611,9 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
   const btPerHourB = useMemo(() => seriesForTypes(regionalEntriesB, BT_ONLY_TYPES), [regionalEntriesB]);
   const avgTotalTeams24hB = avg(teamsPerHourB, allHours);
   const avgBT24hB = avg(btPerHourB, allHours);
+  const lvMkPerHourB = useMemo(() => seriesForTypes(regionalEntriesB, LV_MK_TYPES), [regionalEntriesB]);
   const declaredTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB);
+  const fullTeamsTotalB = sumTurnoAverages(teamsPerHourB, btPerHourB, lvMkPerHourB);
 
   const hasData = regionalPlans.length > 0 || (compare && regionalEntriesB.length > 0);
 
@@ -653,7 +657,10 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-lg text-foreground">{regional.label}</h3>
         {hasData ? (
-          <Badge variant="secondary" className="text-sm whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary" className="text-sm whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
+            <Badge variant="outline" className="text-xs px-2 py-0 whitespace-nowrap">{pair(compare, fullTeamsTotal, fullTeamsTotalB)} equipes no total</Badge>
+          </div>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
         )}
