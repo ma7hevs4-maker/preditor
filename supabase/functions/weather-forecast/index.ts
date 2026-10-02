@@ -75,10 +75,30 @@ async function fetchFromOpenMeteo(lat: number, lon: number, hours: number, start
   const forecastDays = Math.min(Math.ceil(hours / 24) + 1, 16);
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,is_day&forecast_days=${forecastDays}&timezone=auto`;
   
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
+  // Retry with exponential backoff + jitter: Open-Meteo returns "service is overloaded"
+  // (429/5xx) when many bases are requested in parallel.
+  let response: Response | null = null;
+  let errorText = '';
+  const maxAttempts = 5;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      response = await fetch(url);
+      if (response.ok) break;
+      errorText = await response.text();
+      const retryable = response.status === 429 || response.status >= 500 || /overloaded/i.test(errorText);
+      if (!retryable) break;
+    } catch (e) {
+      errorText = String(e);
+      response = null;
+    }
+    if (attempt < maxAttempts) {
+      const delay = 400 * 2 ** (attempt - 1) + Math.random() * 400;
+      console.warn(`Open-Meteo retry ${attempt}/${maxAttempts - 1} in ${Math.round(delay)}ms: ${errorText}`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+
+  if (!response || !response.ok) {
     console.error('Open-Meteo API error:', errorText);
     throw new Error(`Open-Meteo API error: ${errorText}`);
   }
