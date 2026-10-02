@@ -186,6 +186,14 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
   }, [typePerHour]);
   const declaredTeamsTotal = turnoTotals.reduce((sum, total) => sum + total, 0);
 
+  // Total completo: soma de todos os tipos (inclui LV/MK/Reguladas/Sobreaviso)
+  const fullTeamsTotal = useMemo(() => {
+    return ALL_DISPLAY_TYPES.reduce((sum, type) => {
+      const arr = typePerHour[type] || Array(24).fill(0);
+      return sum + TURNOS.reduce((s, turno) => s + avgArr(arr, turno.hours), 0);
+    }, 0);
+  }, [typePerHour]);
+
   // 24h totals
   const allHours = Array.from({ length: 24 }, (_, i) => i);
   const countedPerHour = useMemo(() => {
@@ -235,7 +243,10 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
               Estrutura {kind === "realizado" ? "Realizada" : "Planejada"} - {regional.label}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
+              <div className="flex flex-col items-end gap-1">
+                <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
+                <Badge variant="outline" className="text-xs px-2 py-0">{fullTeamsTotal} equipes no total</Badge>
+              </div>
               {hasSucursais && (
                 <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
                   <SelectTrigger className="w-[180px] h-8 text-sm">
