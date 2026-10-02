@@ -245,7 +245,7 @@ const StructureDetailDialog = ({ open, onClose, regional, allBases, plans, allTy
             <div className="flex items-center gap-2">
               <div className="flex flex-col items-end gap-1">
                 <Badge variant="secondary" className="text-sm">{declaredTeamsTotal} equipes</Badge>
-                <Badge variant="outline" className="text-xs px-2 py-0">{fullTeamsTotal} equipes no total</Badge>
+                <Badge variant="outline" className="text-xs px-2 py-0">{fullTeamsTotal} eq. totais</Badge>
               </div>
               {hasSucursais && (
                 <Select value={selectedSucursal} onValueChange={setSelectedSucursal}>
