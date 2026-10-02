@@ -659,7 +659,7 @@ const RegionalCard = ({ regional, plans, allTypeEntries, allBases, onOpen, plans
         {hasData ? (
           <div className="flex flex-col items-end gap-1">
             <Badge variant="secondary" className="text-sm whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
-            <Badge variant="outline" className="text-xs px-2 py-0 whitespace-nowrap">{pair(compare, fullTeamsTotal, fullTeamsTotalB)} equipes no total</Badge>
+            <Badge variant="outline" className="text-xs px-2 py-0 whitespace-nowrap">{pair(compare, fullTeamsTotal, fullTeamsTotalB)} eq. totais</Badge>
           </div>
         ) : (
           <Badge variant="outline" className="text-xs text-muted-foreground">Sem plano</Badge>
@@ -863,7 +863,7 @@ const ConsolidatedView = ({ ut, regionais, plans, allTypeEntries, allBases, sele
           </Button>
           <div className="flex flex-col items-end gap-1">
             <Badge variant="secondary" className="text-base px-3 py-1 whitespace-nowrap">{pair(compare, declaredTeamsTotal, declaredTeamsTotalB)} equipes</Badge>
-            <Badge variant="outline" className="text-xs px-2 py-0 whitespace-nowrap">{pair(compare, fullTeamsTotal, fullTeamsTotalB)} equipes no total</Badge>
+            <Badge variant="outline" className="text-xs px-2 py-0 whitespace-nowrap">{pair(compare, fullTeamsTotal, fullTeamsTotalB)} eq. totais</Badge>
           </div>
         </div>
       </div>
