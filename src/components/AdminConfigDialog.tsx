@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown, KeyRound } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
-import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
+import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, useActiveSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
 import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
@@ -48,7 +48,8 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
-  const [historicalSeason, setHistoricalSeason] = useState<Season>(getCurrentSeason());
+  const activeSeason = useActiveSeason();
+  const [historicalSeason, setHistoricalSeason] = useState<Season>(activeSeason);
   
   const { data: bases, isLoading: basesLoading } = useBases();
   const { data: historicalData } = useHistoricalData(selectedBaseId, historicalSeason);
@@ -1108,14 +1109,14 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                           }}
                         >
                           {SEASON_LABEL[s]}
-                          {getCurrentSeason() === s && (
+                          {activeSeason === s && (
                             <span className="ml-1 text-[10px] opacity-70">(atual)</span>
                           )}
                         </Button>
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Verão: meses 1, 2, 3, 10, 11, 12 · Inverno: meses 4, 5, 6, 7, 8, 9. O sistema usa automaticamente a estação correspondente ao mês atual nas simulações.
+                      Verão: meses 1, 2, 3, 10, 11, 12 · Inverno: meses 4, 5, 6, 7, 8, 9. A estação usada nas simulações é definida na aba Geral.
                     </p>
                   </div>
                 )}
