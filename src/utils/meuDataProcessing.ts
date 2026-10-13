@@ -187,6 +187,29 @@ export function calculateShiftDate(date: Date | string, hour: number, shiftStart
   return parseDate(shiftDate);
 }
 
+/**
+ * Hora absoluta do incidente relativa ao dia do turno ("Data Turno").
+ * hora_aux_ordenacao é só a hora do dia (0-24); em turnos que cruzam a meia-noite
+ * (Turno A e Turno C estendido) um incidente às 02:00 do dia seguinte vira 26.
+ * Use isto para ordenar e para achar 1º/último incidente.
+ */
+export function absoluteHour(d: any): number | null {
+  if (!d || d.hora_aux_ordenacao == null) return null;
+  let val = Number(d.hora_aux_ordenacao) || 0;
+  const dT = d["Data Turno"];
+  const dA = d["Data Ação"];
+  if (dT && dA && dT !== dA) {
+    const [yT, mT, ddT] = String(dT).split("-").map(Number);
+    const [yA, mA, ddA] = String(dA).split("-").map(Number);
+    const diff = Math.round((Date.UTC(yA, mA - 1, ddA) - Date.UTC(yT, mT - 1, ddT)) / 86400000);
+    if (!isNaN(diff)) val += diff * 24;
+  }
+  return val;
+}
+
+export const compareByAbsoluteHour = (a: any, b: any) =>
+  (absoluteHour(a) ?? 0) - (absoluteHour(b) ?? 0);
+
 export async function readExcelToJson(file: File): Promise<any[]> {
   const name = (file.name || "").toLowerCase();
   const isCsv = name.endsWith(".csv") || name.endsWith(".txt");
