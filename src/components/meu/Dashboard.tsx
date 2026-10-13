@@ -452,9 +452,12 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
   }, []);
 
   const getFirstDispatch = useCallback((eqData: any[]) => {
-    const firstDispatchFromOrder = eqData
-      .filter((d) => d.hora_aux_ordenacao != null && d.hora_aux_ordenacao > 0)
-      .sort((a, b) => a.hora_aux_ordenacao - b.hora_aux_ordenacao)[0]?.hora_aux_ordenacao;
+    // Hora absoluta relativa à Data Turno (turnos que cruzam meia-noite viram >24)
+    const absList = eqData
+      .map((d) => absoluteHour(d))
+      .filter((v): v is number => v != null && v > 0)
+      .sort((a, b) => a - b);
+    const firstDispatchFromOrder = absList[0];
 
     if (firstDispatchFromOrder != null) return firstDispatchFromOrder;
 
@@ -742,13 +745,12 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
       let tme = Number(d.TME) || 0;
 
       // Cap incident time at shift end
-      if (shiftEndMin != null && shiftStartMin != null && d.hora_aux_ordenacao != null) {
-        const incStartMin = d.hora_aux_ordenacao * 60;
+      const absH = absoluteHour(d);
+      if (shiftEndMin != null && shiftStartMin != null && absH != null) {
         let shiftEndAbs = shiftEndMin;
         // Handle overnight shifts
         if (shiftEndAbs <= shiftStartMin) shiftEndAbs += 1440;
-        let adjustedIncStart = incStartMin;
-        if (adjustedIncStart < shiftStartMin && shiftEndAbs > 1440) adjustedIncStart += 1440;
+        const adjustedIncStart = absH * 60;
 
         const incEndMin = adjustedIncStart + tmd + tme;
         if (incEndMin > shiftEndAbs) {
