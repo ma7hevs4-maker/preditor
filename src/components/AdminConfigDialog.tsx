@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, Lock, MapPin, Users, Database, AlertTriangle, Percent, Plus, Pencil, Trash2, Save, X, Copy, RotateCcw, Gauge, MessageSquare, TrendingDown, KeyRound } from "lucide-react";
 import { ContingencyLevelsConfig } from "@/components/ContingencyLevelsConfig";
 import { useBases, useAddBase } from "@/hooks/useBases";
-import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
+import { useHistoricalData, useUpdateHistoricalData, getCurrentSeason, useActiveSeason, Season, SEASON_LABEL } from "@/hooks/useHistoricalData";
 import { useSystemSettings, useUpdateSystemSetting } from "@/hooks/useSystemSettings";
 import { useAllWeatherTriggers, useAddWeatherTrigger, useUpdateWeatherTrigger, useDeleteWeatherTrigger, WeatherTrigger } from "@/hooks/useWeatherTriggers";
 import { useTeamStructures, useAddTeamStructure, useUpdateTeamStructure, useDeleteTeamStructure, structureToTeamsArray, structureToLossTeamsArray, teamsArrayToStructure, TeamStructure } from "@/hooks/useTeamStructures";
@@ -48,7 +48,8 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null);
-  const [historicalSeason, setHistoricalSeason] = useState<Season>(getCurrentSeason());
+  const activeSeason = useActiveSeason();
+  const [historicalSeason, setHistoricalSeason] = useState<Season>(activeSeason);
   
   const { data: bases, isLoading: basesLoading } = useBases();
   const { data: historicalData } = useHistoricalData(selectedBaseId, historicalSeason);
@@ -1108,14 +1109,14 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                           }}
                         >
                           {SEASON_LABEL[s]}
-                          {getCurrentSeason() === s && (
+                          {activeSeason === s && (
                             <span className="ml-1 text-[10px] opacity-70">(atual)</span>
                           )}
                         </Button>
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Verão: meses 1, 2, 3, 10, 11, 12 · Inverno: meses 4, 5, 6, 7, 8, 9. O sistema usa automaticamente a estação correspondente ao mês atual nas simulações.
+                      Verão: meses 1, 2, 3, 10, 11, 12 · Inverno: meses 4, 5, 6, 7, 8, 9. A estação usada nas simulações é definida na aba Geral.
                     </p>
                   </div>
                 )}
@@ -1662,6 +1663,36 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                           Metas de backlog estável ao final do horizonte de simulação. 
                           Usado para calcular equipes adicionais necessárias.
                         </p>
+                      </div>
+
+                      <div className="border-t border-border pt-4 space-y-2">
+                        <h5 className="font-medium text-foreground">Estação dos Dados Históricos</h5>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <Label className="text-xs">Estação usada nas simulações e na Central Climática</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Sem escolha salva, o sistema segue o mês atual (hoje: {SEASON_LABEL[getCurrentSeason()]}).
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const v = systemSettings?.find(s => s.key === "historical_season")?.value;
+                              const active: Season = v === "verao" || v === "inverno" ? v : getCurrentSeason();
+                              return (
+                                <>
+                                  <span className={`text-xs font-medium ${active === "inverno" ? "text-primary" : "text-muted-foreground"}`}>Inverno</span>
+                                  <Switch
+                                    checked={active === "verao"}
+                                    onCheckedChange={(checked) =>
+                                      updateSystemSetting.mutate({ key: "historical_season", value: checked ? "verao" : "inverno" })
+                                    }
+                                  />
+                                  <span className={`text-xs font-medium ${active === "verao" ? "text-primary" : "text-muted-foreground"}`}>Verão</span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="border-t border-border pt-4 space-y-2">

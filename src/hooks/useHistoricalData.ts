@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSettingValue } from "@/hooks/useSystemSettings";
 
 export type Season = "verao" | "inverno";
 
@@ -30,8 +31,15 @@ export interface HistoricalDataRow {
   season: Season;
 }
 
+/** Estação ativa: definida em Configurações > Geral (historical_season); fallback = mês atual */
+export const useActiveSeason = (): Season => {
+  const v = useSettingValue("historical_season", "");
+  return v === "verao" || v === "inverno" ? v : getCurrentSeason();
+};
+
 export const useHistoricalData = (baseId: string | null, season?: Season) => {
-  const effectiveSeason: Season = season ?? getCurrentSeason();
+  const activeSeason = useActiveSeason();
+  const effectiveSeason: Season = season ?? activeSeason;
   return useQuery({
     queryKey: ["historical_data", baseId, effectiveSeason],
     queryFn: async () => {
@@ -79,7 +87,8 @@ export const useAggregatedHistoricalData = (
   baseIds: string[] | null | undefined,
   season?: Season
 ) => {
-  const effectiveSeason: Season = season ?? getCurrentSeason();
+  const activeSeason = useActiveSeason();
+  const effectiveSeason: Season = season ?? activeSeason;
   const ids = (baseIds ?? []).filter(Boolean);
   const key = [...ids].sort().join(",");
 
