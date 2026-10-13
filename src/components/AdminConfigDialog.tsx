@@ -1665,6 +1665,36 @@ export const AdminConfigDialog = ({ trigger }: { trigger?: React.ReactNode } = {
                       </div>
 
                       <div className="border-t border-border pt-4 space-y-2">
+                        <h5 className="font-medium text-foreground">Estação dos Dados Históricos</h5>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <Label className="text-xs">Estação usada nas simulações e na Central Climática</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Sem escolha salva, o sistema segue o mês atual (hoje: {SEASON_LABEL[getCurrentSeason()]}).
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              const v = systemSettings?.find(s => s.key === "historical_season")?.value;
+                              const active: Season = v === "verao" || v === "inverno" ? v : getCurrentSeason();
+                              return (
+                                <>
+                                  <span className={`text-xs font-medium ${active === "inverno" ? "text-primary" : "text-muted-foreground"}`}>Inverno</span>
+                                  <Switch
+                                    checked={active === "verao"}
+                                    onCheckedChange={(checked) =>
+                                      updateSystemSetting.mutate({ key: "historical_season", value: checked ? "verao" : "inverno" })
+                                    }
+                                  />
+                                  <span className={`text-xs font-medium ${active === "verao" ? "text-primary" : "text-muted-foreground"}`}>Verão</span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-border pt-4 space-y-2">
                         <h5 className="font-medium text-foreground">Salvamento do Dashboard Operacional</h5>
                         <div className="flex items-center justify-between gap-4">
                           <div>
