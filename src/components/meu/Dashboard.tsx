@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { TimelineChart } from "./TimelineChart";
-import { getShiftStartHour, horaParaDecimalSeguro } from "../../utils/meuDataProcessing";
+import { getShiftStartHour, horaParaDecimalSeguro, absoluteHour, compareByAbsoluteHour } from "../../utils/meuDataProcessing";
 import { useSettingValue } from "@/hooks/useSystemSettings";
 import { useSavedDashboard } from "@/hooks/useSavedDashboard";
 import { toast } from "sonner";
@@ -1382,7 +1382,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
         }
         return true;
       })
-      .sort((a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0));
+      .sort(compareByAbsoluteHour);
   }, [filteredData, selectedEquipesDetalhe, isPeriodMode, selectedTimelineDay]);
 
   // Available days for selected teams (used in period mode timeline dropdown)
@@ -1433,7 +1433,7 @@ export function Dashboard({ data: rawData, onBack, sourceFiles, rawInc, rawM300 
     });
 
     const equipeData = [...incidentesPlotados, ...incidentesM300Only].sort(
-      (a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0)
+      compareByAbsoluteHour
     );
     
     if (equipeData.length === 0) return { equipe, events: [] };

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { X, Calendar, Star, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TimelineChart } from "./TimelineChart";
-import { getShiftStartHour, isReincidenteCausadoRow } from "@/utils/meuDataProcessing";
+import { getShiftStartHour, isReincidenteCausadoRow, compareByAbsoluteHour } from "@/utils/meuDataProcessing";
 
 interface TeamDetailModalProps {
   team: any; // The ranking row data
@@ -79,7 +79,7 @@ export function TeamDetailModal({
     });
 
     const equipeData = [...incidentesPlotados, ...incidentesM300Only].sort(
-      (a, b) => (a.hora_aux_ordenacao || 0) - (b.hora_aux_ordenacao || 0)
+      compareByAbsoluteHour
     );
 
     if (equipeData.length === 0) return [{ equipe, events: [], turno: "B", shiftStartHour: 0, shiftStart: undefined, shiftEnd: undefined, platformStart: undefined, platformEnd: undefined, platformDuration: undefined, firstLogin: undefined, intervalStart: undefined, intervalEnd: undefined, returnToBaseDuration: undefined, lastLogOff: undefined }];
