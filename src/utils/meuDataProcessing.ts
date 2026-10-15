@@ -638,6 +638,15 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     }
   });
 
+  // Só considera linhas do M300 cuja equipe aparece no incidente (deslocada ou atribuída).
+  // As demais viram "somente M300" (barra cinza) no bloco final.
+  const teamsOfInc = (incRow: any) => {
+    const norm = (v: any) => String(v || "").trim().toUpperCase();
+    const set = new Set([norm(incRow["Equipe Desl."]), norm(incRow["Equipe Atribuída"])]);
+    set.delete(""); set.delete("NÃO INFORMADO");
+    return (m: any) => set.has(norm(m["Equipe"]));
+  };
+
   filteredInc.forEach((incRow: any) => {
     const incNum = incRow["Número"];
     const normalizedIncNum = normalizeIncNum(incNum);
@@ -647,7 +656,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       if (processedOrdem2.has(normalizedIncNum)) return;
       processedOrdem2.add(normalizedIncNum);
 
-      const matches = m300ByInc[normalizedIncNum] || [];
+      const matches = (m300ByInc[normalizedIncNum] || []).filter(teamsOfInc(incRow));
 
       if (matches.length > 0) {
         // Find executor: latest "No_Local"
@@ -749,7 +758,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
       if (processedHighTMDE.has(normalizedIncNum)) return;
       processedHighTMDE.add(normalizedIncNum);
 
-      const matches = m300ByInc[normalizedIncNum] || [];
+      const matches = (m300ByInc[normalizedIncNum] || []).filter(teamsOfInc(incRow));
 
       if (matches.length > 1) {
         // Possible O2: multiple teams in M300
