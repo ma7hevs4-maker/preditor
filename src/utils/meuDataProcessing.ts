@@ -387,7 +387,7 @@ export function processRawData(incRaw: any[], m300Raw: any[]) {
     row["TMDE"] = row["TMD"] + row["TME"];
 
     row["Grupo Processos DESLOC"] = String(
-      row["Grupo Processos (Equipe atrib.)"] || row["Grupo Processos DESLOC"] || "Não informado",
+      row["Grupo Processos (Equipe desloc.)"] || row["Grupo Processos DESLOC"] || row["Grupo Processos (Equipe atrib.)"] || "Não informado",
     ).trim();
     row["Enel / Parceira DESLOC"] = String(
       row["Enel/Parceira (Equipe desloc.)"] || row["Enel / Parceira DESLOC"] || "Não informado",
