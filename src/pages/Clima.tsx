@@ -21,6 +21,8 @@ import { useTeamTypeEntriesByPlans, TeamTypeEntry } from "@/hooks/useTeamTypeEnt
 import { TURNOS, teamTypeLabel } from "@/data/teamTypes";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ClimateExportButton } from "@/components/clima/ClimateExportButton";
+import { calculateOperationalHours, sumOperationalMetrics } from "@/utils/climateOperationalExport";
 
 const UTN_REGIONAIS = ["Campos", "Macaé", "Lagos", "Noroeste"];
 const UTS_REGIONAIS = ["Magé", "Niterói", "São Gonçalo", "Serrana", "Sul"];
@@ -792,60 +794,9 @@ function BaseWeatherCard({ base, provider, selectedDay, eqhTotal, eqhSucursal, s
   }, [dayHours]);
 
   const operationalSummary = useMemo(() => {
-    if (!historicalData || historicalData.length === 0 || dayHours.length === 0 || !triggers) return null;
-
-    let totalBtEntry = 0, totalMtEntry = 0;
-    let totalBtEntryAdj = 0, totalMtEntryAdj = 0;
-    let totalBtOpRemoval = 0, totalMtOpRemoval = 0;
-    let totalBtOpRemovalAdj = 0, totalMtOpRemovalAdj = 0;
-
-    dayHours.forEach(h => {
-      const hist = historicalData.find(d => d.hour === h.hour);
-      if (!hist) return;
-
-      const activeTriggers = triggers.filter(t => isTriggerActive(t, h.precip_mm, h.wind_kmh, h.temp_c, h.gust_kmh));
-      let upliftBT = 0, upliftMT = 0;
-      activeTriggers.forEach(t => {
-        upliftBT += (t.impact_percent_bt ?? t.impact_percent ?? 0);
-        upliftMT += (t.impact_percent_mt ?? t.impact_percent ?? 0);
-      });
-
-      const btEntry = hist.bt_entry_rate;
-      const mtEntry = hist.mt_entry_rate;
-      const btEntryAdj = btEntry * (1 + upliftBT / 100);
-      const mtEntryAdj = mtEntry * (1 + upliftMT / 100);
-
-      totalBtEntry += btEntry;
-      totalMtEntry += mtEntry;
-      totalBtEntryAdj += btEntryAdj;
-      totalMtEntryAdj += mtEntryAdj;
-
-      totalBtOpRemoval += btEntry * hist.bt_operator_removal;
-      totalMtOpRemoval += mtEntry * hist.mt_operator_removal;
-      totalBtOpRemovalAdj += btEntryAdj * hist.bt_operator_removal;
-      totalMtOpRemovalAdj += mtEntryAdj * hist.mt_operator_removal;
-    });
-
-    const hasUplift = totalBtEntryAdj !== totalBtEntry || totalMtEntryAdj !== totalMtEntry;
-
-    const btEntryForTeam = totalBtEntry - totalBtOpRemoval;
-    const mtEntryForTeam = totalMtEntry - totalMtOpRemoval;
-    const btEntryForTeamAdj = totalBtEntryAdj - totalBtOpRemovalAdj;
-    const mtEntryForTeamAdj = totalMtEntryAdj - totalMtOpRemovalAdj;
-
-    const teamsNeeded = Math.ceil(btEntryForTeam / 3 + mtEntryForTeam / 1.5);
-    const teamsNeededAdj = Math.ceil(btEntryForTeamAdj / 3 + mtEntryForTeamAdj / 1.5);
-
-    return {
-      totalBtEntry, totalMtEntry,
-      totalBtEntryAdj, totalMtEntryAdj,
-      totalBtOpRemoval, totalMtOpRemoval,
-      totalBtOpRemovalAdj, totalMtOpRemovalAdj,
-      btEntryForTeam, mtEntryForTeam,
-      btEntryForTeamAdj, mtEntryForTeamAdj,
-      teamsNeeded, teamsNeededAdj,
-      hasUplift,
-    };
+    if (!historicalData?.length || !dayHours.length || !triggers) return null;
+    return sumOperationalMetrics(calculateOperationalHours(dayHours, historicalData, hour =>
+      triggers.filter(t => isTriggerActive(t, hour.precip_mm, hour.wind_kmh, hour.temp_c, hour.gust_kmh))));
   }, [historicalData, dayHours, triggers]);
 
   if (isLoading) {
@@ -1458,6 +1409,11 @@ export default function Clima() {
             Mapa
           </button>
         </div>
+
+        {bases && bases.length > 0 && (
+          <ClimateExportButton bases={bases} polos={selectedUT === "UTN" ? UTN_REGIONAIS : UTS_REGIONAIS}
+            ut={selectedUT} date={dateStr} provider={activeProvider} />
+        )}
 
         {viewMode === "cards" && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
