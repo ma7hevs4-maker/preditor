@@ -17,6 +17,7 @@ import { DailyTeamPlan, planToTeamsArray, planToLossTeamsArray } from "@/hooks/u
 import { useTeamTypeEntriesByPlans, TeamTypeEntry } from "@/hooks/useTeamTypeEntries";
 import { TURNOS, teamTypeLabel } from "@/data/teamTypes";
 import { REGIONAIS, Regional } from "@/data/basesConfig";
+import RosterView from "@/components/visao/RosterView";
 
 // ---------- Constants ----------
 const UTS_LABELS = ["Magé", "Niterói", "São Gonçalo", "Serrana", "Sul"];
@@ -33,7 +34,7 @@ const ALL_DISPLAY_TYPES = [...GERAIS_TYPES, ...LV_MK_TYPES, ...APOIO_TYPES, ...B
 const ALL_INCIDENTS_TYPES = [...GERAIS_TYPES, ...APOIO_TYPES] as const;
 
 // ---------- Data hooks ----------
-export type StructureMode = "planejado" | "realizado" | "comparacao";
+export type StructureMode = "planejado" | "realizado" | "comparacao" | "escala";
 
 const useAllPlansForDate = (date: string, kind: "planejado" | "realizado") =>
   useQuery({
@@ -1098,6 +1099,7 @@ const Visao = () => {
   const { data: realizedEntries } = useTeamTypeEntriesByPlans(realizedPlanIds);
 
   const compare = structureMode === "comparacao";
+  const isEscala = structureMode === "escala";
   // Primary dataset: planejado (also the left side in comparison mode)
   const plans = structureMode === "realizado" ? realizedPlans : plannedPlans;
   const allTypeEntries = structureMode === "realizado" ? realizedEntries : plannedEntries;
@@ -1127,7 +1129,9 @@ const Visao = () => {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Visão de Estrutura</h1>
           <p className="text-sm text-muted-foreground">
-            {compare
+            {isEscala
+              ? "Pessoas de escala e sobreaviso por polo — apenas listagem"
+              : compare
               ? "Comparação por polo — (planejado) - realizado"
               : structureMode === "realizado"
               ? "Visualização das equipes realizadas por polo"
@@ -1164,6 +1168,7 @@ const Visao = () => {
                 { value: "planejado", label: "Planejado" },
                 { value: "realizado", label: "Realizado" },
                 { value: "comparacao", label: "Comparação" },
+                { value: "escala", label: "Escala" },
               ] as { value: StructureMode; label: string }[]).map(opt => (
                 <button
                   key={opt.value}
@@ -1213,7 +1218,7 @@ const Visao = () => {
                 : "Campos · Macaé · Lagos · Noroeste"}
             </span>
 
-            <div className="ml-auto">
+            <div className={cn("ml-auto", isEscala && "hidden")}>
               <div className="flex rounded-lg overflow-hidden border border-border">
                 <button
                   onClick={() => setViewMode("cards")}
@@ -1246,7 +1251,9 @@ const Visao = () => {
           </div>
         </div>
 
-        {viewMode === "cards" ? (
+        {isEscala ? (
+          <RosterView regionais={visibleRegionais} allBases={allBases} selectedDate={selectedDate} />
+        ) : viewMode === "cards" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {visibleRegionais.map(regional => (
               <RegionalCard
@@ -1277,7 +1284,7 @@ const Visao = () => {
         )}
 
         {/* No plans at all */}
-        {(!plans || plans.length === 0) && (!compare || plansB.length === 0) && (
+        {!isEscala && (!plans || plans.length === 0) && (!compare || plansB.length === 0) && (
           <div className="glass-card p-12 flex flex-col items-center justify-center text-center mt-4">
             <Eye className="w-10 h-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-semibold text-foreground mb-1">Nenhum plano encontrado</h3>

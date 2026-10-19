@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TEAM_TYPES, TURNOS, teamTypeLabel } from "@/data/teamTypes";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
+import RosterPlanner from "@/components/estrutura/RosterPlanner";
 
 const ADMIN_PASSWORD = "dys";
 
@@ -1034,15 +1035,16 @@ const StructurePlanner = ({ kind }: { kind: PlanKind }) => {
 };
 
 const Estrutura = () => {
-  const [tab, setTab] = useState<PlanKind>("planejado");
+  const [tab, setTab] = useState<PlanKind | "escala">("planejado");
 
   return (
     <div className="min-h-screen bg-background">
-      <Tabs value={tab} onValueChange={v => setTab(v as PlanKind)} className="w-full">
+      <Tabs value={tab} onValueChange={v => setTab(v as PlanKind | "escala")} className="w-full">
         <div className="px-4 lg:px-6 pl-16 pt-4">
           <TabsList>
             <TabsTrigger value="planejado">Estrutura Planejada</TabsTrigger>
             <TabsTrigger value="realizado">Estrutura Realizada</TabsTrigger>
+            <TabsTrigger value="escala">Escala</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="planejado" className="mt-0">
@@ -1050,6 +1052,9 @@ const Estrutura = () => {
         </TabsContent>
         <TabsContent value="realizado" className="mt-0">
           <StructurePlanner kind="realizado" />
+        </TabsContent>
+        <TabsContent value="escala" className="mt-0">
+          <RosterPlanner />
         </TabsContent>
       </Tabs>
     </div>

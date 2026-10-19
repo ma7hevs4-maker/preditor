@@ -353,6 +353,59 @@ export type Database = {
           },
         ]
       }
+      duty_roster_entries: {
+        Row: {
+          base_id: string
+          created_at: string
+          end_time: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          position: number
+          role: string
+          roster_date: string
+          start_time: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          base_id: string
+          created_at?: string
+          end_time?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          position?: number
+          role: string
+          roster_date: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          base_id?: string
+          created_at?: string
+          end_time?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          position?: number
+          role?: string
+          roster_date?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "duty_roster_entries_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historical_data: {
         Row: {
           base_id: string
