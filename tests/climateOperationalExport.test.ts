@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { calculateOperationalHours, consolidatePoloHours, sumOperationalMetrics } from "./climateOperationalExport";
-import { getBaseIdsForRegional } from "../data/basesConfig";
-import type { HistoricalDataRow } from "../hooks/useHistoricalData";
-import type { WeatherHour } from "../hooks/useWeather";
+import { calculateOperationalHours, consolidatePoloHours, sumOperationalMetrics } from "../src/utils/climateOperationalExport";
+import { getBaseIdsForRegional } from "../src/data/basesConfig";
+import type { HistoricalDataRow } from "../src/hooks/useHistoricalData";
+import type { WeatherHour } from "../src/hooks/useWeather";
 
 const weather = [{ hour: 0, datetime: "2026-10-19T00:00", precip_mm: 0, temp_c: 20, wind_kmh: 0, gust_kmh: 0, humidity: 70, description: "", icon: "" }] satisfies WeatherHour[];
 function branch(bt: number, mt: number, removal: number) {
